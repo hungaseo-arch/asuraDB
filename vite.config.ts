@@ -1,0 +1,21 @@
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import tailwindcss from '@tailwindcss/vite';
+import path from 'node:path';
+
+export default defineConfig({
+  base: '/asuradb/',
+  server: {
+    host: '::',
+    port: 5173,
+  },
+  plugins: [
+    vue(),
+    tailwindcss(),
+  ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+});

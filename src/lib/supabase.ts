@@ -1,5 +1,5 @@
-const SUPABASE_URL = 'https://subatvlyfglztdmyexfl.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1YmF0dmx5ZmdsenRkbXlleGZsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTAzMjQ0NywiZXhwIjoyMDk0NjA4NDQ3fQ.4vJv9BOmP70MY4wm7VQZcAr5VTCGR6D6p1wAeNoYihk';
+const SUPABASE_URL = import.meta.env.VITE_SB_URL as string;
+const SUPABASE_KEY = import.meta.env.VITE_SB_KEY as string;
 
 const HEADERS = {
   apikey: SUPABASE_KEY,

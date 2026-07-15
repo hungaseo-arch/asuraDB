@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import {
   Search as SearchIcon, SlidersHorizontal, X, ExternalLink,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
@@ -13,7 +14,7 @@ import Separator from '@/components/ui/Separator.vue';
 import SourceIcon from '@/components/icons/SourceIcon.vue';
 import type { SearchResult } from '@/data';
 import { cn, previewContent } from '@/lib/utils';
-import { API_BASE } from '@/lib/api';
+import { API_BASE, IS_HOST } from '@/lib/api';
 import { SOURCE_COLOR as sourceColor, SOURCE_LABEL as sourceLabel } from '@/lib/sources';
 import { useSortMode } from '@/composables/useSortMode';
 
@@ -23,6 +24,7 @@ interface SourceFilter {
   id: SourceType | 'all';
   label: string;
   color: string;
+  planned?: boolean;   // 개발예정 — 비활성 표시
 }
 
 const sourceFilters: SourceFilter[] = [
@@ -32,7 +34,8 @@ const sourceFilters: SourceFilter[] = [
   { id: 'gmail',    label: 'Gmail',           color: sourceColor.gmail },
   { id: 'drive',    label: 'Google Drive',    color: sourceColor.drive },
   { id: 'calendar', label: 'Google Calendar', color: sourceColor.calendar },
-  { id: 'band',     label: 'Naver Band',      color: sourceColor.band },
+  { id: 'band',     label: 'Naver Band',      color: sourceColor.band,      planned: true },
+  { id: 'obsidian', label: 'Obsidian',        color: sourceColor.obsidian,  planned: true },
 ];
 
 const query = ref('');
@@ -40,6 +43,7 @@ const activeSource = ref<SourceType | 'all'>('all');
 const results = ref<SearchResult[]>([]);
 const searching = ref(false);
 const searched = ref(false);
+const offline = ref(false);   // 검색 API(8000) 연결 실패 여부
 const inputRef = ref<HTMLInputElement | null>(null);
 
 const expandedMap = ref<Record<string, boolean>>({});
@@ -51,12 +55,14 @@ async function handleSearch() {
   if (!query.value.trim()) return;
   searching.value = true;
   searched.value = false;
+  offline.value = false;
 
   try {
     const params = new URLSearchParams({ q: query.value.trim(), limit: '50' });
     if (activeSource.value !== 'all') params.set('source', activeSource.value);
 
     const res  = await fetch(`${API_BASE}/search?${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
     results.value = (data.results ?? []).map((r: Record<string, unknown>) => ({
@@ -76,6 +82,7 @@ async function handleSearch() {
     }));
   } catch {
     results.value = [];
+    offline.value = true;   // 연결/응답 실패 → 오프라인 안내
   }
 
   searching.value = false;
@@ -96,6 +103,14 @@ function clearSearch() {
   searched.value = false;
   inputRef.value?.focus();
 }
+
+// 홈 빠른검색·딥링크: /search?q=... 진입 시 자동 실행
+const route = useRoute();
+onMounted(() => {
+  const initial = (route.query.q as string | undefined)?.trim();
+  if (initial) { query.value = initial; void handleSearch(); }
+  else inputRef.value?.focus();
+});
 
 const { sortMode, cycleSortMode, sortLabel, sorted: sortedResults } = useSortMode(results);
 
@@ -133,7 +148,7 @@ const pageNumbers = computed<(number | '...')[]>(() => {
   >
     <!-- Header -->
     <div>
-      <h1 class="text-xl font-bold">통합 자료 검색</h1>
+      <h1 class="text-xl font-bold">로컬 검색</h1>
       <p class="text-sm text-muted-foreground mt-0.5">
         FTS + Vector (RRF) · Notion · UpNote · Gmail · Google Drive
       </p>
@@ -176,22 +191,26 @@ const pageNumbers = computed<(number | '...')[]>(() => {
         <button
           v-for="sf in sourceFilters"
           :key="sf.id"
+          :disabled="sf.planned"
+          :title="sf.planned ? '개발예정 — 수집기 연동 준비 중' : ''"
           :class="cn(
             'text-xs px-2.5 py-1 rounded-full border transition-all duration-150',
-            activeSource === sf.id
-              ? 'border-transparent text-background font-medium'
-              : 'border-border/50 text-muted-foreground hover:border-border',
+            sf.planned
+              ? 'border-dashed border-border/40 text-muted-foreground/40 cursor-not-allowed'
+              : activeSource === sf.id
+                ? 'border-transparent text-background font-medium'
+                : 'border-border/50 text-muted-foreground hover:border-border',
           )"
-          :style="activeSource === sf.id ? { background: sf.color } : {}"
-          @click="activeSource = sf.id"
+          :style="!sf.planned && activeSource === sf.id ? { background: sf.color } : {}"
+          @click="!sf.planned && (activeSource = sf.id)"
         >
-          {{ sf.label }}
+          {{ sf.label }}{{ sf.planned ? ' (개발예정)' : '' }}
         </button>
       </div>
     </div>
 
     <!-- How it works (pre-search) -->
-    <div v-if="!searched && !searching" class="grid grid-cols-3 gap-3 mt-4">
+    <div v-if="!searched && !searching" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
       <div
         v-for="card in [
           { icon: AlignLeft, label: 'FTS',     desc: '전문 텍스트 검색\n키워드 정확도 기반', color: '#4ade80' },
@@ -223,12 +242,25 @@ const pageNumbers = computed<(number | '...')[]>(() => {
       <div class="text-sm text-muted-foreground">하이브리드 검색 중…</div>
     </div>
 
+    <!-- 검색 API 오프라인 안내 (0개 결과로 위장되지 않도록) -->
+    <div v-if="searched && !searching && offline"
+      class="mt-4 rounded-xl border border-amber-300 bg-amber-50/60 p-5 text-sm text-amber-800">
+      <template v-if="IS_HOST">
+        검색 백엔드(API)에 연결하지 못했습니다. 잠시 후 자동 기동되니 <b>다시 검색</b>해 주세요.
+        계속 실패하면 상단의 <b>시스템 상태</b> 버튼을 눌러 API를 기동하세요.
+      </template>
+      <template v-else>
+        <b>로컬 검색·AI 지식 Q&A</b>는 데이터가 있는 <b>호스트 PC에서만</b> 동작합니다(원격 미지원).
+        다른 컴퓨터에서는 KPI·마진·지점·수입·DB·견적 등 나머지 기능을 이용하세요.
+      </template>
+    </div>
+
     <!-- Results -->
     <Transition
       enter-active-class="transition-opacity duration-300"
       enter-from-class="opacity-0"
     >
-      <div v-if="searched && !searching" class="space-y-3">
+      <div v-if="searched && !searching && !offline" class="space-y-3">
         <div class="flex items-center justify-between">
           <div class="text-sm text-muted-foreground">
             <span class="text-foreground font-semibold">{{ results.length }}개</span> 결과

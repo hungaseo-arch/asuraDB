@@ -10,6 +10,7 @@ import hashlib
 import io
 import logging
 import os
+import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -50,6 +51,29 @@ SUPPORTED_MIME = {
     "text/plain",                                 # 텍스트
     "text/markdown",
 }
+
+# ── 민감정보(PII) 제외 필터 ────────────────────────────────────────────────
+# 개인 세무·신분 문서는 RAG 코퍼스에 저장하지 않는다(주민번호·여권·계좌 노출 방지).
+# (1) 파일명 패턴 — 다운로드 전 사전 차단
+SENSITIVE_NAME_PATTERNS = re.compile(
+    r"주민|여권|passport|소득금액증명|원천징수|근로소득|소득세|재외국민|"
+    r"등본|초본|가족관계|통장|계좌|급여명세|payroll|SPT|1770|1721|NPWP|KTP",
+    re.IGNORECASE,
+)
+# (2) 본문 패턴 — 추출 텍스트에서 실제 PII가 감지되면 파일 전체를 건너뛰는 안전망
+PII_CONTENT_PATTERNS = {
+    "주민등록번호": re.compile(r"\b\d{6}[-\s]?[1-4]\d{6}\b"),
+    "여권번호":     re.compile(r"\b[MSROD]\d{8}\b"),
+}
+
+
+def _is_sensitive_name(name: str) -> bool:
+    return bool(SENSITIVE_NAME_PATTERNS.search(name or ""))
+
+
+def _detect_pii(content: str) -> list[str]:
+    """본문에서 감지된 PII 종류 목록(없으면 빈 리스트)"""
+    return [label for label, pat in PII_CONTENT_PATTERNS.items() if pat.search(content)]
 
 supabase: SupabaseClient  = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 embedder: SentenceTransformer = SentenceTransformer(EMBEDDING_MODEL)
@@ -145,6 +169,32 @@ def _load_existing_hashes() -> dict[tuple[str, int], str]:
     return hashes
 
 
+def _load_existing_modified() -> dict[str, str]:
+    """drive 파일별 마지막 수집 시점의 modifiedTime → {source_id: modified}
+    (변경 없는 파일은 재다운로드/임베딩을 건너뛰기 위함)"""
+    out: dict[str, str] = {}
+    offset, batch = 0, 1000
+    while True:
+        resp = (
+            supabase.table("documents")
+            .select("source_id,metadata")
+            .eq("source", "drive")
+            .eq("chunk_index", 0)
+            .range(offset, offset + batch - 1)
+            .execute()
+        )
+        rows = resp.data or []
+        for row in rows:
+            m = (row.get("metadata") or {}).get("modified")
+            if m:
+                out[row["source_id"]] = m
+        if len(rows) < batch:
+            break
+        offset += batch
+    log.info(f"기존 modifiedTime {len(out)}개 로드")
+    return out
+
+
 def _remove_deleted_docs(source: str, current_ids: set[str]) -> int:
     """원본에서 삭제된 문서를 Supabase에서 제거"""
     existing_ids: set[str] = set()
@@ -187,7 +237,8 @@ def collect_all():
     current_ids = {f["id"] for f in files}
     _remove_deleted_docs("drive", current_ids)
 
-    existing = _load_existing_hashes()
+    existing          = _load_existing_hashes()
+    existing_modified = _load_existing_modified()
     inserted = skipped = errors = 0
 
     for f in files:
@@ -196,6 +247,17 @@ def collect_all():
         mime      = f["mimeType"]
         modified  = f.get("modifiedTime", "")
         url       = f.get("webViewLink", "")
+
+        # (1) 파일명 기반 민감정보 제외 — 다운로드 전 차단
+        if _is_sensitive_name(name):
+            log.info(f"  민감문서 skip(파일명) [{name}]")
+            skipped += 1
+            continue
+
+        # 변경 없는 파일은 다운로드/임베딩 생략 (modifiedTime 비교)
+        if modified and existing_modified.get(file_id) == modified:
+            skipped += 1
+            continue
 
         try:
             if mime == "application/vnd.google-apps.document":
@@ -213,6 +275,13 @@ def collect_all():
         content = content.replace("\x00", "").strip()
         if not content:
             log.debug(f"  빈 파일 skip: {name}")
+            continue
+
+        # (2) 본문 기반 민감정보 안전망 — 주민번호·여권 감지 시 파일 전체 저장 안 함
+        pii = _detect_pii(content)
+        if pii:
+            log.warning(f"  민감문서 skip(본문 {'/'.join(pii)}) [{name}]")
+            skipped += 1
             continue
 
         chunks = chunk_markdown(content)

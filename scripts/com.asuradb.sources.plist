@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  AsuraDB 문서 소스 수집 자동 실행 (macOS LaunchAgent)
+  대상: Notion · Gmail · Google Drive · Google Calendar · UpNote · Naver Band
+        (scripts/collect_sources.py 가 각 수집기 1회 함수를 개별 실행)
+
+  ◆ 스케줄
+    매일 새벽 06:30 (시스템 시간대) — indicator(06:15) 직후.
+
+  ◆ venv
+    indicator/monthly 와 동일한 ~/.venvs/asuradb 사용.
+
+  ◆ 설치
+    cp scripts/com.asuradb.sources.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.asuradb.sources.plist
+    # 즉시 1회 수집(원할 때):
+    launchctl kickstart -k gui/$(id -u)/com.asuradb.sources
+    # 로그:
+    tail -f /tmp/asuradb-sources.log
+
+  ◆ 제거
+    launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.asuradb.sources.plist
+    rm ~/Library/LaunchAgents/com.asuradb.sources.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.asuradb.sources</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/seojonghwan/.venvs/asuradb/bin/python</string>
+    <string>scripts/collect_sources.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/seojonghwan/dev/asuraDB</string>
+
+  <!-- 매일 새벽 06:30 (시스템 시간대 기준) -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>6</integer>
+    <key>Minute</key>
+    <integer>30</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>KeepAlive</key>
+  <false/>
+
+  <!-- 임베딩 모델은 로컬 캐시(~/.cache/huggingface)만 사용.
+       06:30 기상 직후 네트워크(DNS) 미준비로 HuggingFace 접속 시도가 죽으며
+       notion·gmail 수집이 통째로 실패하던 문제의 대책 (2026-07-15). -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HF_HUB_OFFLINE</key>
+    <string>1</string>
+    <key>TRANSFORMERS_OFFLINE</key>
+    <string>1</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/asuradb-sources.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/asuradb-sources.err</string>
+</dict>
+</plist>

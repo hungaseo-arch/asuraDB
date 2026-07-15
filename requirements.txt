@@ -1,9 +1,0 @@
-notion-client>=2.2.1
-supabase>=2.0.0
-sentence-transformers>=3.0.0
-schedule>=1.2.0
-google-api-python-client>=2.100.0
-google-auth-oauthlib>=1.1.0
-pdfminer.six>=20221105
-watchdog>=4.0.0
-python-dotenv>=1.0.0

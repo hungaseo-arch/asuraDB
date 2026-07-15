@@ -227,6 +227,34 @@ def _query_database_pages(database_id: str) -> list:
     return pages
 
 
+def _search_all() -> tuple[set[str], set[str]]:
+    """통합(integration)에 공유된 모든 page / database id 를 search API로 열거."""
+    headers = {
+        "Authorization": f"Bearer {NOTION_API_KEY}",
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json",
+    }
+    pages: set[str] = set()
+    dbs:   set[str] = set()
+    cursor = None
+    while True:
+        body: dict[str, Any] = {"page_size": 100}
+        if cursor:
+            body["start_cursor"] = cursor
+        r = _httpx.post("https://api.notion.com/v1/search", headers=headers, json=body, timeout=20)
+        r.raise_for_status()
+        data = r.json()
+        for o in data.get("results", []):
+            if o.get("object") == "page":
+                pages.add(o["id"])
+            elif o.get("object") == "database":
+                dbs.add(o["id"])
+        if not data.get("has_more"):
+            break
+        cursor = data.get("next_cursor")
+    return pages, dbs
+
+
 def _collect_all_descendant_pages(root_id: str) -> list[str]:
     """BFS로 모든 하위 페이지/DB ID를 깊이 제한 없이 수집"""
     headers = {
@@ -416,17 +444,56 @@ def collect_entry(entry_id: str) -> set[str]:
 
 
 def collect_all():
-    log.info("=== Notion 전체 수집 시작 ===")
-    entry_ids = [d.strip() for d in NOTION_DATABASE_IDS.split(",") if d.strip()]
-    all_collected_ids: set[str] = set()
-    for entry_id in entry_ids:
+    """통합에 공유된 전체 객체(search)를 전수 수집.
+
+    기존: NOTION_DATABASE_IDS 의 단일 루트만 + 그 페이지의 중첩 블록 BFS → 1건만 수집되던 버그.
+    변경: search API 로 접근 가능한 모든 page/database 열거 → DB 행까지 포함해 전수 upsert.
+    """
+    log.info("=== Notion 전체 수집 시작 (search 전수) ===")
+
+    # 1) 통합에 공유된 모든 page/database 열거
+    try:
+        page_ids, db_ids = _search_all()
+    except Exception as e:
+        log.error(f"[notion] search 실패: {e}", exc_info=True)
+        page_ids, db_ids = set(), set()
+    log.info(f"[notion] search 접근가능: pages={len(page_ids)} databases={len(db_ids)}")
+
+    # 2) 각 DB 의 행(페이지)도 포함 (search 누락 대비)
+    for dbid in db_ids:
         try:
-            ids = collect_entry(entry_id)
-            all_collected_ids.update(ids)
+            for p in _query_database_pages(dbid):
+                page_ids.add(p["id"])
         except Exception as e:
-            log.error(f"수집 실패 {entry_id}: {e}", exc_info=True)
-    _remove_deleted_docs(all_collected_ids)
-    log.info("=== Notion 전체 수집 완료 ===")
+            log.warning(f"[notion] DB 쿼리 실패 {dbid}: {e}")
+
+    # 3) NOTION_DATABASE_IDS 에 명시된 항목 보강 (search 미포함 대비)
+    for entry_id in [d.strip() for d in NOTION_DATABASE_IDS.split(",") if d.strip()]:
+        if entry_id in page_ids or entry_id in db_ids:
+            continue
+        try:
+            t = _notion_object_type(entry_id)
+            if t == "database":
+                for p in _query_database_pages(entry_id):
+                    page_ids.add(p["id"])
+            elif t == "page":
+                page_ids.add(entry_id)
+        except Exception as e:
+            log.warning(f"[notion] env 엔트리 처리 실패 {entry_id}: {e}")
+
+    # 4) 전수 upsert
+    total_i = total_s = 0
+    for pid in page_ids:
+        try:
+            i, s = _upsert_page(pid)
+            total_i += i
+            total_s += s
+        except Exception as e:
+            log.warning(f"[notion] 페이지 수집 실패 {pid}: {e}")
+
+    # 5) 삭제분 정리 + heartbeat
+    _remove_deleted_docs(page_ids)
+    log.info(f"=== Notion 완료 — pages={len(page_ids)} inserted={total_i} skipped={total_s} ===")
     from collectors.heartbeat import record as _hb; _hb("notion")
 
 

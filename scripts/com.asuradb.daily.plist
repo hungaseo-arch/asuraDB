@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  AsuraDB indicator_collector 자동 실행 (macOS LaunchAgent)
+  대상: source='yfinance' 지표 — 환율 4종(USD/IDR, USD/KRW, USD/CNY, KRW/IDR)
+        + 브렌트유 등 yfinance 지원 원자재.
+
+  ◆ 스케줄
+    매일 새벽 06:15 (KST) — 미국 시장 마감(KST 05:00) + 데이터 안정화 후.
+    환율은 24시간이라 시각 자체는 무관하지만, 새벽이 가장 안정적.
+
+  ◆ 외부 venv 사용 (iCloud Deadlock 회피)
+    monthly 와 동일한 ~/.venvs/asuradb 사용. yfinance 추가 설치 필요:
+      uv pip install --python ~/.venvs/asuradb/bin/python yfinance
+
+  ◆ 설치
+    cp scripts/com.asuradb.daily.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.asuradb.daily.plist
+    # 즉시 1회 실행
+    launchctl kickstart -k gui/$(id -u)/com.asuradb.daily
+    # 로그 확인
+    tail -f /tmp/asuradb-daily.log
+
+  ◆ 제거
+    launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.asuradb.daily.plist
+    rm ~/Library/LaunchAgents/com.asuradb.daily.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.asuradb.daily</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/seojonghwan/.venvs/asuradb/bin/python</string>
+    <string>collectors/indicator_collector.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/seojonghwan/dev/asuraDB</string>
+
+  <!-- 매일 새벽 06:15 (KST) — 시스템 시간대 기준 -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>6</integer>
+    <key>Minute</key>
+    <integer>15</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>KeepAlive</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/asuradb-daily.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/asuradb-daily.err</string>
+</dict>
+</plist>

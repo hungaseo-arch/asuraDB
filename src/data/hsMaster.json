@@ -1,0 +1,258 @@
+[
+  {
+    "hs": "40111000",
+    "category": "pc",
+    "label": "Passenger Car",
+    "label_en": "motor cars (incl. station wagons & racing cars)",
+    "uraian": "Ban baru untuk mobil penumpang (termasuk station wagon & mobil balap)",
+    "lartas": "sni"
+  },
+  {
+    "hs": "40112011",
+    "category": "lt",
+    "label": "Light Truck",
+    "label_en": "buses/lorries, width ≤230mm, rim ≤16\"",
+    "uraian": "Ban baru bus/lori — lebar ≤230mm, velg ≤16″",
+    "lartas": "sni"
+  },
+  {
+    "hs": "40112012",
+    "category": "lt",
+    "label": "Light Truck (rim>16\")",
+    "label_en": "buses/lorries, width ≤230mm, rim >16\" (17.5\"·19.5\")",
+    "uraian": "Ban baru bus/lori — lebar ≤230mm, velg >16″",
+    "lartas": "sni"
+  },
+  {
+    "hs": "40112013",
+    "category": "tb",
+    "label": "Truck & Bus (TBR)",
+    "label_en": "buses/lorries, width >230mm~≤385mm",
+    "uraian": "Ban baru bus/lori — lebar >230mm s.d. 385mm",
+    "lartas": "sni"
+  },
+  {
+    "hs": "40112019",
+    "category": "tb",
+    "label": "Truck & Bus (광폭)",
+    "label_en": "buses/lorries, width >385mm~≤450mm",
+    "uraian": "Ban baru bus/lori — lebar >385mm s.d. 450mm (lain-lain)",
+    "lartas": "sni"
+  },
+  {
+    "hs": "40112090",
+    "category": "tb",
+    "label": "Truck & Bus (초광폭)",
+    "label_en": "buses/lorries, width >450mm",
+    "uraian": "Ban baru bus/lori — lebar >450mm",
+    "lartas": "sni"
+  },
+  {
+    "hs": "40113000",
+    "category": "aircraft",
+    "label": "Aircraft",
+    "label_en": "of a kind used on aircraft (참고용)",
+    "uraian": "Ban baru untuk pesawat udara",
+    "lartas": "na"
+  },
+  {
+    "hs": "40114000",
+    "category": "mc",
+    "label": "Motorcycle",
+    "label_en": "motorcycle tyres (4011.40)",
+    "uraian": "Ban baru untuk sepeda motor",
+    "lartas": "sni"
+  },
+  {
+    "hs": "40115000",
+    "category": "bc",
+    "label": "Bicycle",
+    "label_en": "bicycle tyres (4011.50)",
+    "uraian": "Ban baru untuk sepeda",
+    "lartas": "na"
+  },
+  {
+    "hs": "40117000",
+    "category": "agr",
+    "label": "Agricultural (AGR)",
+    "label_en": "agricultural/forestry vehicles & machines",
+    "uraian": "Ban baru untuk kendaraan & mesin pertanian/kehutanan",
+    "lartas": "na"
+  },
+  {
+    "hs": "40118011",
+    "category": "ind",
+    "label": "Industrial/Pneumatic",
+    "label_en": "8429/8430 machinery/forklift/industrial, rim ≤61cm",
+    "uraian": "Ban baru — mesin 8429/8430, forklift & industri, velg ≤61cm",
+    "lartas": "na"
+  },
+  {
+    "hs": "40118019",
+    "category": "mining_truck",
+    "label": "Mining Truck",
+    "label_en": "other construction/mining vehicles, rim ≤61cm",
+    "uraian": "Ban baru — kendaraan konstruksi/pertambangan lain, velg ≤61cm",
+    "lartas": "na"
+  },
+  {
+    "hs": "40118021",
+    "category": "otr",
+    "label": "OTR (기계·지게차)",
+    "label_en": "8429/8430 machinery/forklift, rim >61cm",
+    "uraian": "Ban baru — mesin 8429/8430/forklift, velg >61cm",
+    "lartas": "na"
+  },
+  {
+    "hs": "40118029",
+    "category": "otr",
+    "label": "OTR (기타)",
+    "label_en": "other, rim >61cm",
+    "uraian": "Ban baru — lain-lain, velg >61cm",
+    "lartas": "na"
+  },
+  {
+    "hs": "40118040",
+    "category": "otr",
+    "label": "OTR (구코드)",
+    "label_en": "OTR, rim >24\" — legacy code, 실데이터 유지",
+    "uraian": "Ban baru OTR (kode lama), velg >24″",
+    "lartas": "na"
+  },
+  {
+    "hs": "40119000",
+    "category": "other",
+    "label": "Other New",
+    "label_en": "other new pneumatic (BTKI 세분 가능)",
+    "uraian": "Ban pneumatik baru lainnya",
+    "lartas": "na"
+  },
+  {
+    "hs": "40121100",
+    "category": "retread",
+    "label": "Retreaded PC",
+    "label_en": "retreaded, motor cars (참고용)",
+    "uraian": "Ban vulkanisir — mobil penumpang",
+    "lartas": "na"
+  },
+  {
+    "hs": "40121200",
+    "category": "retread",
+    "label": "Retreaded Bus/Lorry",
+    "label_en": "retreaded, buses/lorries (참고용)",
+    "uraian": "Ban vulkanisir — bus/lori",
+    "lartas": "na"
+  },
+  {
+    "hs": "40121900",
+    "category": "retread",
+    "label": "Retreaded Other",
+    "label_en": "retreaded, other (참고용)",
+    "uraian": "Ban vulkanisir — lain-lain",
+    "lartas": "na"
+  },
+  {
+    "hs": "40122000",
+    "category": "used",
+    "label": "Used Pneumatic",
+    "label_en": "used pneumatic — 인니 중고 수입규제(lartas)",
+    "uraian": "Ban pneumatik bekas",
+    "lartas": "ban"
+  },
+  {
+    "hs": "40129016",
+    "category": "solid",
+    "label": "Solid (보조·광폭)",
+    "label_en": "other solid, ext. dia. >250mm, width >450mm",
+    "uraian": "Ban pejal — diameter luar >250mm, lebar >450mm",
+    "lartas": "na"
+  },
+  {
+    "hs": "40129017",
+    "category": "solid",
+    "label": "Solid Tyre",
+    "label_en": "solid >250mm ext. dia. — 포트 실데이터 확정",
+    "uraian": "Ban pejal — diameter luar >250mm",
+    "lartas": "na"
+  },
+  {
+    "hs": "40129080",
+    "category": "flap",
+    "label": "Flap",
+    "label_en": "tyre flaps of rubber — 포트 실데이터 확정",
+    "uraian": "Flap (pelindung ban dalam) dari karet",
+    "lartas": "na"
+  },
+  {
+    "hs": "40131011",
+    "category": "tube",
+    "label": "Tube PC & LT",
+    "label_en": "inner tubes, passenger car & light truck (SNI)",
+    "uraian": "Ban dalam — mobil penumpang & truk ringan",
+    "lartas": "sni"
+  },
+  {
+    "hs": "40131021",
+    "category": "tube",
+    "label": "Tube LT/TB ≤450mm",
+    "label_en": "inner tubes, LT/TB, width ≤450mm",
+    "uraian": "Ban dalam — bus/truk, lebar ≤450mm",
+    "lartas": "sni"
+  },
+  {
+    "hs": "40131029",
+    "category": "tube",
+    "label": "Tube LT/TB >450mm",
+    "label_en": "inner tubes, LT/TB, width >450mm",
+    "uraian": "Ban dalam — bus/truk, lebar >450mm",
+    "lartas": "na"
+  },
+  {
+    "hs": "40132000",
+    "category": "tube",
+    "label": "Tube Bicycle",
+    "label_en": "inner tubes, bicycle",
+    "uraian": "Ban dalam — sepeda",
+    "lartas": "na"
+  },
+  {
+    "hs": "40139011",
+    "category": "tube",
+    "label": "Tube Mining ≤450mm",
+    "label_en": "OTR tubes (8429/8430 machinery), ≤450mm",
+    "uraian": "Ban dalam — mesin 8429/8430, ≤450mm",
+    "lartas": "na"
+  },
+  {
+    "hs": "40139019",
+    "category": "tube",
+    "label": "Tube Mining >450mm",
+    "label_en": "OTR tubes (8429/8430 machinery), >450mm",
+    "uraian": "Ban dalam — mesin 8429/8430, >450mm",
+    "lartas": "na"
+  },
+  {
+    "hs": "40139020",
+    "category": "tube",
+    "label": "Tube Motorcycle",
+    "label_en": "inner tubes, motorcycle (SNI)",
+    "uraian": "Ban dalam — sepeda motor",
+    "lartas": "sni"
+  },
+  {
+    "hs": "40139031",
+    "category": "tube",
+    "label": "Tube OTR Ch87 <450mm",
+    "label_en": "OTR tubes (Ch.87 road vehicles), <450mm",
+    "uraian": "Ban dalam — kendaraan Bab 87, <450mm",
+    "lartas": "na"
+  },
+  {
+    "hs": "40139039",
+    "category": "tube",
+    "label": "Tube OTR Ch87 >450mm",
+    "label_en": "OTR tubes (Ch.87 road vehicles), >450mm",
+    "uraian": "Ban dalam — kendaraan Bab 87, >450mm",
+    "lartas": "na"
+  }
+]

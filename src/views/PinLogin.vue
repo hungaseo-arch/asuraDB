@@ -2,100 +2,104 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AsuraLogo from '@/components/icons/AsuraLogo.vue';
+import { Loader2 } from 'lucide-vue-next';
+import { signIn, type Role } from '@/lib/auth';
+import { LAUNCHER_BASE } from '@/lib/api';
 
-const PINS: Record<string, string> = { '0574': 'full', '0000': 'quote' };
 const router = useRouter();
 
-const digits  = ref<string[]>([]);
-const shake   = ref(false);
-
-function press(d: string) {
-  if (digits.value.length >= 4) return;
-  digits.value.push(d);
-  if (digits.value.length === 4) verify();
+// 로그인 성공 즉시 검색/AI 백엔드(8000)를 런처(8001) 경유로 예열한다.
+// 첫 기동은 임베딩 모델 로딩으로 ~20s 걸리므로, 앱 진입 전에 미리 시작해 대기를 줄인다.
+// 런처(LaunchAgent, 상시)가 죽어 있어도 조용히 무시 — Layout onMounted 가 한 번 더 시도한다.
+function warmUpApi() {
+  fetch(`${LAUNCHER_BASE}/start`, { method: 'POST', keepalive: true }).catch(() => {});
 }
 
-function del() {
-  digits.value.pop();
+const email    = ref('');
+const password = ref('');
+const checking = ref(false);
+const errorMsg = ref('');
+
+// 로그인 후 역할별 진입 페이지
+function landingFor(role: Role | null): string {
+  if (role === 'super_admin' || role === 'staff') return '/';
+  return '/quote';   // distributor · end_user · 알 수 없음 → 견적서 페이지
 }
 
-function verify() {
-  const pin  = digits.value.join('');
-  const role = PINS[pin];
-  if (role) {
-    sessionStorage.setItem('asura_auth', role);
-    router.replace(role === 'full' ? '/' : '/quote');
-  } else {
-    shake.value = true;
-    setTimeout(() => {
-      shake.value  = false;
-      digits.value = [];
-    }, 600);
+async function submit() {
+  if (!email.value.trim() || !password.value) return;
+  checking.value = true;
+  errorMsg.value = '';
+  try {
+    const role = await signIn(email.value.trim(), password.value);
+    warmUpApi();   // 로그인 성공 → API 예열(비차단)
+    router.replace(landingFor(role));
+  } catch (e) {
+    errorMsg.value = e instanceof Error ? e.message : String(e);
+    password.value = '';
+  } finally {
+    checking.value = false;
   }
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-background flex items-center justify-center">
-    <div class="flex flex-col items-center gap-8 w-64">
+  <div class="min-h-screen bg-background flex items-center justify-center p-4">
+    <form
+      class="flex flex-col items-center gap-7 w-80"
+      @submit.prevent="submit"
+    >
       <!-- Logo -->
       <div class="flex flex-col items-center gap-3">
         <AsuraLogo :size="56" style="filter: drop-shadow(0 0 16px rgba(38,126,255,0.5));" />
         <div class="text-center">
           <div class="font-bold text-lg tracking-tight">AsuraDB</div>
-          <div class="text-xs text-muted-foreground mt-0.5">PIN을 입력하세요</div>
+          <div class="text-xs text-muted-foreground mt-0.5">이메일로 로그인</div>
         </div>
       </div>
 
-      <!-- Dot indicators -->
-      <div
-        class="flex gap-3"
-        :class="shake && 'animate-[shake_0.5s_ease]'"
-      >
-        <div
-          v-for="i in 4"
-          :key="i"
-          class="w-3 h-3 rounded-full border-2 transition-all duration-150"
-          :class="digits.length >= i
-            ? 'bg-primary border-primary'
-            : 'bg-transparent border-border'"
+      <!-- Inputs -->
+      <div class="w-full flex flex-col gap-2">
+        <label class="text-xs text-muted-foreground" for="login-email">이메일</label>
+        <input
+          id="login-email"
+          v-model="email"
+          type="email"
+          autocomplete="email"
+          required
+          :disabled="checking"
+          class="h-10 rounded-lg border border-input bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+          placeholder="you@example.com"
+        />
+
+        <label class="text-xs text-muted-foreground mt-2" for="login-password">비밀번호</label>
+        <input
+          id="login-password"
+          v-model="password"
+          type="password"
+          autocomplete="current-password"
+          required
+          :disabled="checking"
+          class="h-10 rounded-lg border border-input bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+          placeholder="••••••••"
         />
       </div>
 
-      <!-- Keypad -->
-      <div class="grid grid-cols-3 gap-3 w-full">
-        <button
-          v-for="d in ['1','2','3','4','5','6','7','8','9']"
-          :key="d"
-          class="h-14 rounded-xl text-lg font-semibold bg-card border border-border hover:bg-accent hover:border-primary/30 active:scale-95 transition-all duration-100"
-          @click="press(d)"
-        >
-          {{ d }}
-        </button>
-        <div />
-        <button
-          class="h-14 rounded-xl text-lg font-semibold bg-card border border-border hover:bg-accent hover:border-primary/30 active:scale-95 transition-all duration-100"
-          @click="press('0')"
-        >
-          0
-        </button>
-        <button
-          class="h-14 rounded-xl text-sm text-muted-foreground bg-card border border-border hover:bg-accent hover:text-foreground active:scale-95 transition-all duration-100"
-          @click="del"
-        >
-          ⌫
-        </button>
-      </div>
-    </div>
+      <!-- Error -->
+      <p
+        v-if="errorMsg"
+        class="text-xs text-red-600 text-center -mt-2 max-w-full wrap-break-word"
+      >{{ errorMsg }}</p>
+
+      <!-- Submit -->
+      <button
+        type="submit"
+        :disabled="checking || !email || !password"
+        class="w-full h-10 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        <Loader2 v-if="checking" :size="14" class="animate-spin" />
+        {{ checking ? '확인 중…' : '로그인' }}
+      </button>
+    </form>
   </div>
 </template>
-
-<style scoped>
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%       { transform: translateX(-8px); }
-  40%       { transform: translateX(8px); }
-  60%       { transform: translateX(-6px); }
-  80%       { transform: translateX(6px); }
-}
-</style>

@@ -56,7 +56,10 @@ asuradb_vue/
 ├── vite.config.ts
 ├── tsconfig*.json
 ├── README.md              ← 본 문서
-├── MIGRATION.md           ← React → Vue 매핑 표 + 미지원 항목
+├── docs/                  ← 프로젝트 문서 (개발 지침 · 가이드 · 운영이력)
+│   ├── AsuraDB_Development_Guide.md   ← 아키텍처·스키마·연결/보안(§11)·로드맵·부록 A(마이그레이션)
+│   ├── AsuraDB_지표수집_가이드.md      ← 외부 거시·시장 지표 24종 수집
+│   └── 웹사이트_운영_변경이력.md       ← 월간 비즈니스 데이터 갱신 절차 + 변경이력
 └── src/
     ├── main.ts                              엔트리 (Pinia + Router + MotionPlugin)
     ├── App.vue                              루트 (TooltipProvider, Toaster, RouterView)
@@ -96,7 +99,7 @@ asuradb_vue/
 
 ## 5. 환경변수 (.env)
 
-`AsuraDB_Development_Guide.md` §9 참조. Vue 환경에서는 모든 클라이언트 노출용 키에 `VITE_` 접두사 필수.
+`docs/AsuraDB_Development_Guide.md` §9 참조. Vue 환경에서는 모든 클라이언트 노출용 키에 `VITE_` 접두사 필수.
 
 ```bash
 VITE_SUPABASE_URL=https://xxxx.supabase.co
@@ -110,7 +113,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ## 6. 다음 작업 (Next steps / Langkah berikutnya)
 
-`MIGRATION.md` 의 "Post-migration TODO" 섹션을 따라 진행. 핵심:
+`docs/AsuraDB_Development_Guide.md` §7 로드맵 / §13 구현현황을 따라 진행. 핵심:
 
 1. `@supabase/supabase-js` 클라이언트 초기화 (`src/lib/supabase.ts`)
 2. `mockResults` → `hybrid_search` RPC 실제 호출 전환 (`views/Search.vue`)

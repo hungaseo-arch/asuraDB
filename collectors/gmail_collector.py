@@ -334,14 +334,25 @@ def collect_all():
 
     label_id = _get_label_id(service, PKDB_LABEL)
     if not label_id:
-        log.warning(f"'{PKDB_LABEL}' 라벨 없음 — 전체 받은편지함 최근 500개 수집")
+        # 라벨이 없으면 수집 대상을 특정할 수 없음 → 기존 문서 보호를 위해 중단.
+        # (과거 동작: '받은편지함 최근 500개' 폴백 후 그 외 전량 prune → 데이터 손실 위험)
+        log.error(
+            f"'{PKDB_LABEL}' 라벨이 없어 Gmail 수집을 중단합니다 (기존 문서 보호). "
+            f"수집할 메일에 '{PKDB_LABEL}' 라벨을 지정한 뒤 다시 실행하세요."
+        )
+        return
 
-    kwargs = {"userId": "me", "maxResults": 500}
-    if label_id:
-        kwargs["labelIds"] = [label_id]
-
-    resp    = service.users().threads().list(**kwargs).execute()
-    threads = resp.get("threads", [])
+    # 라벨된 스레드 전체 수집 (페이지네이션 — 500개 cap 제거)
+    threads: list[dict] = []
+    page_token = None
+    while True:
+        resp = service.users().threads().list(
+            userId="me", labelIds=[label_id], maxResults=500, pageToken=page_token,
+        ).execute()
+        threads.extend(resp.get("threads", []))
+        page_token = resp.get("nextPageToken")
+        if not page_token:
+            break
     log.info(f"수집 대상 스레드 {len(threads)}개")
 
     current_ids = {t["id"] for t in threads}

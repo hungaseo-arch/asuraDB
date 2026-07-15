@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+/* 폰트는 index.html <link> 에서 로드 — CSS 원격 @import 는 빌드 시 네트워크 요청으로 hang 유발 */
 @import "tailwindcss";
 @import "tw-animate-css";
 

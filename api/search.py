@@ -1,7 +1,7 @@
 """
 Hybrid Search API — FastAPI
 임베딩 생성 + Supabase hybrid_search RPC 호출
-Ollama AI 검색 및 자동화 레포트 (스트리밍)
+Claude AI 검색 및 자동화 레포트 (스트리밍)
 """
 import json
 import os
@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
-import httpx
+import anthropic
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -22,9 +22,11 @@ from supabase import create_client
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 app = FastAPI(title="AsuraDB Search API")
+# 이 백엔드는 service_role 키로 RLS를 우회하므로, 교차 출처 접근을 로컬 dev 출처로만 제한한다.
+# (외부 악성 사이트가 사용자 브라우저를 통해 localhost API를 읽/쓰지 못하도록 차단)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
@@ -32,48 +34,20 @@ app.add_middleware(
 embedder = SentenceTransformer(os.environ.get("EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2"))
 supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
 
-OLLAMA_BASE  = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL",    "qwen3:1.7b")
+_claude       = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+CLAUDE_MODEL  = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
 
 
-def _stream_ollama(system: str, user: str):
-    """Ollama /api/chat 스트리밍 — <think> 블록 자동 제거"""
-    in_think = False
-    buf      = ""
-    with httpx.Client(timeout=httpx.Timeout(120)) as client:
-        with client.stream("POST", f"{OLLAMA_BASE}/api/chat", json={
-            "model":    OLLAMA_MODEL,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user",   "content": user},
-            ],
-            "stream": True,
-            "think":  False,
-        }) as resp:
-            for line in resp.iter_lines():
-                if not line:
-                    continue
-                try:
-                    text = json.loads(line).get("message", {}).get("content", "")
-                except json.JSONDecodeError:
-                    continue
-                if not text:
-                    continue
-                buf += text
-                out  = ""
-                while True:
-                    if not in_think:
-                        s = buf.find("<think>")
-                        if s == -1:
-                            out += buf; buf = ""; break
-                        out += buf[:s]; buf = buf[s + 7:]; in_think = True
-                    else:
-                        e = buf.find("</think>")
-                        if e == -1:
-                            buf = ""; break
-                        buf = buf[e + 8:]; in_think = False
-                if out:
-                    yield out
+def _stream_claude(system: str, user: str):
+    """Claude API 스트리밍"""
+    with _claude.messages.stream(
+        model=CLAUDE_MODEL,
+        max_tokens=2048,
+        system=system,
+        messages=[{"role": "user", "content": user}],
+    ) as stream:
+        for text in stream.text_stream:
+            yield text
 
 
 def _search(q: str, source: str | None = None, tag: str | None = None, limit: int = 10) -> list[dict]:
@@ -105,7 +79,7 @@ def search(
 
 class AiSearchRequest(BaseModel):
     q:     str
-    limit: int = 8
+    limit: int = 30
 
 
 def _build_context(docs: list[dict]) -> str:
@@ -147,7 +121,7 @@ def ai_search(req: AiSearchRequest):
             })
         yield f"data: {json.dumps({'type': 'sources', 'sources': sources_payload}, ensure_ascii=False)}\n\n"
 
-        for text in _stream_ollama(system_prompt, user_prompt):
+        for text in _stream_claude(system_prompt, user_prompt):
             yield f"data: {json.dumps({'type': 'text', 'text': text}, ensure_ascii=False)}\n\n"
 
         yield "data: [DONE]\n\n"
@@ -158,7 +132,7 @@ def ai_search(req: AiSearchRequest):
 # ── 자동화 레포트 ──────────────────────────────────────────────────────────
 
 class ReportRequest(BaseModel):
-    topic: str = "인도네시아 타이어 시장 동향"
+    topic: str = "인도네시아 월간 타이어 수입량"
 
 
 REPORT_QUERIES = [
@@ -197,11 +171,60 @@ def report_generate(req: ReportRequest):
     )
 
     def stream():
-        for text in _stream_ollama(REPORT_SYSTEM, user_prompt):
+        for text in _stream_claude(REPORT_SYSTEM, user_prompt):
             yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(stream(), media_type="text/event-stream")
+
+
+# ── 타이어 수입통계 수집 (BPS WebAPI dataexim) ──────────────────────────────
+# TireImport.vue [최신데이터가져오기] 버튼 → 이 엔드포인트 → bps_import_collector 로직 재사용.
+# BPS_API_KEY(.env) 필요: https://webapi.bps.go.id 무료 발급.
+
+class TireCollectRequest(BaseModel):
+    years: list[int] = []   # 비우면 서버가 결정(연초엔 전년도 포함)
+
+
+@app.post("/collect/tire-imports")
+def collect_tire_imports(req: TireCollectRequest):
+    from collectors.bps_import_collector import (
+        build_rows,
+        default_years,
+        fetch_year,
+        upsert_rows,
+    )
+
+    api_key = os.environ.get("BPS_API_KEY", "")
+    if not api_key:
+        return {"ok": False, "error": "BPS_API_KEY 가 .env 에 없습니다. webapi.bps.go.id 에서 무료 발급 후 추가하세요."}
+
+    years = req.years or default_years()
+    summary: list[dict] = []
+    total = 0
+    for year in years:
+        try:
+            records = fetch_year(api_key, year)
+        except Exception as e:  # noqa: BLE001
+            summary.append({"year": year, "ok": False, "error": str(e)})
+            continue
+        rows, skipped, no_month = build_rows(records, year)
+        if rows:
+            upsert_rows(rows)
+            total += len(rows)
+        summary.append({
+            "year": year, "ok": True, "rows": len(rows),
+            "months": sorted({r["month"] for r in rows}),
+            "skipped_hs": sorted(skipped), "no_month": no_month,
+        })
+
+    if total:
+        try:
+            from collectors.heartbeat import record
+            record("bps_import_collector")
+        except Exception:  # noqa: BLE001
+            pass
+    return {"ok": True, "total_rows": total, "years": summary}
 
 
 # ── 공통 ───────────────────────────────────────────────────────────────────

@@ -1,5 +1,8 @@
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router';
 import Layout from '@/components/Layout.vue';
+import { supabase } from '@/lib/supabase';
+import { syncRoleFromSession } from '@/lib/auth';
+import { pushRecent } from '@/lib/recent';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -8,13 +11,19 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
-        redirect: '/search',
+        redirect: '/home',
+      },
+      {
+        path: 'home',
+        name: 'home',
+        component: () => import('@/views/Home.vue'),
+        meta: { title: '홈' },
       },
       {
         path: 'search',
         name: 'search',
         component: () => import('@/views/Search.vue'),
-        meta: { title: '통합 자료 검색' },
+        meta: { title: '로컬 검색' },
       },
       {
         path: 'ai-search',
@@ -23,16 +32,64 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'AI 지식 Q&A' },
       },
       {
-        path: 'report',
-        name: 'report',
-        component: () => import('@/views/Report.vue'),
-        meta: { title: '자동화 레포트' },
-      },
-      {
         path: 'quote',
         name: 'quote',
         component: () => import('@/views/Quote.vue'),
-        meta: { title: '견적서 생성' },
+        meta: { title: '견적서 작성' },
+      },
+      {
+        path: 'price-compare',
+        name: 'price-compare',
+        component: () => import('@/views/PriceCompare.vue'),
+        meta: { title: '가격비교' },
+      },
+      {
+        path: 'price-compare/:id',
+        name: 'price-compare-detail',
+        component: () => import('@/views/PriceCompare.vue'),
+        meta: { title: '가격비교' },
+      },
+      {
+        path: 'load-calc',
+        name: 'load-calc',
+        component: () => import('@/views/LoadCalc.vue'),
+        meta: { title: '하중계산' },
+      },
+      {
+        path: 'monitor',
+        name: 'monitor',
+        component: () => import('@/views/Monitor.vue'),
+        meta: { title: 'KPI 모니터링' },
+      },
+      {
+        path: 'tire-import',
+        name: 'tire-import',
+        component: () => import('@/views/TireImport.vue'),
+        meta: { title: '인도네시아 타이어 수입량' },
+      },
+      {
+        path: 'margin',
+        name: 'margin',
+        component: () => import('@/views/Margin.vue'),
+        meta: { title: '마진 분석' },
+      },
+      {
+        path: 'branch-sales',
+        name: 'branch-sales',
+        component: () => import('@/views/BranchSales.vue'),
+        meta: { title: '지점 판매 현황' },
+      },
+      {
+        path: 'docs',
+        name: 'docs',
+        component: () => import('@/views/Docs.vue'),
+        meta: { title: '정리' },
+      },
+      {
+        path: 'databases',
+        name: 'databases',
+        component: () => import('@/views/Databases.vue'),
+        meta: { title: '회사 DB' },
       },
     ],
   },
@@ -55,10 +112,34 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to) => {
-  const auth = sessionStorage.getItem('asura_auth');
-  if (!auth && !to.meta.public) return '/login';
-  if (auth === 'quote' && !to.meta.public && to.path !== '/quote') return '/quote';
+router.beforeEach(async (to) => {
+  const { data } = await supabase.auth.getSession();
+  const hasSession = !!data.session;
+
+  // 비로그인 → 보호 경로 접근 차단
+  if (!hasSession) {
+    sessionStorage.removeItem('asura_auth');
+    if (!to.meta.public) return '/login';
+    return;
+  }
+
+  // 세션은 있으나 역할 캐시가 없으면(탭 재오픈 등) 복원
+  let role = sessionStorage.getItem('asura_auth');
+  if (!role) role = await syncRoleFromSession();
+
+  // 역할 기반 페이지 게이팅 — 4역할 모델
+  //   super_admin / staff : 모든 경로 허용
+  //   distributor / end_user : /quote + /price-compare(고객용) 만 허용 (원가·내부정보 차단)
+  //   알 수 없는/누락 역할도 보수적으로 제한
+  const isPrivileged = role === 'super_admin' || role === 'staff';
+  const customerAllowed = to.path === '/quote' || to.path.startsWith('/price-compare');
+  if (!isPrivileged && !to.meta.public && !customerAllowed) return '/quote';
+});
+
+// 최근 방문 페이지 기록 (Command Palette용)
+router.afterEach((to) => {
+  const title = to.meta.title as string | undefined;
+  if (title && !to.meta.public) pushRecent(to.path, title);
 });
 
 export default router;

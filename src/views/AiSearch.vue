@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import {
   BrainCircuit, Send, X, ExternalLink,
   ChevronDown, ChevronUp, Zap, Tag,
   ArrowUpDown, Clock, TrendingUp,
 } from 'lucide-vue-next';
+import PageHeader from '@/components/PageHeader.vue';
 import Input from '@/components/ui/Input.vue';
 import Button from '@/components/ui/Button.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -12,7 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import Separator from '@/components/ui/Separator.vue';
 import SourceIcon from '@/components/icons/SourceIcon.vue';
 import { cn, previewContent } from '@/lib/utils';
-import { API_BASE } from '@/lib/api';
+import { API_BASE, IS_HOST } from '@/lib/api';
 import { SOURCE_COLOR as sourceColor, SOURCE_LABEL as sourceLabel } from '@/lib/sources';
 import { useSortMode } from '@/composables/useSortMode';
 
@@ -61,7 +63,7 @@ async function handleSearch() {
     const res = await fetch(`${API_BASE}/ai-search`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ q: query.value.trim(), limit: 8 }),
+      body:    JSON.stringify({ q: query.value.trim(), limit: 30 }),
     });
 
     if (!res.ok || !res.body) throw new Error('API 오류');
@@ -111,7 +113,15 @@ async function handleSearch() {
       }
     }
   } catch (e) {
-    answer.value = `오류: ${String(e)}`;
+    const msg = String(e);
+    const connFailed = e instanceof TypeError || msg.includes('Failed to fetch');
+    if (connFailed && !IS_HOST) {
+      answer.value = 'AI 지식 Q&A와 로컬 검색은 데이터가 있는 호스트 PC에서만 동작합니다(원격 미지원). 다른 컴퓨터에서는 KPI·마진·지점·수입·DB·견적 등 나머지 기능을 이용하세요.';
+    } else if (connFailed) {
+      answer.value = 'AI 검색 백엔드(localhost:8000)에 연결할 수 없습니다. 런처(scripts/launcher.py)가 실행 중인지 확인하세요 — 실행 중이면 백엔드 첫 기동에 ~20초가 걸립니다.';
+    } else {
+      answer.value = `오류: ${msg}`;
+    }
   }
 
   loading.value = false;
@@ -121,6 +131,13 @@ async function handleSearch() {
 function onKeyDown(e: KeyboardEvent) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSearch(); }
 }
+
+// 홈 AI Q&A 박스·딥링크: /ai-search?q=... 진입 시 자동 질문
+const route = useRoute();
+onMounted(() => {
+  const initial = (route.query.q as string | undefined)?.trim();
+  if (initial) { query.value = initial; void handleSearch(); }
+});
 
 function clearAll() {
   query.value       = '';
@@ -139,24 +156,18 @@ function clearAll() {
     class="p-4 md:p-6 max-w-3xl mx-auto space-y-5"
   >
     <!-- Header -->
-    <div class="flex items-start justify-between">
-      <div>
-        <h1 class="text-xl font-bold flex items-center gap-2">
-          <BrainCircuit :size="20" class="text-primary" />
-          AI 지식 Q&A
-        </h1>
-        <p class="text-sm text-muted-foreground mt-0.5">
-          질문하면 DB에서 관련 문서를 찾아 Ollama가 답변합니다
-        </p>
-      </div>
-      <button
-        v-if="done"
-        class="text-muted-foreground hover:text-foreground transition-colors"
-        @click="clearAll"
-      >
-        <X :size="16" />
-      </button>
-    </div>
+    <PageHeader title="AI 지식 Q&A" subtitle="질문하면 DB 전체에서 관련 문서를 찾아 Claude Haiku가 답변합니다">
+      <template #icon><BrainCircuit :size="20" class="text-primary" /></template>
+      <template #actions>
+        <button
+          v-if="done"
+          class="text-muted-foreground hover:text-foreground transition-colors"
+          @click="clearAll"
+        >
+          <X :size="16" />
+        </button>
+      </template>
+    </PageHeader>
 
     <!-- Input -->
     <div class="relative">
@@ -210,7 +221,7 @@ function clearAll() {
         <CardContent class="p-4">
           <div class="flex items-center gap-2 mb-3 text-xs font-semibold text-primary">
             <BrainCircuit :size="13" />
-            Ollama 답변
+            Claude Haiku 답변
           </div>
           <div class="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
             {{ answer }}<span

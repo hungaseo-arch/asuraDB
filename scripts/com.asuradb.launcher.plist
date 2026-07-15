@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  AsuraDB 런처 자동 실행 (macOS LaunchAgent)
+  로그인 시 launcher.py(8001)를 자동 기동하고, 죽으면 다시 살린다(KeepAlive).
+  런처가 떠 있으면 브라우저에서 앱을 열 때 검색/AI 백엔드(8000)가 자동 기동된다.
+
+  설치:
+    cp scripts/com.asuradb.launcher.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.asuradb.launcher.plist
+  제거:
+    launchctl unload ~/Library/LaunchAgents/com.asuradb.launcher.plist
+    rm ~/Library/LaunchAgents/com.asuradb.launcher.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.asuradb.launcher</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/uv</string>
+    <string>run</string>
+    <string>python</string>
+    <string>scripts/launcher.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/seojonghwan/dev/asuraDB</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/asuradb-launcher.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/asuradb-launcher.err</string>
+</dict>
+</plist>

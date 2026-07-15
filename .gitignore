@@ -12,6 +12,22 @@ node_modules
 dist
 dist-ssr
 *.local
+*.tsbuildinfo
+*.timestamp-*.mjs
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Supabase local/temp state
+supabase/.temp/
+
+# Claude local settings
+.claude/settings.local.json
 
 # Env
 .env

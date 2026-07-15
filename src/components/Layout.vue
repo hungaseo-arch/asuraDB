@@ -1,75 +1,86 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
-import { RouterLink, RouterView, useRoute } from 'vue-router';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import {
-  Search, BrainCircuit, FileBarChart2, ClipboardList,
-  ChevronLeft, Menu, Circle, ExternalLink, RefreshCw,
+  Home, Search, BrainCircuit, ClipboardList, BarChart3, Ship, Percent, Store,
+  FolderOpen, Package, RefreshCw, LogOut, Scale, Gauge,
 } from 'lucide-vue-next';
+import { signOut } from '@/lib/auth';
 import AsuraLogo from '@/components/icons/AsuraLogo.vue';
-import { storeToRefs } from 'pinia';
-import { useUiStore } from '@/stores/ui';
-import Badge from '@/components/ui/Badge.vue';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import NotionIcon from '@/components/icons/NotionIcon.vue';
-import GmailIcon from '@/components/icons/GmailIcon.vue';
-import GoogleDriveIcon from '@/components/icons/GoogleDriveIcon.vue';
-import UpNoteIcon from '@/components/icons/UpNoteIcon.vue';
-import ObsidianIcon from '@/components/icons/ObsidianIcon.vue';
-import GoogleCalendarIcon from '@/components/icons/GoogleCalendarIcon.vue';
-import NaverBandIcon from '@/components/icons/NaverBandIcon.vue';
 import { cn } from '@/lib/utils';
 import { API_BASE, LAUNCHER_BASE } from '@/lib/api';
-
-type SourceStatus = 'synced' | 'syncing' | 'error' | 'planned';
 
 interface NavItem {
   to?: string;
   href?: string;
   icon: typeof Search;
   label: string;
+  short?: string;
   badge: string | null;
   exact?: boolean;
 }
 
-interface SourceItem {
-  icon: object;
-  label: string;
-  color: string;
-  key: string;
-  status: SourceStatus;
-  lastSynced: string | null;
+const router = useRouter();
+const auth = sessionStorage.getItem('asura_auth');
+// 4역할 모델: super_admin/staff = 권한 풀, distributor/end_user = 견적서만
+const isPrivileged = auth === 'super_admin' || auth === 'staff';
+const isQuoteOnly  = !isPrivileged;
+
+// 역할 뱃지 라벨
+const roleLabel =
+  auth === 'super_admin' ? 'Admin'
+  : auth === 'staff'        ? 'Staff'
+  : auth === 'distributor'  ? 'Distributor'
+  : 'Customer';
+
+async function handleLogout() {
+  await signOut();
+  router.replace('/login');
 }
 
-const isQuoteOnly = sessionStorage.getItem('asura_auth') === 'quote';
-
-const allNavItems: NavItem[] = [
-  { to: '/search',    icon: Search,          label: '통합 자료 검색', badge: null },
-  { to: '/ai-search', icon: BrainCircuit,    label: 'AI 지식 Q&A',  badge: null },
-  { to: '/report',    icon: FileBarChart2,   label: '자동화 레포트',   badge: null },
-  { to: '/quote',     icon: ClipboardList,   label: '견적서 생성',     badge: null },
-  { href: 'http://localhost:3000', icon: ExternalLink, label: 'Open WebUI', badge: null },
+// ── 3그룹 재분류: 경영·성과 / 영업·견적 / 운영·데이터 (3그룹 × 3페이지) ──────
+interface NavGroup { key: string; label: string; items: NavItem[] }
+const NAV_GROUPS: NavGroup[] = [
+  {
+    key: 'perf', label: '경영·성과',
+    items: [
+      { to: '/monitor',      icon: BarChart3, label: 'KPI — 핵심성과지표', short: 'KPI', badge: null },
+      { to: '/margin',       icon: Percent,   label: '마진 — 마진분석',    short: '마진', badge: null },
+      { to: '/branch-sales', icon: Store,     label: '지점 — 지점실적',    short: '지점', badge: null },
+    ],
+  },
+  {
+    key: 'sales', label: '영업·견적',
+    items: [
+      { to: '/quote',         icon: ClipboardList, label: '견적 — 견적서',        short: '견적', badge: null },
+      { to: '/price-compare', icon: Scale,         label: '가격비교',             short: '가격비교', badge: null },
+      { to: '/load-calc',     icon: Gauge,         label: '하중 — 하중·규격 조회', short: '하중', badge: null },
+    ],
+  },
+  {
+    key: 'ops', label: '운영·데이터',
+    items: [
+      { to: '/tire-import', icon: Ship,       label: '수입 — 수입관리',   short: '수입', badge: null },
+      { to: '/databases',   icon: Package,    label: 'DB — 데이터베이스', short: 'DB', badge: null },
+      { to: '/docs',        icon: FolderOpen, label: '정리 — 데이터 정리', short: '정리', badge: null },
+    ],
+  },
 ];
 
-const navItems = isQuoteOnly
-  ? allNavItems.filter(item => item.to === '/quote')
-  : allNavItems;
+// 고객 전용(distributor/end_user)은 견적서 + 가격비교만 평면 노출 (그룹 없음)
+const quoteOnlyItems: NavItem[] = [
+  { to: '/quote',         icon: ClipboardList, label: '견적서 작성', short: '견적', badge: null },
+  { to: '/price-compare', icon: Scale,         label: '가격비교',    short: '가격비교', badge: null },
+];
 
-const sourceItems = ref<SourceItem[]>([
-  { icon: NotionIcon,         label: 'Notion',          color: '#e5e5e5', key: 'notion',   status: 'syncing', lastSynced: null },
-  { icon: UpNoteIcon,         label: 'UpNote',          color: '#4ade80', key: 'upnote',   status: 'syncing', lastSynced: null },
-  { icon: GmailIcon,          label: 'Gmail',           color: '#f87171', key: 'gmail',    status: 'syncing', lastSynced: null },
-  { icon: GoogleDriveIcon,    label: 'Google Drive',    color: '#60a5fa', key: 'drive',    status: 'syncing', lastSynced: null },
-  { icon: GoogleCalendarIcon, label: 'Google Calendar', color: '#4285F4', key: 'calendar', status: 'syncing', lastSynced: null },
-  { icon: ObsidianIcon,       label: 'Obsidian',        color: '#a78bfa', key: 'obsidian', status: 'planned', lastSynced: null },
-  { icon: NaverBandIcon,      label: 'Naver Band',      color: '#1DB446', key: 'band',     status: 'syncing', lastSynced: null },
-]);
-
-const statusDot: Record<string, string> = {
-  synced:  'bg-green-400',
-  syncing: 'bg-yellow-400 animate-pulse',
-  error:   'bg-red-400',
-  planned: 'bg-muted-foreground/40',
-};
+// 드롭다운 열림 상태
+const openGroup = ref<string | null>(null);
+function toggleGroup(key: string) { openGroup.value = openGroup.value === key ? null : key; }
+function closeGroups() { openGroup.value = null; }
+function onWindowClick(e: MouseEvent) {
+  if (!(e.target as HTMLElement).closest?.('[data-navgroup]')) closeGroups();
+}
+function groupActive(g: NavGroup): boolean { return g.items.some(it => isActive(it.to!, it.exact)); }
 
 const isRefreshing = ref(false);
 const apiOnline = ref<boolean | null>(null);
@@ -83,73 +94,6 @@ async function checkApiOnline() {
   }
 }
 
-const SB_URL = import.meta.env.VITE_SB_URL as string;
-const SB_KEY = import.meta.env.VITE_SB_KEY as string;
-const SB_HEADERS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
-
-async function sbGet<T>(table: string, qs: string): Promise<T[]> {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, { headers: SB_HEADERS });
-  if (!res.ok) throw new Error(`${table} ${res.status}`);
-  return res.json() as Promise<T[]>;
-}
-
-function formatLocal(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function localDateStr(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-async function fetchSourceStatuses() {
-  try {
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-
-    const hbRows = await sbGet<{ source: string; last_run: string }>(
-      'collector_heartbeat', 'select=source,last_run',
-    );
-
-    const heartbeats: Record<string, string> = {};
-    for (const row of hbRows) heartbeats[row.source] = row.last_run;
-
-    for (const item of sourceItems.value) {
-      if (item.key === 'obsidian') continue;
-
-      let lastUpdated = heartbeats[item.key] ?? null;
-
-      if (!lastUpdated) {
-        const rows = await sbGet<{ updated_at: string }>(
-          'documents',
-          `select=updated_at&source=eq.${item.key}&order=updated_at.desc&limit=1`,
-        );
-        lastUpdated = rows[0]?.updated_at ?? null;
-      }
-
-      item.lastSynced = lastUpdated;
-      item.status = !lastUpdated ? 'error' : localDateStr(lastUpdated) === today ? 'synced' : 'error';
-    }
-
-  } catch (e) {
-    console.error('[fetchSourceStatuses]', e);
-  }
-}
-
-async function refreshSources() {
-  if (isRefreshing.value) return;
-  isRefreshing.value = true;
-  sourceItems.value.forEach(item => {
-    if (item.key !== 'obsidian') item.status = 'syncing';
-  });
-  await fetchSourceStatuses();
-  isRefreshing.value = false;
-}
-
 async function startApi() {
   if (isRefreshing.value) return;
   isRefreshing.value = true;
@@ -160,292 +104,198 @@ async function startApi() {
     await new Promise(r => setTimeout(r, 1000));
     try {
       const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(2000) });
-      if (res.ok) { await fetchSourceStatuses(); isRefreshing.value = false; return; }
+      if (res.ok) { isRefreshing.value = false; return; }
     } catch { /* 기동 대기 중 */ }
   }
-  await fetchSourceStatuses();
   isRefreshing.value = false;
 }
 
+// 상태 배지 = 새로고침 버튼: 페이지 데이터 새로고침 + API 상태 갱신(오프라인이면 기동)
+async function refreshAll() {
+  window.dispatchEvent(new CustomEvent('asura:refresh'));
+  if (apiOnline.value === false) { await startApi(); return; }
+  if (isRefreshing.value) return;
+  isRefreshing.value = true;
+  await checkApiOnline();
+  isRefreshing.value = false;
+}
+
+// ── API 자동 기동/유지 (런처 8001 경유) ──────────────────────────────────────
+// 앱이 열려 있는 동안 하트비트로 API(8000)를 살려두고,
+// 탭을 닫으면 하트비트가 끊겨 런처가 유휴 타임아웃 후 자동 종료한다.
+let hbTimer: number | undefined;
+let alive = true;  // 언마운트 후 폴링 루프가 죽은 컴포넌트의 ref를 건드리지 않도록
+
+async function ensureApiRunning() {
+  try {
+    await fetch(`${LAUNCHER_BASE}/start`, { method: 'POST', signal: AbortSignal.timeout(3000) });
+  } catch { /* 런처 미실행 시 무시 */ }
+  for (let i = 0; i < 15 && alive; i++) {
+    await new Promise(r => setTimeout(r, 1000));
+    if (!alive) return;
+    await checkApiOnline();
+    if (apiOnline.value) return;
+  }
+}
+
+function startHeartbeat() {
+  if (hbTimer !== undefined) return;
+  hbTimer = window.setInterval(() => {
+    fetch(`${LAUNCHER_BASE}/heartbeat`, { method: 'POST', keepalive: true }).catch(() => {});
+  }, 7000);
+}
+
+function stopHeartbeat() {
+  if (hbTimer !== undefined) { clearInterval(hbTimer); hbTimer = undefined; }
+}
+
+// 하루 1회: 로그인/앱 진입 시점 기준으로 수집기를 돌려 비어있는 이전 자료까지 catch-up.
+// (yfinance 환율·브렌트/파생 KRW·IDR + 스크래퍼 매크로. 수동 전용 원자재는 소스 없어 제외)
+async function maybeDailyCollect() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem('asura_last_collect') === today) return;
+  localStorage.setItem('asura_last_collect', today);
+  try {
+    await ensureApiRunning();  // 런처/ API 기동 보장 후 수집 트리거
+    void fetch(`${LAUNCHER_BASE}/collect`, { method: 'POST', keepalive: true }).catch(() => {});
+  } catch { /* 런처 미가동 시 조용히 무시 */ }
+}
+
 onMounted(() => {
-  void fetchSourceStatuses();
   void checkApiOnline();
+  void ensureApiRunning();
+  startHeartbeat();
+  void maybeDailyCollect();
+  window.addEventListener('click', onWindowClick);
 });
 
-const ui = useUiStore();
-const { sidebarCollapsed, mobileSidebarOpen } = storeToRefs(ui);
+onUnmounted(() => {
+  alive = false;
+  stopHeartbeat();
+  window.removeEventListener('click', onWindowClick);
+});
+
 const route = useRoute();
 
 function isActive(to: string, exact?: boolean): boolean {
   return exact ? route.path === to : route.path === to || route.path.startsWith(`${to}/`);
 }
 
-const asideWidthStyle = computed(() => ({
-  width: sidebarCollapsed.value ? '64px' : '220px',
-  transition: 'width 280ms cubic-bezier(.34,1.56,.64,1)',
-  boxShadow: '4px 0 24px color-mix(in srgb, var(--primary) 8%, transparent)',
-}));
+// 상단 브랜드 우측에 표시할 현재 상세페이지 제목 (홈에서는 숨김)
+const pageTitle = computed(() =>
+  route.path === '/home' ? '홈' : ((route.meta?.title as string | undefined) ?? ''),
+);
 </script>
 
 <template>
-  <div class="flex h-screen w-full overflow-hidden bg-background text-foreground">
-    <!-- Mobile overlay -->
-    <Transition
-      enter-active-class="transition-opacity duration-200"
-      enter-from-class="opacity-0"
-      leave-active-class="transition-opacity duration-200"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="mobileSidebarOpen"
-        class="fixed inset-0 z-30 bg-black/60 md:hidden"
-        @click="ui.closeMobileSidebar()"
-      />
-    </Transition>
-
-    <!-- Desktop Sidebar -->
-    <aside
-      :style="asideWidthStyle"
-      class="hidden md:flex flex-col h-full z-40 border-r border-border shrink-0 bg-card overflow-hidden relative"
-    >
-      <!-- Sidebar Content -->
-      <!-- Logo -->
-      <div class="flex items-center gap-2.5 h-14 px-4 border-b border-border shrink-0">
-        <AsuraLogo :size="28" class="shrink-0" style="filter: drop-shadow(0 0 8px rgba(38,126,255,0.5));" />
-        <Transition
-          enter-active-class="transition-all duration-150"
-          enter-from-class="opacity-0 -translate-x-2"
-          leave-active-class="transition-all duration-150"
-          leave-to-class="opacity-0 -translate-x-2"
-        >
-          <div v-if="!sidebarCollapsed" class="overflow-hidden">
-            <div class="font-bold text-sm leading-tight text-foreground">AsuraDB</div>
-            <div class="text-[10px] text-muted-foreground leading-tight">v1.0</div>
-          </div>
-        </Transition>
-        <button
-          class="ml-auto p-1 rounded-md hover:bg-accent transition-colors shrink-0"
-          @click="ui.toggleSidebar()"
-        >
-          <Menu v-if="sidebarCollapsed" :size="14" />
-          <ChevronLeft v-else :size="14" />
-        </button>
+  <div class="flex flex-col h-screen w-full overflow-hidden bg-background text-foreground">
+    <!-- Top navigation bar -->
+    <header class="flex items-center gap-2 h-14 px-3 sm:px-4 border-b border-border bg-card shrink-0 print:hidden">
+      <!-- ① 브랜드 + 현재 상세페이지 제목(좌) -->
+      <div class="flex-1 min-w-0 flex items-center gap-2.5">
+        <RouterLink to="/home" class="flex items-center gap-2 shrink-0" title="홈">
+          <AsuraLogo :size="30" class="shrink-0" style="filter: drop-shadow(0 0 8px rgba(38,126,255,0.5));" />
+          <span class="font-bold text-xl text-foreground hidden sm:inline">AsuraDB</span>
+        </RouterLink>
+        <template v-if="pageTitle">
+          <span class="h-6 w-px bg-border shrink-0 hidden sm:block" />
+          <span class="text-sm font-semibold text-foreground truncate">{{ pageTitle }}</span>
+        </template>
       </div>
-
-      <!-- Nav -->
-      <nav class="flex-1 p-2 space-y-0.5 overflow-y-auto">
-        <Tooltip v-for="item in navItems" :key="item.to ?? item.href" :delay-duration="0">
-          <TooltipTrigger :as-child="true">
-            <a
-              v-if="item.href"
-              :href="item.href"
-              target="_blank"
-              rel="noopener noreferrer"
-              :class="cn(
-                'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150',
-                'hover:bg-accent hover:text-accent-foreground text-muted-foreground',
-                sidebarCollapsed && 'justify-center',
-              )"
-            >
-              <component :is="item.icon" :size="16" class="shrink-0" />
-              <span v-if="!sidebarCollapsed" class="overflow-hidden whitespace-nowrap flex-1">
-                {{ item.label }}
-              </span>
-            </a>
-            <RouterLink
-              v-else
-              :to="item.to!"
-              :class="cn(
-                'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150',
-                'hover:bg-accent hover:text-accent-foreground',
-                isActive(item.to!, item.exact)
-                  ? 'bg-primary/15 text-primary font-medium'
-                  : 'text-muted-foreground',
-                sidebarCollapsed && 'justify-center',
-              )"
-            >
-              <component :is="item.icon" :size="16" class="shrink-0" />
-              <span v-if="!sidebarCollapsed" class="overflow-hidden whitespace-nowrap flex-1">
-                {{ item.label }}
-              </span>
-              <Badge
-                v-if="item.badge && !sidebarCollapsed"
-                class="text-[9px] px-1 py-0 h-4 bg-primary/20 text-primary border-0"
-              >
-                {{ item.badge }}
-              </Badge>
-            </RouterLink>
-          </TooltipTrigger>
-          <TooltipContent v-if="sidebarCollapsed" side="right">
-            {{ item.label }}
-          </TooltipContent>
-        </Tooltip>
-
-        <!-- Source section -->
-        <div class="pt-3 pb-1">
-          <div
-            v-if="!sidebarCollapsed"
-            class="px-2.5 mb-1.5 flex items-center justify-between"
+      <!-- ② 메뉴바(가운데) — 3그룹 드롭다운 (경영·성과 / 영업·견적 / 운영·데이터) -->
+      <!-- 드롭다운이 잘리지 않도록 overflow 없음 (그룹 3개는 좁은 화면에서도 수용) -->
+      <nav v-if="!isQuoteOnly" class="shrink-0 flex items-center justify-center gap-1 px-1">
+        <div v-for="g in NAV_GROUPS" :key="g.key" class="relative" data-navgroup>
+          <button
+            :class="cn(
+              'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
+              groupActive(g) || openGroup === g.key
+                ? 'bg-primary/15 text-primary font-semibold'
+                : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground',
+            )"
+            @click="toggleGroup(g.key)"
           >
-            <span class="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-              데이터 소스
-            </span>
-            <button
-              class="p-0.5 rounded hover:bg-accent transition-colors text-muted-foreground/50 hover:text-muted-foreground"
-              :class="{ 'animate-spin': isRefreshing }"
-              :disabled="isRefreshing"
-              @click="refreshSources"
-            >
-              <RefreshCw :size="10" />
-            </button>
-          </div>
-          <Tooltip v-for="src in sourceItems" :key="src.label" :delay-duration="0">
-            <TooltipTrigger :as-child="true">
-              <div
+            {{ g.label }}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="transition-transform" :class="openGroup === g.key && 'rotate-180'"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <transition enter-active-class="transition-opacity duration-100" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-100" leave-to-class="opacity-0">
+            <div v-if="openGroup === g.key" class="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 min-w-48 rounded-xl border border-border bg-card shadow-xl p-1.5">
+              <RouterLink
+                v-for="item in g.items" :key="item.to" :to="item.to!" :title="item.label"
                 :class="cn(
-                  'flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs cursor-default',
-                  'text-muted-foreground/70',
-                  sidebarCollapsed && 'justify-center',
+                  'flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm whitespace-nowrap transition-colors',
+                  isActive(item.to!, item.exact)
+                    ? 'bg-primary/15 text-primary font-semibold'
+                    : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground',
                 )"
+                @click="closeGroups"
               >
-                <component :is="src.icon" :size="14" :style="{ color: src.color }" class="shrink-0" />
-                <div
-                  v-if="!sidebarCollapsed"
-                  class="flex-1 flex items-center justify-between min-w-0 gap-1"
-                >
-                  <div class="flex flex-col min-w-0">
-                    <span class="truncate leading-tight">{{ src.label }}</span>
-                    <span class="text-[9px] text-muted-foreground/40 leading-tight truncate">
-                      {{ src.lastSynced
-                        ? formatLocal(src.lastSynced)
-                        : src.status === 'planned' ? '연동 예정' : '수집기록없음' }}
-                    </span>
-                  </div>
-                  <span :class="cn('w-1.5 h-1.5 rounded-full shrink-0', statusDot[src.status])" />
-                </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent v-if="sidebarCollapsed" side="right">
-              {{ src.label }}
-            </TooltipContent>
-          </Tooltip>
+                <component :is="item.icon" :size="15" class="shrink-0" />
+                {{ item.label }}
+              </RouterLink>
+            </div>
+          </transition>
         </div>
       </nav>
-
-      <!-- Footer -->
-      <div v-if="!sidebarCollapsed" class="p-3 border-t border-border">
-        <div class="text-[10px] text-muted-foreground/40 text-center">
-          Ollama qwen3:8b · pgvector
-        </div>
-      </div>
-    </aside>
-
-    <!-- Mobile Sidebar -->
-    <Transition
-      enter-active-class="transition-transform duration-300 ease-out"
-      enter-from-class="-translate-x-full"
-      leave-active-class="transition-transform duration-300 ease-out"
-      leave-to-class="-translate-x-full"
-    >
-      <aside
-        v-if="mobileSidebarOpen"
-        class="fixed left-0 top-0 h-full w-55 z-40 flex flex-col bg-card border-r border-border md:hidden"
-      >
-        <div class="flex items-center gap-2.5 h-14 px-4 border-b border-border shrink-0">
-          <AsuraLogo :size="28" class="shrink-0" />
-          <div class="overflow-hidden">
-            <div class="font-bold text-sm leading-tight text-foreground">AsuraDB</div>
-            <div class="text-[10px] text-muted-foreground leading-tight">PKDB v2.0</div>
-          </div>
-          <button
-            class="ml-auto p-1 rounded-md hover:bg-accent transition-colors shrink-0"
-            @click="ui.closeMobileSidebar()"
-          >
-            <ChevronLeft :size="14" />
-          </button>
-        </div>
-        <nav class="flex-1 p-2 space-y-0.5 overflow-y-auto">
-          <template v-for="item in navItems" :key="item.to ?? item.href">
-            <a
-              v-if="item.href"
-              :href="item.href"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150 hover:bg-accent hover:text-accent-foreground text-muted-foreground"
-              @click="ui.closeMobileSidebar()"
-            >
-              <component :is="item.icon" :size="16" class="shrink-0" />
-              <span class="overflow-hidden whitespace-nowrap flex-1">{{ item.label }}</span>
-            </a>
-            <RouterLink
-              v-else
-              :to="item.to!"
-              :class="cn(
-                'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150',
-                'hover:bg-accent hover:text-accent-foreground',
-                isActive(item.to!, item.exact)
-                  ? 'bg-primary/15 text-primary font-medium'
-                  : 'text-muted-foreground',
-              )"
-              @click="ui.closeMobileSidebar()"
-            >
-              <component :is="item.icon" :size="16" class="shrink-0" />
-              <span class="overflow-hidden whitespace-nowrap flex-1">{{ item.label }}</span>
-              <Badge
-                v-if="item.badge"
-                class="text-[9px] px-1 py-0 h-4 bg-primary/20 text-primary border-0"
-              >
-                {{ item.badge }}
-              </Badge>
-            </RouterLink>
-          </template>
-        </nav>
-      </aside>
-    </Transition>
-
-    <!-- Main -->
-    <div class="flex-1 flex flex-col h-full overflow-hidden">
-      <!-- Topbar -->
-      <header class="flex items-center gap-3 h-14 px-4 border-b border-border bg-card/50 shrink-0">
-        <button
-          class="md:hidden p-1.5 rounded-md hover:bg-accent transition-colors"
-          @click="ui.openMobileSidebar()"
+      <!-- 고객 전용: 견적서·가격비교 평면 메뉴 -->
+      <nav v-else class="shrink-0 flex items-center justify-center gap-1 px-1 overflow-x-auto max-w-full">
+        <RouterLink
+          v-for="item in quoteOnlyItems" :key="item.to" :to="item.to!" :title="item.label"
+          :class="cn(
+            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
+            isActive(item.to!, item.exact)
+              ? 'bg-primary/15 text-primary font-semibold'
+              : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground',
+          )"
         >
-          <Menu :size="18" />
-        </button>
-        <AsuraLogo :size="20" class="hidden md:block" />
-        <span class="text-sm text-muted-foreground hidden md:block">
-          AsuraDB <span class="text-muted-foreground/50 mx-1">/</span>
-          <span class="text-foreground/80">개인 지식 DB 검색 시스템</span>
-        </span>
-        <div class="ml-auto flex items-center gap-2">
+          <component :is="item.icon" :size="15" class="shrink-0" />
+          <span class="hidden md:inline">{{ item.short ?? item.label }}</span>
+        </RouterLink>
+      </nav>
+      <!-- ③ 상태·역할·로그아웃(우) -->
+      <div class="flex-1 min-w-0 flex items-center justify-end gap-2">
+          <!-- 상태 + 새로고침 통합 버튼 -->
           <button
-            v-if="apiOnline === false"
             :disabled="isRefreshing"
-            class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md border border-red-500/30 text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="startApi"
+            class="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            :class="apiOnline === false
+              ? 'border-red-500/30 text-red-600 hover:bg-red-400/10'
+              : 'border-green-500/30 text-green-600 hover:bg-green-500/10'"
+            :title="apiOnline === false ? 'API 오프라인 · 클릭하여 기동·새로고침' : '시스템 정상 · 클릭하여 새로고침'"
+            @click="refreshAll"
           >
-            <RefreshCw :size="10" :class="isRefreshing && 'animate-spin'" />
-            API 오프라인
+            <RefreshCw :size="11" :class="isRefreshing && 'animate-spin'" />
+            {{ apiOnline === false ? 'API 오프라인' : '시스템 정상' }}
           </button>
-          <Badge
-            v-else
-            variant="outline"
-            class="text-xs gap-1 border-green-500/30 text-green-400"
-          >
-            <Circle :size="6" class="fill-green-400" />
-            시스템 정상
-          </Badge>
-          <div class="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-primary">
-            A
+          <div class="h-7 px-2.5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary whitespace-nowrap">
+            {{ roleLabel }}
           </div>
+          <button
+            class="h-7 w-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            title="로그아웃"
+            @click="handleLogout"
+          >
+            <LogOut :size="14" />
+          </button>
         </div>
       </header>
 
       <!-- Page Content -->
       <main class="flex-1 overflow-y-auto">
         <RouterView />
-      </main>
-    </div>
+    </main>
   </div>
 </template>
+
+<style>
+/* 인쇄 시: 앱셸의 h-screen + overflow-hidden + main의 overflow-y-auto가
+   콘텐츠를 1페이지에 잘라버리므로, 자연스럽게 흐르도록 해제 */
+@media print {
+  html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+  body > * { height: auto !important; overflow: visible !important; }
+  .h-screen,
+  .h-full { height: auto !important; }
+  .overflow-hidden,
+  .overflow-y-auto { overflow: visible !important; }
+}
+</style>

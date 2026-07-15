@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  AsuraDB monthly_collector 자동 실행 (macOS LaunchAgent)
+
+  ◆ 스케줄
+    매일 새벽 01:05 에 실행. collector 내부 가드에서
+      - 오늘이 말일(=내일이 1일)이거나
+      - 직전 월 데이터가 누락된 지표가 있을 때(catchup)
+    에만 실제 수집을 수행. 그 외엔 즉시 skip.
+
+  ◆ 왜 매일?
+    launchd 의 StartCalendarInterval 은 단일 시각만 지정 가능하고
+    "월말"을 정확히 표현하기 어려움. 매일 실행 + 스크립트 내부 가드 패턴이
+    가장 단순하고, 컴퓨터가 꺼져 있어 말일 실행을 놓쳤더라도 다음 실행
+    시 catchup 으로 자동 보충됨.
+
+  ◆ 설치
+    cp scripts/com.asuradb.monthly.plist ~/Library/LaunchAgents/
+    launchctl load  ~/Library/LaunchAgents/com.asuradb.monthly.plist
+    # 수동 즉시 실행 (테스트)
+    launchctl start com.asuradb.monthly
+    # 로그 확인
+    tail -f /tmp/asuradb-monthly.log
+
+  ◆ 제거
+    launchctl unload ~/Library/LaunchAgents/com.asuradb.monthly.plist
+    rm ~/Library/LaunchAgents/com.asuradb.monthly.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.asuradb.monthly</string>
+
+  <!--
+    중요: launchd 가 ~/Desktop (iCloud Drive 동기화 폴더) 내 .venv 에 접근하면
+    "OSError: [Errno 11] Resource deadlock avoided" 가 발생.
+    venv 를 iCloud 외부(~/.venvs/asuradb)에 두고 그 안의 python 을 직접 호출.
+
+    venv 생성:
+      mkdir -p ~/.venvs && uv venv ~/.venvs/asuradb --python 3.11
+      source ~/.venvs/asuradb/bin/activate
+      uv pip install -r requirements.txt
+      deactivate
+  -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/seojonghwan/.venvs/asuradb/bin/python</string>
+    <string>collectors/monthly_collector.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/seojonghwan/dev/asuraDB</string>
+
+  <!-- 매일 새벽 01:05 — 자정 직후 + 5분 여유로 시계 동기화/네트워크 안정화 -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>1</integer>
+    <key>Minute</key>
+    <integer>5</integer>
+  </dict>
+
+  <!-- 컴퓨터가 꺼져 있다가 켜진 경우 누락된 실행을 보충 -->
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- 한 번 실행 후 종료 (KeepAlive 금지 — 백그라운드 상주 X) -->
+  <key>KeepAlive</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/asuradb-monthly.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/asuradb-monthly.err</string>
+
+  <!-- .env 의 SUPABASE_URL 등 환경 변수는 collector 가 load_dotenv 로 직접 읽음 -->
+</dict>
+</plist>

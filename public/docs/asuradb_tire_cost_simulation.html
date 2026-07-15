@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>타이어 원가 시뮬레이션 | AsuraDB</title>
+<style>
+  :root{
+    --bg:#F0F0F0;          /* LIGHT GREY 60% */
+    --blue:#E3F2FD;        /* SOFT BLUE 30% */
+    --bluegrey:#ECEFF1;    /* PASTEL BLUE-GREY 30% */
+    --green:#E8F5E9;       /* SAGE GREEN 10% */
+    --ink:#546E7A;         /* TEXT & LINE */
+    --ink-strong:#37474F;
+    --line:#CFD8DC;
+    --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Segoe UI','Malgun Gothic','Noto Sans KR',sans-serif;font-size:14px;line-height:1.55}
+  .wrap{max-width:1180px;margin:0 auto;padding:20px 16px 48px}
+
+  header{background:var(--blue);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+  header h1{font-size:19px;color:var(--ink-strong);letter-spacing:-.3px}
+  header h1 small{display:block;font-size:12px;font-weight:400;color:var(--ink);margin-top:2px}
+  .badge{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px}
+
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:16px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  @media(max-width:640px){.result{grid-template-columns:repeat(2,1fr)!important}}
+
+  .card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+  .card h2{font-size:14px;color:var(--ink-strong);border-bottom:2px solid var(--blue);padding-bottom:8px;margin-bottom:12px}
+  .card h2 .en{font-weight:400;font-size:11px;color:var(--ink)}
+
+  label{display:block;font-size:12px;margin:10px 0 4px;color:var(--ink)}
+  label .sub{color:#78909C;font-size:11px}
+  select,input[type=number]{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bluegrey);color:var(--ink-strong);font-size:14px}
+  select:focus,input:focus{outline:2px solid var(--blue)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+  .spec{background:var(--bluegrey);border-radius:8px;padding:10px 12px;font-size:12px;margin-top:10px}
+  .spec b{color:var(--ink-strong)}
+
+  .scen{display:flex;gap:8px;margin:6px 0 2px}
+  .scen button{flex:1;padding:8px 4px;border:1px solid var(--line);border-radius:8px;background:var(--bluegrey);color:var(--ink);cursor:pointer;font-size:12px}
+  .scen button.on{background:var(--blue);color:var(--ink-strong);font-weight:600;border-color:#90CAF9}
+  .scen button.best.on{background:var(--green);border-color:#A5D6A7}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:7px 8px;border-bottom:1px solid var(--bluegrey);text-align:right;color:var(--ink)}
+  th{background:var(--bluegrey);color:var(--ink-strong);font-size:12px}
+  td:first-child,th:first-child{text-align:left}
+  td.num{font-variant-numeric:tabular-nums;color:var(--ink-strong)}
+  tr.sum td{border-top:2px solid var(--line);font-weight:700;color:var(--ink-strong);background:var(--blue)}
+  tr.sub td{background:#F7F9FA}
+
+  .result{background:var(--green);border:1px solid #C8E6C9;border-radius:12px;padding:16px 18px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .result .kpi small{display:block;font-size:11px;color:var(--ink)}
+  .result .kpi b{font-size:20px;color:var(--ink-strong);font-variant-numeric:tabular-nums}
+  .result .kpi span{font-size:11px;color:#78909C}
+
+  .note{font-size:11px;color:#78909C;margin-top:8px}
+  input[type=range]{width:100%;accent-color:#64B5F6}
+  .mrow{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-strong);margin-top:2px}
+  footer{font-size:11px;color:#90A4AE;margin-top:8px;text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 요약(전체 폭 1열) -->
+  <div class="result">
+    <div class="kpi"><small>FOB 원가 (세트/본)<br>FOB Cost</small><b id="kFob">–</b><span>USD</span></div>
+    <div class="kpi"><small>실질 수입원가<br>Landed (PPN공제 후)</small><b id="kLand">–</b><span>USD</span></div>
+    <div class="kpi"><small>권장 도매판가<br>Wholesale Price</small><b id="kPrice">–</b><span id="kPriceIdr">USD</span></div>
+    <div class="kpi"><small>본당 마진<br>Margin/Unit</small><b id="kMar">–</b><span>USD</span></div>
+  </div>
+
+  <div class="grid">
+    <!-- ══════════ 좌측: 입력 ══════════ -->
+    <div>
+      <div class="card">
+        <h2>제품 선택 <span class="en">Size · Ukuran</span></h2>
+        <label>대표 사이즈 (Representative Size / Ukuran Utama)</label>
+        <select id="size"></select>
+        <div class="spec" id="specBox"></div>
+      </div>
+
+      <div class="card">
+        <h2>시나리오 <span class="en">Scenario · Skenario</span></h2>
+        <div class="scen">
+          <button id="scWorst" onclick="setScen('worst')">최악 Worst</button>
+          <button id="scBase" class="on" onclick="setScen('base')">기대값 Base</button>
+          <button id="scBest" class="best" onclick="setScen('best')">최선 Best</button>
+        </div>
+        <p class="note">최악: 유가 급등(호르무즈) · 최선: 경기회복/유가 정상화. 선택 시 아래 단가가 자동 갱신되며 직접 수정도 가능합니다.</p>
+      </div>
+
+      <div class="card">
+        <h2>원자재 단가 <span class="en">USD/kg · Harga Bahan Baku</span></h2>
+        <div class="row2">
+          <div><label>천연고무 NR <span class="sub">SICOM</span></label><input type="number" id="pNR" step="0.01"></div>
+          <div><label>합성고무 BR <span class="sub">CFR 동남아</span></label><input type="number" id="pBR" step="0.01"></div>
+          <div><label>카본블랙 CB <span class="sub">FOB 칭다오</span></label><input type="number" id="pCB" step="0.01"></div>
+          <div><label>강선류 Steel <span class="sub">비드+코드 평균</span></label><input type="number" id="pST" step="0.01"></div>
+          <div><label>배합약품 Chem</label><input type="number" id="pCH" step="0.01"></div>
+          <div><label>섬유·기타 Textile</label><input type="number" id="pTX" step="0.01"></div>
+        </div>
+        <p class="note">출처: SICOM · ChemAnalyst · Expert Market Research · PriceWatch (2026-06~07)</p>
+      </div>
+
+      <div class="card">
+        <h2>수입·판가 변수 <span class="en">Import & Pricing</span></h2>
+        <div class="row2">
+          <div><label>해상운임 <span class="sub">USD/40HC</span></label><input type="number" id="frt" value="1200" step="50"></div>
+          <div><label>관세 BM <span class="sub">% (ACFTA 0~5)</span></label><input type="number" id="bm" value="0" step="1" min="0" max="15"></div>
+          <div><label>환율 <span class="sub">IDR/USD</span></label><input type="number" id="fx" value="16000" step="100"></div>
+          <div><label>내륙운송·통관 <span class="sub">USD/본</span></label><input type="number" id="inl" value="3.5" step="0.5"></div>
+        </div>
+        <label style="margin-top:14px">목표 마진율 (Margin / Margin) — <b id="mgLbl" style="color:var(--ink-strong)">15%</b></label>
+        <input type="range" id="mg" min="8" max="25" value="15" step="1">
+        <div class="mrow"><span>8%</span><span>25%</span></div>
+      </div>
+    </div>
+
+    <!-- ══════════ 우측: 결과 ══════════ -->
+    <div>
+      <div class="card">
+        <h2>원자재비 내역 <span class="en">Raw Material Cost · Biaya Bahan Baku</span></h2>
+        <table id="tblBom">
+          <thead><tr><th>재료 (KR/EN/ID)</th><th>비중</th><th>중량 kg</th><th>단가 USD/kg</th><th>금액 USD</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>원가 집계 <span class="en">Cost Build-up · Rincian Biaya</span></h2>
+        <table id="tblCost"><tbody></tbody></table>
+        <p class="note">가공비: 인건·에너지·감가상각 (중국 제조 기준, kg당 배부) · 가공손실 5% · 검증: 중국 FOB 실거래가 대역과 대조</p>
+      </div>
+
+      <div class="card">
+        <h2>수입원가 — 자카르타 <span class="en">Landed Cost Jakarta · Biaya Impor</span></h2>
+        <table id="tblLand"><tbody></tbody></table>
+        <p class="note">ACFTA Form E 적용 가정 · PPN 11% 매입세액공제, PPh22 2.5%(API-U) 선납 반영 시 실질원가 기준 · 관세율은 통관사 확인 필수</p>
+      </div>
+
+      <div class="card">
+        <h2>마진별 판가표 <span class="en">Price Matrix · Daftar Harga</span></h2>
+        <table id="tblPrice"><thead><tr><th>마진율</th><th>판가 USD</th><th>판가 IDR</th><th>적용 대상</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <footer>PT Ascendo Internasional · 작성 SEO Jonghwan / 서종환 · 데이터: AsuraDB Raw Material Intelligence</footer>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── 사이즈 마스터 (중량: 인니 유통 실측 기준 / TT=튜브타입, TL=튜브리스) ── */
+const SIZES = {
+  "7.50R16":  {ply:"14PR", type:"TT", tire:27, tf:5.0,  upc:420, li:"122/118L"},
+  "10.00R20": {ply:"16PR", type:"TT", tire:52, tf:9.0,  upc:200, li:"146/143K"},
+  "11.00R20": {ply:"16PR", type:"TT", tire:58, tf:10.0, upc:180, li:"152/149K"},
+  "12.00R20": {ply:"18PR", type:"TT", tire:65, tf:11.0, upc:160, li:"154/151K"},
+  "12.00R24": {ply:"20PR", type:"TT", tire:75, tf:13.0, upc:140, li:"160/156K"},
+  "11R22.5":  {ply:"16PR", type:"TL", tire:55, tf:0,    upc:190, li:"148/145L"}
+};
+/* BOM 구성비: 전강선 TBR 업계 표준 */
+const BOM = [
+  {k:"NR", name:"천연고무 · Natural Rubber · Karet Alam", r:0.30, p:"pNR"},
+  {k:"BR", name:"합성고무 · Synthetic Rubber · Karet Sintetis", r:0.13, p:"pBR"},
+  {k:"CB", name:"카본블랙 · Carbon Black · Karbon Hitam", r:0.20, p:"pCB"},
+  {k:"ST", name:"강선류 · Steel Cord+Bead · Kawat Baja", r:0.22, p:"pST"},
+  {k:"CH", name:"배합약품 · Chemicals · Bahan Kimia", r:0.10, p:"pCH"},
+  {k:"TX", name:"섬유·기타 · Textile · Tekstil", r:0.05, p:"pTX"}
+];
+/* 시나리오 단가 (USD/kg) — 출처: 2026-07 조사 (SICOM/ChemAnalyst/EMR/PriceWatch) */
+const SCEN = {
+  worst:{pNR:2.40, pBR:2.55, pCB:1.15, pST:0.99, pCH:1.55, pTX:1.55, proc:1.05},
+  base: {pNR:2.25, pBR:2.35, pCB:1.01, pST:0.90, pCH:1.50, pTX:1.50, proc:1.00},
+  best: {pNR:2.10, pBR:2.10, pCB:0.92, pST:0.82, pCH:1.45, pTX:1.45, proc:0.97}
+};
+const LOSS=0.05, PROC_KG=0.244, PACK_KG=0.067, PPN=0.11, PPH=0.025, INS=0.003;
+let scen="base";
+
+const $=id=>document.getElementById(id);
+const fmt=(n,d=2)=>n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+
+/* ── AsuraDB 최신 시세 자동 반영 (원자재 단가·환율) ──
+   지표 → USD/kg 변환. RLS(to authenticated) 대비: 동일 출처 localStorage의
+   로그인 세션 토큰을 사용하고, 미로그인/DB 미연결 시 조사 기본값(SCEN.base) 유지. */
+const SB_URL="https://subatvlyfglztdmyexfl.supabase.co";
+const SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1YmF0dmx5ZmdsenRkbXlleGZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMzI0NDcsImV4cCI6MjA5NDYwODQ0N30.fwg1pKMIouTB6G84jfsZZNzLSEHXrwYdaXsX2MPbAAI";
+const DB_MAP={
+  pNR:{ind:"nr_rubber",       conv:v=>v/100},   /* USc/kg → USD/kg */
+  pBR:{ind:"synthetic_rubber",conv:v=>v/1000},  /* USD/MT → USD/kg */
+  pCB:{ind:"carbon_black",    conv:v=>v/1000},
+  pST:{ind:"steel_wire",      conv:v=>v/1000}
+};
+function sbToken(){
+  try{const raw=localStorage.getItem("sb-subatvlyfglztdmyexfl-auth-token");
+      return raw?(JSON.parse(raw).access_token||SB_ANON):SB_ANON;}catch(e){return SB_ANON;}
+}
+async function sbLatest(ind){
+  const r=await fetch(`${SB_URL}/rest/v1/indicator_history?select=value&indicator_id=eq.${ind}&order=recorded_date.desc&limit=1`,
+    {headers:{apikey:SB_ANON,Authorization:"Bearer "+sbToken()}});
+  if(!r.ok) throw new Error(ind+" "+r.status);
+  const d=await r.json(); return (d&&d[0])?parseFloat(d[0].value):null;
+}
+async function loadDbLatest(){
+  try{
+    for(const [k,m] of Object.entries(DB_MAP)){
+      const v=await sbLatest(m.ind);
+      if(v!=null) SCEN.base[k]=+m.conv(v).toFixed(2);
+    }
+    const idr=await sbLatest("usd_idr");
+    if(idr!=null) $("fx").value=Math.round(idr);
+    if(scen==="base") applyScen();
+    calc();
+    const note=document.querySelector("#pNR").closest(".card").querySelector(".note");
+    if(note) note.innerHTML="출처: AsuraDB 최신 시세 자동 반영 (SICOM·ChemAnalyst·EMR·PriceWatch) · 직접 수정 가능";
+  }catch(e){/* 미로그인/DB 미연결 → 조사 기본값 유지 */}
+}
+
+function init(){
+  const sel=$("size");
+  Object.keys(SIZES).forEach(s=>{
+    const o=document.createElement("option");
+    o.value=s; o.textContent=s+" "+SIZES[s].ply+(SIZES[s].type==="TL"?" (튜브리스)":" (TT세트)");
+    sel.appendChild(o);
+  });
+  sel.value="10.00R20";
+  applyScen();
+  document.querySelectorAll("select,input").forEach(el=>el.addEventListener("input",calc));
+  calc();
+  loadDbLatest();   // AsuraDB 최신 시세 자동 반영 (원자재 단가·환율)
+}
+function setScen(s){
+  scen=s;
+  ["Worst","Base","Best"].forEach(x=>$("sc"+x).classList.remove("on"));
+  $("sc"+s.charAt(0).toUpperCase()+s.slice(1)).classList.add("on");
+  applyScen(); calc();
+}
+function applyScen(){
+  const v=SCEN[scen];
+  ["pNR","pBR","pCB","pST","pCH","pTX"].forEach(k=>$(k).value=v[k]);
+}
+function calc(){
+  const sz=SIZES[$("size").value];
+  const w=sz.tire, procMul=SCEN[scen].proc;
+
+  /* 사양 박스 */
+  $("specBox").innerHTML=
+    `<b>${$("size").value} ${sz.ply}</b> · 하중지수 ${sz.li} · ${sz.type==="TL"?"튜브리스 Tubeless / Tanpa Ban Dalam":"튜브타입 Tube Type"}<br>
+     타이어 단품 <b>${w} kg</b>${sz.tf?` + 튜브·플랩 → 세트 <b>${(w+8).toFixed(0)} kg급</b>`:""} ·
+     40HC 적재 약 <b>${sz.upc}본</b><br>
+     <span style="font-size:11px">근거: 제조사 공개 사양 및 인니 유통 실측 (10.00R20 세트 55~65kg)</span>`;
+
+  /* BOM */
+  let mat=0, rows="";
+  BOM.forEach(b=>{
+    const kg=w*b.r, up=parseFloat($(b.p).value)||0, amt=kg*up; mat+=amt;
+    rows+=`<tr><td>${b.name}</td><td>${(b.r*100).toFixed(0)}%</td><td class="num">${fmt(kg,1)}</td><td class="num">${fmt(up)}</td><td class="num">${fmt(amt)}</td></tr>`;
+  });
+  const loss=mat*LOSS, rmc=mat+loss;
+  rows+=`<tr class="sub"><td>가공손실 Processing Loss · Rugi Proses (5%)</td><td></td><td></td><td></td><td class="num">${fmt(loss)}</td></tr>`;
+  rows+=`<tr class="sum"><td>원자재비 합계 RMC</td><td>100%</td><td class="num">${fmt(w,1)}</td><td></td><td class="num">${fmt(rmc)}</td></tr>`;
+  document.querySelector("#tblBom tbody").innerHTML=rows;
+
+  /* 원가 집계 */
+  const proc=w*PROC_KG*procMul, pack=w*PACK_KG;
+  const mfg=rmc+proc, fobTire=mfg+pack, fob=fobTire+sz.tf;
+  document.querySelector("#tblCost tbody").innerHTML=
+    `<tr><td>원자재비 (RMC / Biaya Bahan)</td><td class="num">${fmt(rmc)}</td></tr>
+     <tr><td>가공비 (인건·에너지·감가상각 / Biaya Proses)</td><td class="num">${fmt(proc)}</td></tr>
+     <tr><td>제조원가 (Manufacturing Cost / Biaya Produksi)</td><td class="num">${fmt(mfg)}</td></tr>
+     <tr><td>포장·선적 (Packing & Port)</td><td class="num">${fmt(pack)}</td></tr>
+     ${sz.tf?`<tr><td>튜브+플랩 세트 (Tube & Flap / Ban Dalam+Flap)</td><td class="num">${fmt(sz.tf)}</td></tr>`:""}
+     <tr class="sum"><td>FOB 원가 ${sz.tf?"(TT세트)":"(TL 단품)"} — Ex-China</td><td class="num">${fmt(fob)}</td></tr>`;
+
+  /* Landed */
+  const frtU=(parseFloat($("frt").value)||0)/sz.upc;
+  const cif=(fob+frtU)*(1+INS);
+  const bmR=(parseFloat($("bm").value)||0)/100, bmA=cif*bmR;
+  const ppn=(cif+bmA)*PPN, pph=(cif+bmA)*PPH, inl=parseFloat($("inl").value)||0;
+  const landGross=cif+bmA+ppn+pph+inl;
+  const landNet=cif+bmA+inl;               /* PPN 공제·PPh 선납 반영 실질원가 */
+  document.querySelector("#tblLand tbody").innerHTML=
+    `<tr><td>FOB</td><td class="num">${fmt(fob)}</td></tr>
+     <tr><td>해상운임/본 (Freight, 40HC ${sz.upc}본)</td><td class="num">${fmt(frtU)}</td></tr>
+     <tr><td>보험 0.3% → CIF</td><td class="num">${fmt(cif)}</td></tr>
+     <tr><td>관세 BM ${(bmR*100).toFixed(0)}%</td><td class="num">${fmt(bmA)}</td></tr>
+     <tr class="sub"><td>PPN 11% (환급성) · PPh22 2.5% (선납)</td><td class="num">${fmt(ppn)} · ${fmt(pph)}</td></tr>
+     <tr><td>통관·내륙운송 (Inland)</td><td class="num">${fmt(inl)}</td></tr>
+     <tr class="sub"><td>총 지출 (Cash-out, Gross)</td><td class="num">${fmt(landGross)}</td></tr>
+     <tr class="sum"><td>실질 수입원가 (Net Landed / Biaya Impor Bersih)</td><td class="num">${fmt(landNet)}</td></tr>`;
+
+  /* 판가 */
+  const mgv=parseInt($("mg").value); $("mgLbl").textContent=mgv+"%";
+  const fx=parseFloat($("fx").value)||16000;
+  const price=landNet*(1+mgv/100), mar=price-landNet;
+  $("kFob").textContent=fmt(fob); $("kLand").textContent=fmt(landNet);
+  $("kPrice").textContent=fmt(price); $("kPriceIdr").textContent="USD · Rp "+Math.round(price*fx).toLocaleString();
+  $("kMar").textContent=fmt(mar);
+
+  const tiers=[[10,"대량계약·정부조달"],[12,"광산·건설사"],[15,"일반 도매 [권장]"],[18,"소매 직판"]];
+  document.querySelector("#tblPrice tbody").innerHTML=tiers.map(t=>{
+    const p=landNet*(1+t[0]/100);
+    return `<tr${t[0]===15?' class="sub"':''}><td>${t[0]}%</td><td class="num">${fmt(p)}</td><td class="num">Rp ${Math.round(p*fx).toLocaleString()}</td><td style="text-align:left">${t[1]}</td></tr>`;
+  }).join("");
+}
+init();
+</script>
+</body>
+</html>

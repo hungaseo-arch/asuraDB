@@ -7,3 +7,32 @@ export const LAUNCHER_BASE = 'http://localhost:8001';
 export const IS_HOST = /^(localhost|127\.0\.0\.1)$/.test(
   typeof location !== 'undefined' ? location.hostname : '',
 );
+
+/**
+ * API(8000)가 떠 있도록 보장한다. 런처(8001)는 유휴 시 API 를 자동 종료하므로,
+ * :8000 을 직접 호출하기 전 반드시 먼저 깨워야 한다.
+ *   1) /health 로 이미 살아 있으면 즉시 true
+ *   2) 아니면 런처 /start 로 기동 요청 후 최대 ~15초 health 폴링
+ * 런처 자체가 없으면(호스트 아님·미실행) false 를 반환한다.
+ */
+export async function ensureApiRunning(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(2000) });
+    if (res.ok) return true;
+  } catch { /* 아래에서 기동 시도 */ }
+
+  try {
+    await fetch(`${LAUNCHER_BASE}/start`, { method: 'POST', signal: AbortSignal.timeout(3000) });
+  } catch {
+    return false;   // 런처 미실행 → 기동 불가
+  }
+
+  for (let i = 0; i < 15; i++) {
+    await new Promise(r => setTimeout(r, 1000));
+    try {
+      const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(2000) });
+      if (res.ok) return true;
+    } catch { /* 기동 대기 중 */ }
+  }
+  return false;
+}

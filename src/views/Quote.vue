@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import { ClipboardList, Trash2, Printer, Loader2, Save, FolderOpen, FilePlus, X, ChevronDown } from 'lucide-vue-next';
+import { ClipboardList, Trash2, Printer, Loader2, Save, FolderOpen, FilePlus, Copy, X, ChevronDown } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { sbGet, sbPost, sbPatch, sbDelete, sbRpc } from '@/lib/supabase';
@@ -64,7 +64,31 @@ async function loadProducts() {
   productsLoading.value = false;
 }
 
-onMounted(() => { void loadProducts(); });
+// ── 고객 ─────────────────────────────────────────────────────────────────────
+interface Customer {
+  id:             string;
+  customer_code:  string;
+  customer_name:  string;
+  main_pic_name:  string | null;
+  acquirer_name:  string | null;
+}
+
+const customers = ref<Customer[]>([]);
+
+async function loadCustomers() {
+  // customers RLS 는 super_admin/staff 만 select 허용 → 그 외 역할은 조회 자체를 건너뛴다.
+  // (Order Information 블록도 isQuoteOnly 에서 숨겨지므로 이 자동완성이 필요 없다)
+  if (!canViewCost) return;
+  try {
+    customers.value = await sbGet<Customer[]>(
+      'customers?select=id,customer_code,customer_name,main_pic_name,acquirer_name&is_active=eq.true&order=customer_name.asc',
+    ) ?? [];
+  } catch {
+    customers.value = [];
+  }
+}
+
+onMounted(() => { void loadProducts(); void loadCustomers(); });
 
 // 4역할 모델 (가이드: app_metadata.role)
 //   super_admin / staff : 원가 포함 조회, 마진 표시
@@ -143,6 +167,45 @@ function openAc(e: Event, line: LineItem) {
   acIdx.value   = -1;
 }
 function closeAc() { acState.value = { lineId: null, rect: null }; acIdx.value = -1; }
+
+// ── 고객명 자동완성 ───────────────────────────────────────────────────────────
+const custAc    = ref<{ open: boolean; rect: AcRect | null }>({ open: false, rect: null });
+const custAcIdx = ref(-1);
+
+const custSuggestions = computed<Customer[]>(() => {
+  if (!custAc.value.open) return [];
+  const q = form.value.customerName.trim().toLowerCase();
+  if (!q) return [];
+  return customers.value
+    .filter(c =>
+      (c.customer_name ?? '').toLowerCase().includes(q) ||
+      (c.customer_code ?? '').toLowerCase().includes(q) ||
+      (c.main_pic_name ?? '').toLowerCase().includes(q)
+    )
+    .slice(0, 8);
+});
+
+function openCustAc(e: Event) {
+  const r = (e.target as HTMLInputElement).getBoundingClientRect();
+  custAc.value    = { open: true, rect: { bottom: r.bottom, left: r.left, width: r.width } };
+  custAcIdx.value = -1;
+}
+function closeCustAc() { custAc.value = { open: false, rect: null }; custAcIdx.value = -1; }
+
+function selectCustomer(c: Customer) {
+  form.value.customerName = c.customer_name;
+  // 담당자(quotes.sales_rep)는 비어 있을 때만 채운다 — 사용자가 적어둔 값을 덮지 않기 위함
+  if (!form.value.contactPerson && c.main_pic_name) form.value.contactPerson = c.main_pic_name;
+  closeCustAc();
+}
+
+function onCustomerKeydown(e: KeyboardEvent) {
+  if (!custSuggestions.value.length) return;
+  if      (e.key === 'ArrowDown')                     { e.preventDefault(); custAcIdx.value = Math.min(custAcIdx.value + 1, custSuggestions.value.length - 1); }
+  else if (e.key === 'ArrowUp')                       { e.preventDefault(); custAcIdx.value = Math.max(custAcIdx.value - 1, -1); }
+  else if (e.key === 'Enter' && custAcIdx.value >= 0) { e.preventDefault(); selectCustomer(custSuggestions.value[custAcIdx.value]); }
+  else if (e.key === 'Escape')                          closeCustAc();
+}
 
 // 대리점 기본 마진율 — 판매가 = 원가 ÷ (1 − 마진율). 가격비교(PriceCompare)와 동일한 정의.
 const DIST_MARGIN = 0.25;
@@ -318,6 +381,7 @@ interface QuoteSummary {
 const currentQuoteId     = ref<string | null>(null);
 const currentQuoteNumber = ref<string | null>(null);
 const isSaving           = ref(false);
+const savingMode         = ref<'update' | 'new' | null>(null);   // 어느 저장 버튼이 도는 중인지
 const saveSuccess        = ref(false);
 const saveError          = ref<string | null>(null);
 const showLoadModal      = ref(false);
@@ -336,7 +400,9 @@ const filteredQuotes = computed(() => {
   );
 });
 
-async function saveQuote() {
+// asNew=true → 불러온 견적을 덮어쓰지 않고 새 번호를 받아 별도 견적으로 저장
+async function saveQuote(asNew = false) {
+  savingMode.value  = asNew ? 'new' : 'update';
   isSaving.value    = true;
   saveSuccess.value = false;
   saveError.value   = null;
@@ -354,7 +420,8 @@ async function saveQuote() {
       currency:            'USD',
     };
 
-    let quoteId = currentQuoteId.value;
+    // asNew 면 기존 id 를 무시하고 insert 경로로 보내 원본을 그대로 남긴다
+    let quoteId = asNew ? null : currentQuoteId.value;
 
     if (quoteId) {
       await sbPatch(`quotes?id=eq.${quoteId}`, quoteData);
@@ -365,6 +432,9 @@ async function saveQuote() {
       quoteId = ins[0].id;
       currentQuoteId.value     = quoteId;
       currentQuoteNumber.value = ins[0].quote_number;
+      // 실제 발번된 번호를 입력칸에도 반영. 새로 저장 시 이전 견적 번호가 남아 있으면
+      // 화면과 저장된 레코드가 어긋나 보인다 (불러오기 시 이 칸은 DB 번호로 채워짐).
+      form.value.quoteNumber = ins[0].quote_number;
     }
 
     if (lines.value.length) {
@@ -388,7 +458,8 @@ async function saveQuote() {
   } catch (e) {
     saveError.value = e instanceof Error ? e.message : String(e);
   }
-  isSaving.value = false;
+  isSaving.value   = false;
+  savingMode.value = null;
 }
 
 async function openLoadModal() {
@@ -525,10 +596,23 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
         <Button v-if="canSaveImport" variant="outline" size="sm" class="gap-1.5 text-xs print:hidden" @click="openLoadModal">
           <FolderOpen :size="13" />Import
         </Button>
-        <Button v-if="canSaveImport" size="sm" class="gap-1.5 text-xs print:hidden" :disabled="isSaving" @click="saveQuote">
-          <Loader2 v-if="isSaving" :size="13" class="animate-spin" />
+        <Button v-if="canSaveImport" size="sm" class="gap-1.5 text-xs print:hidden" :disabled="isSaving" @click="saveQuote()">
+          <Loader2 v-if="savingMode === 'update'" :size="13" class="animate-spin" />
           <Save v-else :size="13" />
-          {{ isSaving ? 'Saving…' : (currentQuoteId ? '수정 저장' : 'SAVE') }}
+          {{ savingMode === 'update' ? 'Saving…' : (currentQuoteId ? '수정 저장' : 'SAVE') }}
+        </Button>
+        <!-- 불러온 견적을 원본 유지한 채 새 번호로 복제 저장 -->
+        <Button
+          v-if="canSaveImport && currentQuoteId"
+          variant="outline"
+          size="sm"
+          class="gap-1.5 text-xs print:hidden"
+          :disabled="isSaving"
+          @click="saveQuote(true)"
+        >
+          <Loader2 v-if="savingMode === 'new'" :size="13" class="animate-spin" />
+          <Copy v-else :size="13" />
+          {{ savingMode === 'new' ? 'Saving…' : '새로 저장' }}
         </Button>
         <Button variant="outline" size="sm" class="gap-1.5 text-xs print:hidden" @click="handlePrint">
           <Printer :size="13" />Print / PDF
@@ -557,7 +641,17 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
       <div v-show="showOrderInfo" class="order-info-body px-4 sm:px-10 py-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 print:grid-cols-3 gap-x-5 gap-y-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">Customer Name <span class="text-destructive">*</span></label>
-          <input v-model="form.customerName" type="text" :class="cell + ' h-9 text-sm px-3'" />
+          <input
+            v-model="form.customerName"
+            type="text"
+            autocomplete="off"
+            :class="cell + ' h-9 text-sm px-3'"
+            placeholder="고객명 입력 · 기존 고객 검색"
+            @focus="openCustAc"
+            @input="openCustAc"
+            @blur="closeCustAc"
+            @keydown="onCustomerKeydown"
+          />
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs text-muted-foreground">Quotation No.</label>
@@ -910,6 +1004,41 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
+  <!-- 고객명 자동완성 드롭다운 -->
+  <Teleport to="body">
+    <div
+      v-if="custAc.open && custSuggestions.length > 0 && custAc.rect"
+      class="fixed z-9999 rounded-lg border border-border bg-card shadow-xl overflow-hidden print:hidden"
+      :style="{
+        top:       `${custAc.rect.bottom + 4}px`,
+        left:      `${custAc.rect.left}px`,
+        minWidth:  `${Math.max(custAc.rect.width, 280)}px`,
+        maxHeight: '280px',
+        overflowY: 'auto',
+      }"
+      @mousedown.prevent
+    >
+      <div
+        v-for="(c, i) in custSuggestions"
+        :key="c.id"
+        class="ac-item flex items-center gap-3 px-3 py-2.5 cursor-pointer border-b border-border/30 last:border-0"
+        :class="i === custAcIdx ? 'bg-primary/10' : 'hover:bg-accent'"
+        @click="selectCustomer(c)"
+      >
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-medium text-foreground truncate">{{ c.customer_name }}</div>
+          <div class="flex items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground">
+            <span class="font-mono">{{ c.customer_code }}</span>
+            <template v-if="c.main_pic_name">
+              <span class="text-muted-foreground/40">·</span>
+              <span>PIC {{ c.main_pic_name }}</span>
+            </template>
           </div>
         </div>
       </div>

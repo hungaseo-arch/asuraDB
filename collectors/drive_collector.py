@@ -24,13 +24,12 @@ from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-from pdfminer.high_level import extract_text_to_fp
-from pdfminer.layout import LAParams
 from sentence_transformers import SentenceTransformer
 from supabase import create_client, Client as SupabaseClient
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from pipeline.chunker import chunk_markdown
+from collectors import pdf_extract
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -40,8 +39,19 @@ SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
 EMBEDDING_MODEL     = os.environ.get("EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2")
 TOKEN_PATH          = os.path.join(os.path.dirname(__file__), "..", "token.json")
 
-SCOPES = [
+# PDF 추출은 pdf_extract.extract_isolated 로 격리 실행하고 이 시간(초)을 넘으면 건너뛴다.
+# 일부 PDF 가 pdfminer 레이아웃 분석에서 O(n^2) 로 폭주하는 것을 차단(배경: pdf_extract.py).
+PDF_TIMEOUT = int(os.environ.get("DRIVE_PDF_TIMEOUT", "90"))
+
+# token.json 은 gmail/drive/calendar 수집기가 공유한다. 자기 스코프 하나만 지정해
+# refresh 하면 그 스코프로 좁혀진 access token 이 token.json 에 저장되어, 뒤이어
+# 도는 다른 수집기가 (아직 유효한 좁은 토큰을 그대로 쓰다) 403 으로 죽는다.
+# → 반드시 scripts/google_auth.py 와 동일한 전체 목록으로 refresh 할 것.
+GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.compose",
+    "https://www.googleapis.com/auth/calendar.readonly",
 ]
 
 # 수집 대상 MIME 타입
@@ -84,7 +94,7 @@ def _get_credentials() -> Credentials:
         raise FileNotFoundError(
             f"token.json 없음: python3 scripts/google_auth.py 를 먼저 실행하세요"
         )
-    creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
+    creds = Credentials.from_authorized_user_file(TOKEN_PATH, GOOGLE_SCOPES)
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
         with open(TOKEN_PATH, "w") as f:
@@ -123,17 +133,18 @@ def _docs_to_markdown(service, file_id: str) -> str:
 
 
 def _pdf_to_text(service, file_id: str) -> str:
-    """PDF 바이너리를 텍스트로 추출"""
+    """PDF 바이너리를 텍스트로 추출.
+
+    pdfminer 추출을 별도 프로세스로 격리하고 PDF_TIMEOUT 초를 넘기면 프로세스를
+    강제 종료하고 TimeoutError 를 던진다(호출부에서 errors 로 집계 후 다음 파일 진행).
+    """
     req  = service.files().get_media(fileId=file_id)
     buf  = io.BytesIO()
     dl   = MediaIoBaseDownload(buf, req)
     done = False
     while not done:
         _, done = dl.next_chunk()
-    buf.seek(0)
-    out = io.StringIO()
-    extract_text_to_fp(buf, out, laparams=LAParams())
-    return out.getvalue()
+    return pdf_extract.extract_isolated(buf.getvalue(), PDF_TIMEOUT)
 
 
 def _plain_text(service, file_id: str) -> str:

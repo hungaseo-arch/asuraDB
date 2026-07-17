@@ -35,7 +35,17 @@ SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
 EMBEDDING_MODEL      = os.environ.get("EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2")
 TOKEN_PATH           = os.path.join(os.path.dirname(__file__), "..", "token.json")
 
-SCOPES       = ["https://www.googleapis.com/auth/calendar.readonly"]
+# token.json 은 gmail/drive/calendar 수집기가 공유한다. 자기 스코프 하나만 지정해
+# refresh 하면 그 스코프로 좁혀진 access token 이 token.json 에 저장되어, 뒤이어
+# 도는 다른 수집기가 (아직 유효한 좁은 토큰을 그대로 쓰다) 403 으로 죽는다.
+# → 반드시 scripts/google_auth.py 와 동일한 전체 목록으로 refresh 할 것.
+GOOGLE_SCOPES = [
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.compose",
+    "https://www.googleapis.com/auth/calendar.readonly",
+]
+
 PAST_DAYS    = 365 * 10  # 과거 10년
 FUTURE_DAYS  = 365 * 2   # 미래 2년
 
@@ -48,7 +58,7 @@ embedder: SentenceTransformer = SentenceTransformer(EMBEDDING_MODEL)
 def _get_credentials() -> Credentials:
     if not os.path.exists(TOKEN_PATH):
         raise FileNotFoundError("token.json 없음: python3 scripts/google_auth.py 를 먼저 실행하세요")
-    creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
+    creds = Credentials.from_authorized_user_file(TOKEN_PATH, GOOGLE_SCOPES)
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
         with open(TOKEN_PATH, "w") as f:

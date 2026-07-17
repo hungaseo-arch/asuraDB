@@ -9,7 +9,6 @@ Gmail → Supabase 수집기
 """
 import base64
 import hashlib
-import io
 import logging
 import os
 import re
@@ -31,6 +30,7 @@ from supabase import create_client, Client as SupabaseClient
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from pipeline.chunker import chunk_markdown
+from collectors import pdf_extract
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -41,7 +41,19 @@ EMBEDDING_MODEL      = os.environ.get("EMBEDDING_MODEL", "paraphrase-multilingua
 TOKEN_PATH           = os.path.join(os.path.dirname(__file__), "..", "token.json")
 PKDB_LABEL           = "PKDB"
 
-SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+# token.json 은 gmail/drive/calendar 수집기가 공유한다. 자기 스코프 하나만 지정해
+# refresh 하면 그 스코프로 좁혀진 access token 이 token.json 에 저장되어, 뒤이어
+# 도는 다른 수집기가 (아직 유효한 좁은 토큰을 그대로 쓰다) 403 으로 죽는다.
+# → 반드시 scripts/google_auth.py 와 동일한 전체 목록으로 refresh 할 것.
+GOOGLE_SCOPES = [
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.compose",
+    "https://www.googleapis.com/auth/calendar.readonly",
+]
+
+# PDF 첨부 추출 격리 subprocess 타임아웃(초). 초과 시 해당 첨부만 건너뜀.
+PDF_TIMEOUT = int(os.environ.get("GMAIL_PDF_TIMEOUT", "90"))
 
 supabase: SupabaseClient     = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 embedder: SentenceTransformer = SentenceTransformer(EMBEDDING_MODEL)
@@ -52,7 +64,7 @@ embedder: SentenceTransformer = SentenceTransformer(EMBEDDING_MODEL)
 def _get_credentials() -> Credentials:
     if not os.path.exists(TOKEN_PATH):
         raise FileNotFoundError("token.json 없음: python3 scripts/google_auth.py 를 먼저 실행하세요")
-    creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
+    creds = Credentials.from_authorized_user_file(TOKEN_PATH, GOOGLE_SCOPES)
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
         with open(TOKEN_PATH, "w") as f:
@@ -171,15 +183,12 @@ def _extract_attachment_text(service, user_id: str, msg_id: str, part: dict) -> 
         return filename, (_html_to_text(text) if mime == "text/html" else text)
 
     if mime == "application/pdf":
+        # 격리 subprocess 로 추출 — 일부 PDF 가 pdfminer 레이아웃 분석에서 폭주(O(n^2),
+        # 수 시간·수 GB)해 수집 전체가 멈추는 것을 방지(배경: collectors/pdf_extract.py).
         try:
-            from pdfminer.high_level import extract_text_to_fp
-            from pdfminer.layout import LAParams
-            buf = io.BytesIO(raw_bytes)
-            out = io.StringIO()
-            extract_text_to_fp(buf, out, laparams=LAParams())
-            return filename, out.getvalue()
-        except Exception as e:
-            log.debug(f"    PDF 추출 실패 [{filename}]: {e}")
+            return filename, pdf_extract.extract_isolated(raw_bytes, PDF_TIMEOUT)
+        except Exception as e:  # TimeoutError/RuntimeError 포함
+            log.debug(f"    PDF 추출 실패/건너뜀 [{filename}]: {e}")
             return filename, ""
 
     return filename, ""

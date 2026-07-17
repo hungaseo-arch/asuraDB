@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { Printer, X, Upload, Info, Download, CloudDownload } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 import { sbGetAll, sbPost } from '@/lib/supabase';
-import { API_BASE, IS_HOST } from '@/lib/api';
+import { API_BASE, IS_HOST, ensureApiRunning } from '@/lib/api';
 import PageHeader from '@/components/PageHeader.vue';
 import { exportCsv } from '@/lib/csv';
 import { niceCeil, deltaClass, deltaText } from '@/lib/format';
@@ -406,6 +406,12 @@ async function fetchLatest() {
   if (collecting.value) return;
   collecting.value = true;
   try {
+    // 런처가 유휴 시 API(8000)를 자동 종료하므로, 직접 호출 전 먼저 깨운다.
+    // (이 단계 없이 바로 POST 하면 API 가 꺼져 있을 때 fetch 가 throw → '오프라인' 오진)
+    if (!await ensureApiRunning()) {
+      toast.error('로컬 API(:8000) 오프라인 — 런처(com.asuradb.launcher) 상태를 확인하세요.');
+      return;
+    }
     // years 미전송 → 서버가 수집 대상 연도를 결정(연초엔 전년도 발표분·소급 수정까지 포함).
     const res = await fetch(`${API_BASE}/collect/tire-imports`, {
       method: 'POST',

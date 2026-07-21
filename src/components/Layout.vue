@@ -3,7 +3,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import {
   Home, Search, BrainCircuit, ClipboardList, BarChart3, Ship, Percent, Store,
-  FolderOpen, Package, RefreshCw, LogOut, Scale, Gauge,
+  FolderOpen, Package, RefreshCw, LogOut, Scale, Gauge, BookMarked, Wallet,
 } from 'lucide-vue-next';
 import { signOut } from '@/lib/auth';
 import AsuraLogo from '@/components/icons/AsuraLogo.vue';
@@ -47,6 +47,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/monitor',      icon: BarChart3, label: 'KPI — 핵심성과지표', short: 'KPI', badge: null },
       { to: '/margin',       icon: Percent,   label: '마진 — 마진분석',    short: '마진', badge: null },
       { to: '/branch-sales', icon: Store,     label: '지점 — 지점실적',    short: '지점', badge: null },
+      { to: '/labor-cost',   icon: Wallet,    label: '인건비 — 인건비현황', short: '인건비', badge: null },
     ],
   },
   {
@@ -63,6 +64,12 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/tire-import', icon: Ship,       label: '수입 — 수입관리',   short: '수입', badge: null },
       { to: '/databases',   icon: Package,    label: 'DB — 데이터베이스', short: 'DB', badge: null },
       { to: '/docs',        icon: FolderOpen, label: '정리 — 데이터 정리', short: '정리', badge: null },
+    ],
+  },
+  {
+    key: 'seo', label: 'SEO자료',
+    items: [
+      { to: '/seo-docs', icon: BookMarked, label: '자료실 — 개인 자료·참고 문서', short: '자료실', badge: null },
     ],
   },
 ];
@@ -202,11 +209,27 @@ const pageTitle = computed(() =>
           <span class="text-sm font-semibold text-foreground truncate">{{ pageTitle }}</span>
         </template>
       </div>
-      <!-- ② 메뉴바(가운데) — 3그룹 드롭다운 (경영·성과 / 영업·견적 / 운영·데이터) -->
-      <!-- 드롭다운이 잘리지 않도록 overflow 없음 (그룹 3개는 좁은 화면에서도 수용) -->
+      <!-- ② 메뉴바(가운데) — 그룹 드롭다운 (경영·성과 / 영업·견적 / 운영·데이터 / SEO자료) -->
+      <!-- 드롭다운이 잘리지 않도록 overflow 없음 -->
       <nav v-if="!isQuoteOnly" class="shrink-0 flex items-center justify-center gap-1 px-1">
         <div v-for="g in NAV_GROUPS" :key="g.key" class="relative" data-navgroup>
+          <!-- 항목이 하나뿐인 그룹은 드롭다운 없이 바로 이동 (2번 클릭 방지) -->
+          <RouterLink
+            v-if="g.items.length === 1"
+            :to="g.items[0].to!"
+            :title="g.items[0].label"
+            :class="cn(
+              'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
+              groupActive(g)
+                ? 'bg-primary/15 text-primary font-semibold'
+                : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground',
+            )"
+            @click="closeGroups"
+          >
+            {{ g.label }}
+          </RouterLink>
           <button
+            v-else
             :class="cn(
               'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
               groupActive(g) || openGroup === g.key

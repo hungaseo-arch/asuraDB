@@ -561,8 +561,8 @@ const costKpi = computed(() => {
 
 function rowCls(kind: Row['kind']): string {
   if (kind === 'total') return 'font-bold bg-muted/40 [&>td]:border-t-2 [&>td]:border-border';
-  if (kind === 'amount') return 'bg-teal-500/15 text-teal-700 font-semibold';
-  if (kind === 'subtotal') return 'font-semibold [&>td]:border-t [&>td]:border-teal-500/40';
+  if (kind === 'amount') return 'bg-primary/10 text-primary font-semibold';
+  if (kind === 'subtotal') return 'font-semibold [&>td]:border-t [&>td]:border-primary/40';
   return '';
 }
 
@@ -669,7 +669,7 @@ function pnlFmt(n: number | null | undefined, fmt: PnlFmt): string {
 }
 
 function pnlRowCls(kind: PnlKind): string {
-  if (kind === 'profit') return 'font-bold bg-teal-500/15 text-teal-700 [&>td]:border-t-2 [&>td]:border-teal-500/40';
+  if (kind === 'profit') return 'font-bold bg-primary/10 text-primary [&>td]:border-t-2 [&>td]:border-primary/40';
   if (kind === 'head') return 'font-bold [&>td]:border-t [&>td]:border-border/60';
   if (kind === 'pct') return 'text-[11px] text-muted-foreground/80';
   if (kind === 'bep') return 'text-foreground/75 [&>td]:border-t [&>td]:border-border/40';
@@ -880,7 +880,7 @@ async function onUpload(e: Event) {
       :subtitle="`단위: 본/EA, 매출 백만 루피아`"
     >
       <template #controls>
-        <div class="inline-flex items-center gap-1.5 self-end bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-teal-400">
+        <div class="inline-flex items-center gap-1.5 self-end bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-primary">
           <span class="text-[11px] font-semibold text-muted-foreground shrink-0">지점</span>
           <select
             v-model="branchKey"
@@ -889,7 +889,7 @@ async function onUpload(e: Event) {
             <option v-for="b in (['surabaya','semarang'] as const)" :key="b" :value="b">{{ BRANCH_LABEL[b] }}</option>
           </select>
         </div>
-        <div class="inline-flex items-center gap-1.5 self-end bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-teal-400">
+        <div class="inline-flex items-center gap-1.5 self-end bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-primary">
           <span class="text-[11px] font-semibold text-muted-foreground shrink-0">연도</span>
           <select
             v-model.number="year"
@@ -902,7 +902,7 @@ async function onUpload(e: Event) {
         <div class="inline-flex bg-muted rounded-lg p-1 gap-1 self-end">
           <button
             v-for="t in MAIN_TABS" :key="t.k"
-            :class="['text-xs font-semibold px-4 py-2 rounded-md transition-colors', mainTab === t.k ? 'bg-card text-teal-600 shadow-sm' : 'text-muted-foreground hover:text-foreground']"
+            :class="['text-xs font-semibold px-4 py-2 rounded-md transition-colors', mainTab === t.k ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground']"
             @click="mainTab = t.k"
           >{{ t.label }}</button>
         </div>
@@ -1049,7 +1049,7 @@ async function onUpload(e: Event) {
           <button
             v-for="t in TABS" :key="t.n"
             :class="['text-xs font-semibold px-3 py-1.5 rounded-md transition-colors',
-                     activeTab === t.n ? 'bg-card text-teal-600 shadow-sm' : 'text-muted-foreground hover:text-foreground']"
+                     activeTab === t.n ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground']"
             @click="activeTab = t.n"
           >{{ t.label }}</button>
         </div>
@@ -1057,7 +1057,7 @@ async function onUpload(e: Event) {
           <button
             v-for="mt in METRICS" :key="mt.k"
             :class="['text-xs font-semibold px-3 py-1.5 rounded-md transition-colors',
-                     metric === mt.k ? 'bg-card text-teal-600 shadow-sm' : 'text-muted-foreground hover:text-foreground']"
+                     metric === mt.k ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground']"
             @click="metric = mt.k"
           >{{ mt.label }}</button>
         </div>
@@ -1073,8 +1073,8 @@ async function onUpload(e: Event) {
           <thead>
             <tr>
               <th rowspan="2" class="sticky left-0 z-10 bg-card text-left px-2.5 py-1.5 font-semibold text-foreground min-w-30 shadow-[1px_0_0_var(--border)]">Category</th>
-              <th v-if="hasPrev" class="px-2 py-1.5 bg-indigo-500/20 text-indigo-700 font-semibold text-center border-b border-border/50 tabular-nums">{{ year - 1 }}</th>
-              <th :colspan="months.length + 1" class="px-2 py-1.5 bg-teal-500/12 text-teal-700 font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
+              <th v-if="hasPrev" class="px-2 py-1.5 bg-muted/40 text-muted-foreground font-semibold text-center border-b border-border/50 tabular-nums">{{ year - 1 }}</th>
+              <th :colspan="months.length + 1" class="px-2 py-1.5 bg-primary/10 text-primary font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
             </tr>
             <tr>
               <th v-if="hasPrev" class="px-2 py-1 bg-indigo-500/10 text-indigo-700 font-semibold text-right border-b border-border/50">평균</th>
@@ -1165,8 +1165,8 @@ async function onUpload(e: Event) {
           <thead>
             <tr>
               <th rowspan="2" class="sticky left-0 z-10 bg-card text-left px-2.5 py-1.5 font-semibold text-foreground min-w-32 shadow-[1px_0_0_var(--border)]">ITEM</th>
-              <th class="px-2 py-1.5 bg-indigo-500/20 text-indigo-700 font-semibold text-center border-b border-border/50 tabular-nums">{{ year - 1 }}</th>
-              <th :colspan="pnlMonths.length + 1" class="px-2 py-1.5 bg-amber-500/12 text-amber-700 font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
+              <th class="px-2 py-1.5 bg-muted/40 text-muted-foreground font-semibold text-center border-b border-border/50 tabular-nums">{{ year - 1 }}</th>
+              <th :colspan="pnlMonths.length + 1" class="px-2 py-1.5 bg-primary/10 text-primary font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
             </tr>
             <tr>
               <th class="px-2 py-1 bg-indigo-500/10 text-indigo-700 font-semibold text-right border-b border-border/50">평균</th>

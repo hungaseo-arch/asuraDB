@@ -676,16 +676,16 @@ async function loadYearRecords(year: string): Promise<void> {
   }
 }
 
-const hasChartFilter = computed(() =>
-  !!filterQuery.value.trim() || !!productFilter.value || !!typeFilter.value,
-);
-
-// 필터에 매칭되는 records만 추리기 — 축별 priority: keyword > product/type
+// 필터에 매칭되는 records만 추리기 — 우선순위는 filteredTotalsOf(KPI 카드) 와 동일하게
+// keyword > brand > product/type 를 유지해야 카드 합계와 그래프가 어긋나지 않는다.
 function filterRecordsForChart(records: MarginRecordRow[]): MarginRecordRow[] {
   const q = filterQuery.value.trim().toLowerCase();
   if (q) {
     const axis = filterMode.value;
     return records.filter(r => r.axis === axis && r.primary_key.toLowerCase().includes(q));
+  }
+  if (brandFilter.value) {
+    return records.filter(r => r.axis === 'brand' && r.primary_key === brandFilter.value);
   }
   if (productFilter.value || typeFilter.value) {
     return records.filter(r => {
@@ -699,8 +699,8 @@ function filterRecordsForChart(records: MarginRecordRow[]): MarginRecordRow[] {
 }
 
 // 필터가 켜지거나 연도가 바뀌면 raw records 로드
-watch([hasChartFilter, selectedMonth], () => {
-  if (!hasChartFilter.value || !selectedMonth.value) return;
+watch([anyFilter, selectedMonth], () => {
+  if (!anyFilter.value || !selectedMonth.value) return;
   const yr = selectedMonth.value.slice(0, 4);
   void loadYearRecords(yr);
   void loadYearRecords(String(Number(yr) - 1));
@@ -708,7 +708,7 @@ watch([hasChartFilter, selectedMonth], () => {
 
 function yearAvg(year: string): { sales: number; margin: number } | null {
   // 필터 모드: 캐시된 records에서 집계
-  if (hasChartFilter.value) {
+  if (anyFilter.value) {
     const recs = yearRecordsCache.value[year];
     if (!recs) return null;
     const filt = filterRecordsForChart(recs);
@@ -768,7 +768,7 @@ const trend = computed<TrendPoint[]>(() => {
     const pct = selAvg.sales > 0 ? (selAvg.margin / selAvg.sales) * 100 : 0;
     points.push({ key: `${selYear}-avg`, label: `'${selYear.slice(2)} 평균`, sales: selAvg.sales, margin: selAvg.margin, marginPct: pct, isAverage: true });
   }
-  const filtMap = hasChartFilter.value ? monthAggFiltered(selYear) : null;
+  const filtMap = anyFilter.value ? monthAggFiltered(selYear) : null;
   for (const r of monthsList.value.filter(m => m.year_month.startsWith(selYear))) {
     const sales  = filtMap ? (filtMap.get(r.year_month)?.sales  ?? 0) : Number(r.total_sales);
     const margin = filtMap ? (filtMap.get(r.year_month)?.margin ?? 0) : Number(r.total_margin);

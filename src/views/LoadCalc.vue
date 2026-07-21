@@ -110,6 +110,63 @@ const OTR: Otr[] = ([
 ] as [string,string,string,string,number|null,[number,number|null][]][])
   .map(r => ({ brand: r[0], pattern: r[1], app: r[2], size: r[3], pr: r[4], pts: r[5].filter(p => p[1] != null) as [number, number][] }));
 
+/* ── 지게차 IND (ASCENDO INDUSTRIAL TYRES 카탈로그) ────────────────────────
+   출처: PT. Ascendo Internasional 'INDUSTRIAL TYRES — SOLID & PNEUMATIC' 카탈로그.
+   pneumatic = Max Load Capacity(kg) @ Standard Pressure(psi), solid = Load Capacity(kg).
+   solid 은 공기압 개념이 없어 psi = null.                                        */
+interface Ind { brand: string; pattern: string; type: 'PNEUMATIC' | 'SOLID'; size: string; pr: number | null; rim: string; od: number; sw: number; load: number; psi: number | null; nm: boolean }
+const IND: Ind[] = ([
+  // ── Pneumatic · AB700 (PR / RIM / O.D / SW / Max Load / Std Pressure)
+  ['AB700','PNEUMATIC','5.00-8',   10,  '3.50D', 470, 137, 1150, 145],
+  ['AB700','PNEUMATIC','18X7-8',   14,  '4.33R', 465, 173, 1440, 130],
+  ['AB700','PNEUMATIC','6.00-9',   12,  '4.00E', 533, 160, 1675, 150],
+  ['AB700','PNEUMATIC','7.00-9',   10,  '5.00S', 590, 190, 1995, 125],
+  ['AB700','PNEUMATIC','6.50-10',  12,  '5.00F', 586, 190, 1895, 125],
+  ['AB700','PNEUMATIC','7.00-12',  12,  '5.00S', 665, 190, 2375, 125],
+  ['AB700','PNEUMATIC','8.25-12',  12,  '6.50',  765, 235, 3060, 105],
+  ['AB700','PNEUMATIC','28X9-15',  16,  '7.00',  690, 220, 3115, 145],
+  ['AB700','PNEUMATIC','8.25-15',  14,  '6.50',  820, 235, 3775, 120],
+  // ── Solid · S2000
+  ['S200 RIB','SOLID','4.00-8',    null,'3.00D', 404, 113,  950, null],
+  ['S2000','SOLID','5.00-8',       null,'3.00D', 452, 120, 1415, null],
+  ['S2000','SOLID','15X4.5-8',     null,'3.00D', 382, 109, 1040, null],
+  ['S2000','SOLID','16X6-8',       null,'4.33R', 415, 148, 1495, null],
+  ['S2000','SOLID','18X7-8',       null,'4.33R', 450, 153, 2145, null],
+  ['S2000','SOLID','6.00-9',       null,'4.00',  525, 145, 1885, null],
+  ['S2000','SOLID','21X8-9',       null,'6.00E', 522, 185, 2755, null],
+  ['S2000','SOLID','200/50-10',    null,'6.50F', 460, 195, 2470, null],
+  ['S2000','SOLID','6.50-10',      null,'5.00',  572, 162, 2340, null],
+  ['S2000','SOLID','23X9-10',      null,'6.50F', 582, 203, 3445, null],
+  ['S2000','SOLID','7.00-12',      null,'5.00',  655, 173, 2920, null],
+  ['S2000','SOLID','2.50-15',      null,'7.00',  715, 226, 4745, null],
+  ['S2000','SOLID','6.00-15',      null,'4.50E', 690, 153, 2455, null],
+  ['S2000','SOLID','7.00-15',      null,'5.50',  733, 171, 3545, null],
+  ['S2000','SOLID','3.00-15',      null,'8.00',  802, 258, 5850, null],
+  ['S2000','SOLID','28X9-15',      null,'7.00',  688, 212, 3445, null],
+  ['S2000','SOLID','8.25-15',      null,'6.50F', 810, 208, 4750, null],
+  ['S2000','SOLID','7.50-16',      null,'6.00',  780, 199, 3950, null],
+  ['S2000','SOLID','9.00-20',      null,'7.00',  997, 233, 5400, null],
+  ['S2000','SOLID','10.00-20',     null,'7.50', 1035, 253, 6000, null],
+  ['Smooth','SOLID','10.00-20',    null,'7.50', 1015, 218, 6000, null],
+  // ── Solid · S1000
+  ['S1000','SOLID','6.00-9',       null,'4.00',  525, 145, 1885, null],
+  ['S1000','SOLID','6.50-10',      null,'5.00',  572, 168, 2340, null],
+  ['S1000','SOLID','7.00-12',      null,'5.00',  655, 173, 2920, null],
+  // ── NON MARKING (무착색 컴파운드) · 제약·식품·음료 구역용 별도 규격
+  ['S2000','SOLID','5.00-8',       null,'3.00D', 452, 120, 1415, null, 1],
+  ['S2000','SOLID','16X6-8',       null,'4.33R', 415, 148, 1495, null, 1],
+  ['S2000','SOLID','18X7-8',       null,'4.33R', 450, 153, 2145, null, 1],
+  ['S1000','SOLID','6.00-9',       null,'4.00',  525, 145, 1885, null, 1],
+  ['S2000','SOLID','21X8-9',       null,'6.00E', 522, 185, 2755, null, 1],
+  ['S1000','SOLID','6.50-10',      null,'5.00',  572, 168, 2340, null, 1],
+  ['S2000','SOLID','23X9-10',      null,'6.50F', 582, 203, 3445, null, 1],
+  ['S1000','SOLID','7.00-12',      null,'5.00',  655, 173, 2920, null, 1],
+  ['S2000','SOLID','28X9-15',      null,'7.00',  688, 212, 3445, null, 1],
+  ['S2000','SOLID','7.50-16',      null,'6.00',  780, 199, 3950, null, 1],
+  ['S2000','SOLID','8.25-15',      null,'6.50F', 810, 208, 4750, null, 1],
+] as [string,'PNEUMATIC'|'SOLID',string,number|null,string,number,number,number,number|null,number?][])
+  .map(r => ({ brand: 'ASCENDO', pattern: r[0], type: r[1], size: r[2], pr: r[3], rim: r[4], od: r[5], sw: r[6], load: r[7], psi: r[8], nm: !!r[9] }));
+
 /* ── 농기계 AGR ───────────────────────────────────────────────────────────── */
 interface Agr { brand: string; pattern: string; app: string; size: string; pr: number; load: number; psi: number; speed: number }
 const AGR: Agr[] = ([
@@ -194,6 +251,8 @@ const mn = reactive<TkphState>({ veh: '', brand: 'all', empty: 35000, payload: 4
 const ag = reactive({ veh: '', axle: 5000, count: 2, cur: 'Rp', price: 2500000, life: 6000, retread: '0', rcost: 900000, rlife: 4000, rcount: 0, fuelp: 13000, econ: 4, vinfo: '' });
 
 const resultHtml = ref('');
+// 트럭 탭: 대체 후보에서 사용자가 고른 권장 타이어 (TBR 인덱스). null = 자동 추천
+const truckPick = ref<number | null>(null);
 let truckTrailer: { tires: number; share: number } | null = null;
 let truckLayout: [GroupKey, number][] | null = null;
 let truckName = '';
@@ -243,13 +302,22 @@ function sortByFit<T extends Record<string, unknown>>(list: T[], load: number, c
 }
 
 /* ── 결과 HTML 빌더 ───────────────────────────────────────────────────────── */
-function tireRow(name: string, sub: string, cap: number, capLabel: string, load: number, meta: string) {
+// pick 을 넘기면 카드가 '권장 타이어' 선택 버튼이 된다 (트럭 탭 대체 후보 전용)
+function tireRow(name: string, sub: string, cap: number, capLabel: string, load: number, meta: string,
+                 pick?: { idx: number; on: boolean }) {
   const v = verdict(load, cap);
   const w = Math.min(v.pct, 100);
-  return `<div class="rounded-xl border ${v.cls === 'pass' ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-border bg-card'} p-3 mb-2">
+  const sel = pick
+    ? ` cursor-pointer transition-colors ${pick.on ? 'ring-2 ring-primary border-primary/50' : 'hover:border-primary/50'}`
+    : '';
+  const attrs = pick ? ` data-pick="${pick.idx}" role="button" tabindex="0" aria-pressed="${pick.on}"` : '';
+  const badge = pick
+    ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${pick.on ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}">${pick.on ? '● 선택됨' : '선택'}</span>`
+    : '';
+  return `<div${attrs} class="rounded-xl border ${v.cls === 'pass' ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-border bg-card'} p-3 mb-2${sel}">
     <div class="flex justify-between items-baseline gap-2">
       <div class="text-sm font-bold">${name} <span class="text-xs font-medium text-muted-foreground ml-1">${sub}</span></div>
-      <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${STATUS_CLS[v.cls]}">${v.label}</span>
+      <div class="flex items-center gap-1.5 shrink-0">${badge}<span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${STATUS_CLS[v.cls]}">${v.label}</span></div>
     </div>
     <div class="text-xs text-muted-foreground mt-1">${capLabel} <b class="text-foreground tabular-nums">${fmt(cap)}</b> kg · 사용률 <b class="text-foreground tabular-nums">${v.pct ? v.pct.toFixed(0) : '—'}%</b></div>
     <div class="h-2 rounded bg-muted mt-2 overflow-hidden"><i style="display:block;height:100%;width:${w}%;background:${BAR[v.cls]}"></i></div>
@@ -369,7 +437,13 @@ function calcTruck() {
     const ta = tier(a.u), tb = tier(b.u); if (ta !== tb) return ta - tb;
     return ta === 0 ? b.u - a.u : a.u - b.u;
   });
-  const rec = ranked.length ? ranked[0].t : null;
+  // 권장 타이어 = 사용자가 대체 후보에서 고른 것, 없으면 자동 추천 1순위
+  // (규격 필터 변경 등으로 선택한 타이어가 후보에서 빠지면 자동으로 되돌린다)
+  const autoRec = ranked.length ? ranked[0].t : null;
+  const pickedIdx = truckPick.value;
+  const picked = pickedIdx != null ? pool.find(x => TBR.indexOf(x) === pickedIdx) ?? null : null;
+  if (pickedIdx != null && !picked) truckPick.value = null;
+  const rec = picked ?? autoRec;
 
   const gData = groups.map(g => {
     const load = gvw * g.share, perTire = load / g.tires, cap = rec ? (g.dual ? rec.dual : rec.single) : 0;
@@ -388,8 +462,11 @@ function calcTruck() {
   const gmap: Partial<Record<GroupKey, typeof gData[number]>> = { steer: gData[0], drive: gData[1], trailer: gData[2] };
   axles.forEach(a => { const g = gmap[a.group]; if (g) { a.util = g.u; a.cls = g.cls; a.dual = g.dual; } });
 
+  // 분포율 = 각 축군 하중 ÷ 전체 축하중 합계 (합계는 GVW 와 일치)
+  const loadSum = gData.reduce((a, g) => a + g.load, 0);
   const rows = gData.map(g => `<tr class="border-b border-border/50"><td class="px-2 py-1.5 text-left font-semibold">${g.label}</td>
     <td class="px-2 py-1.5 text-right tabular-nums">${fmt(g.load)}</td>
+    <td class="px-2 py-1.5 text-right tabular-nums text-muted-foreground">${loadSum ? Math.round(g.load / loadSum * 100) + '%' : '-'}</td>
     <td class="px-2 py-1.5 text-right tabular-nums">${g.tires}본</td>
     <td class="px-2 py-1.5 text-right tabular-nums">${fmt(g.perTire)}</td>
     <td class="px-2 py-1.5 text-right tabular-nums">${g.cap ? fmt(g.cap) : '-'}</td>
@@ -401,30 +478,37 @@ function calcTruck() {
   const drivePer = gvw * groups[1].share / groups[1].tires;
   const alt = ranked.slice(0, 6).map(r => tireRow(`${r.t.pattern} · ${r.t.size}`,
     `${r.t.brand} ${r.t.cat} · ${r.t.pr}PR · LI ${r.t.li}`,
-    r.t.dual, '복륜 용량', drivePer, `단륜 ${fmt(r.t.single)} kg · 공기압 ${r.t.psi} psi`)).join('');
+    r.t.dual, '복륜 용량', drivePer, `단륜 ${fmt(r.t.single)} kg · 공기압 ${r.t.psi} psi`,
+    { idx: TBR.indexOf(r.t), on: rec === r.t })).join('');
 
   resultHtml.value = `<div class="rounded-xl border border-border bg-card p-4">
     <!-- 권장 타이어(좌 50%) + 차량 다이어그램(우 50%) 1행 -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 items-stretch">
       <div class="rounded-xl bg-muted/50 border border-border p-4">
-        <div class="text-xs font-semibold text-muted-foreground">권장 타이어 · ${truckName || t.customName.trim() || '수동 입력'}</div>
+        <div class="flex items-center justify-between gap-2">
+          <div class="text-xs font-semibold text-muted-foreground">권장 타이어 · ${truckName || t.customName.trim() || '수동 입력'}</div>
+          ${picked
+            ? `<button type="button" data-pick="auto" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-accent shrink-0">↺ 자동 추천</button>`
+            : `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">자동 추천</span>`}
+        </div>
         <div class="text-xl font-extrabold">${rec ? rec.pattern + ' · ' + rec.size : '적합 규격 없음'}</div>
         ${rec ? `<div class="text-xs text-muted-foreground mt-1">${rec.brand} ${rec.cat} · ${rec.pr}PR · LI ${rec.li} · 단륜 ${fmt(rec.single)} / 복륜 ${fmt(rec.dual)} kg</div>` : ''}
         <div class="mt-2 px-3 py-2 rounded-lg font-bold text-xs ${STATUS_CLS[oCls]}">${oTxt}</div>
       </div>
       <div class="rounded-xl border border-border bg-muted/30 p-3 text-muted-foreground flex items-center">${truckSVG(axles, gvw, hasTrailer)}</div>
     </div>
-    <div class="overflow-x-auto"><table class="w-full text-xs border-collapse">
-      <tr class="bg-muted text-muted-foreground"><th class="px-2 py-1.5 text-left">축 위치</th><th class="px-2 py-1.5 text-right">축하중</th><th class="px-2 py-1.5 text-right">타이어</th><th class="px-2 py-1.5 text-right">하중/본</th><th class="px-2 py-1.5 text-right">용량</th><th class="px-2 py-1.5 text-right">사용률</th></tr>
+    <div class="overflow-x-auto"><table class="w-full min-w-140 text-xs border-collapse table-fixed">
+      <tr class="bg-muted text-muted-foreground"><th class="px-2 py-1.5 text-left w-[22%]">축 위치</th><th class="px-2 py-1.5 text-right">축하중</th><th class="px-2 py-1.5 text-right">분포율</th><th class="px-2 py-1.5 text-right">타이어</th><th class="px-2 py-1.5 text-right">하중/본</th><th class="px-2 py-1.5 text-right">용량</th><th class="px-2 py-1.5 text-right">사용률</th></tr>
       ${rows}
     </table></div>
     ${cpk}
-    ${renderTires('대체 후보 · 구동축 복륜 기준', alt)}
+    ${renderTires('대체 후보 · 구동축 복륜 기준 <span class="font-normal text-muted-foreground">— 카드를 누르면 권장 타이어로 반영됩니다</span>', alt)}
   </div>`;
 }
 
 /* ── TKPH 공통 계산 (지게차·중장비·광산) ─────────────────────────────────── */
-function calcTKPHTab(s: TkphState, poolPred: ((o: Otr) => boolean) | null, noPoolMsg: string) {
+function calcTKPHTab(s: TkphState, poolPred: ((o: Otr) => boolean) | null,
+                     noPool: string | ((govLoaded: number, speed: number) => string)) {
   const empty = +s.empty, pay = +s.payload, rc = +s.rear, fc = +s.front, n = +s.n, l = +s.l, h = +s.h, rated = +s.tkph;
   if (empty <= 0 || rc <= 0 || fc <= 0 || h <= 0) return errBox();
   const gross = empty + pay;
@@ -457,12 +541,32 @@ function calcTKPHTab(s: TkphState, poolPred: ((o: Otr) => boolean) | null, noPoo
       r.over ? '⚠ 정격속도 초과 → 데이터북 확인' : '')).join('');
     tires = renderTires(`적정 OTR 추천 · 운행속도 ${speed.toFixed(0)} km/h`, rows);
   } else {
-    tires = noPoolMsg;
+    tires = typeof noPool === 'function' ? noPool(govLoaded, speed) : noPool;
   }
   resultHtml.value = `<div class="rounded-xl border border-border bg-card p-4">${req}${tk}${tires}</div>`;
 }
-const calcForklift = () => calcTKPHTab(fk, null,
-  `<div class="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-500"><b>지게차 IND 타이어 카탈로그 미첨부</b><br>산출된 전축 하중을 충족하는 지게차 라인(TKPORTH·ETPORTM·4KLIFT-D 등)은 해당 카탈로그 확보 시 자동 매칭됩니다.</div>`);
+// 지게차: IND 카탈로그에서 최고부하 1본당 하중을 충족하는 규격을 추천
+// (여유 있는 것 우선 → 그중 사용률이 높은, 즉 과잉 스펙이 아닌 순)
+function indRank(pool: Ind[], load: number, n: number) {
+  const tier = (u: number) => u <= 90 ? 0 : u <= 100 ? 1 : 2;
+  const ranked = pool.map(x => ({ x, u: load / x.load * 100 })).sort((a, b) => {
+    const ta = tier(a.u), tb = tier(b.u); if (ta !== tb) return ta - tb;
+    return ta === 0 ? b.u - a.u : a.u - b.u;
+  }).slice(0, n);
+  return ranked.map(r => tireRow(
+    `${r.x.pattern} · ${r.x.size}`,
+    `${r.x.brand} · ${r.x.type === 'SOLID' ? '솔리드' : '공압'}${r.x.pr ? ` · ${r.x.pr}PR` : ''}`,
+    r.x.load, r.x.type === 'SOLID' ? '하중용량' : '최대하중', load,
+    `림 ${r.x.rim} · O.D ${r.x.od}mm · 폭 ${r.x.sw}mm${r.x.psi ? ` · 공기압 ${r.x.psi} psi` : ' · 공기압 불필요'}`)).join('');
+}
+// 논마킹은 규격·하중이 일반 라인과 겹쳐 추천 목록을 중복시키므로 본 추천에서 제외하고 별도 섹션으로 분리
+function indTires(load: number) {
+  return renderTires('적정 지게차 타이어 추천 · 최고부하 축 1본당 하중 기준 <span class="font-normal text-muted-foreground">— ASCENDO INDUSTRIAL (SOLID &amp; PNEUMATIC)</span>',
+      indRank(IND.filter(x => !x.nm), load, 8))
+    + renderTires('논마킹 (NON MARKING) · 무착색 컴파운드 <span class="font-normal text-muted-foreground">— 제약·식품·음료 구역 등 바닥 자국이 문제되는 현장</span>',
+      indRank(IND.filter(x => x.nm), load, 4));
+}
+const calcForklift = () => calcTKPHTab(fk, null, load => indTires(load));
 const calcHeavy  = () => calcTKPHTab(hv, o => o.app.includes('로더') || o.app.includes('그레이더'), '');
 const calcMining = () => calcTKPHTab(mn, o => o.app.includes('덤프'), '');
 
@@ -503,7 +607,16 @@ function applyPreset(tb: Tab, idx: string) {
 function run() {
   ({ truck: calcTruck, forklift: calcForklift, heavy: calcHeavy, mining: calcMining, agri: calcAgri })[tab.value]();
 }
-function switchTab(k: Tab) { tab.value = k; resultHtml.value = ''; }
+function switchTab(k: Tab) { tab.value = k; resultHtml.value = ''; truckPick.value = null; }
+
+// 결과는 v-html 로 그려지므로 이벤트 위임으로 '권장 타이어' 선택을 받는다
+function onResultClick(e: MouseEvent) {
+  const el = (e.target as HTMLElement | null)?.closest('[data-pick]');
+  if (!el) return;
+  const v = el.getAttribute('data-pick');
+  truckPick.value = v === 'auto' ? null : Number(v);
+  run();
+}
 </script>
 
 <template>
@@ -648,7 +761,7 @@ function switchTab(k: Tab) { tab.value = k; resultHtml.value = ''; }
         <div v-if="!resultHtml" class="rounded-xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
           차량 선택과 제원을 입력한 뒤 「적정 타이어 계산」을 눌러 주세요.
         </div>
-        <div v-else v-html="resultHtml" />
+        <div v-else v-html="resultHtml" @click="onResultClick" />
       </section>
     </div>
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { FileText, ArrowLeft, ChevronLeft, ChevronRight, Search } from 'lucide-vue-next';
 import PageHeader from '@/components/PageHeader.vue';
 import { sbGet } from '@/lib/supabase';
@@ -12,7 +13,17 @@ interface Post {
   file: string;   // public/docs/*.html
 }
 
-// DB(doc_posts) 미적용 환경 폴백용 기본 목록
+// 이 게시판은 '정리'(회사 자료)와 'SEO자료'(개인 자료실)가 공유한다.
+// 라우트 meta.scope 로 목록만 갈라 본다 (DB: doc_posts.scope).
+const route = useRoute();
+const scope = computed<'company' | 'personal'>(
+  () => (route.meta.scope === 'personal' ? 'personal' : 'company'),
+);
+const subtitle = computed(() =>
+  scope.value === 'personal' ? '개인 자료·참고 문서 모음 · 게시판' : '회사 자료·검토 문서 모음 · 게시판',
+);
+
+// DB(doc_posts) 미적용 환경 폴백용 기본 목록 — 회사 자료(scope=company)에만 해당
 const DEFAULT_POSTS: Post[] = [
   { id: 2, title: '타이어 원가 시뮬레이션', category: '원가 분석', date: '2026-07-03', file: 'asuradb_tire_cost_simulation.html' },
   { id: 1, title: '재고·Buffer Stock 적정성 검토 산식 작성 가이드', category: '재고량 산정', date: '2026-06-25', file: 'buffer_stock_review.html' },
@@ -25,16 +36,18 @@ interface DocRow { id: number; title: string; category: string; published_on: st
 
 async function loadPosts() {
   loading.value = true;
+  const isPersonal = scope.value === 'personal';
   try {
     const rows = await sbGet<DocRow[]>(
-      'doc_posts?select=id,title,category,published_on,file&order=published_on.desc',
+      `doc_posts?select=id,title,category,published_on,file&scope=eq.${scope.value}&order=published_on.desc`,
     );
     posts.value = rows?.length
       ? rows.map(r => ({ id: r.id, title: r.title, category: r.category, date: r.published_on, file: r.file }))
-      : DEFAULT_POSTS;
+      // 개인 자료실은 아직 문서가 없을 수 있다 — 회사 문서를 섞어 보여주면 안 되므로 빈 목록 유지
+      : (isPersonal ? [] : DEFAULT_POSTS);
   } catch {
-    // 테이블 미생성 등 → 기본 목록으로 폴백
-    posts.value = DEFAULT_POSTS;
+    // 테이블/컬럼 미적용 등 → 회사 자료만 기본 목록으로 폴백
+    posts.value = isPersonal ? [] : DEFAULT_POSTS;
   }
   loading.value = false;
 }
@@ -66,13 +79,20 @@ const selected = ref<Post | null>(null);
 const docSrc = (p: Post) => `${import.meta.env.BASE_URL}docs/${p.file}`;
 function open(p: Post) { selected.value = p; }
 function back() { selected.value = null; }
+
+// '정리' ↔ 'SEO자료' 는 같은 컴포넌트를 재사용하므로 라우트만 바뀌면 재조회해야 한다
+watch(scope, () => {
+  selected.value = null;
+  page.value = 1;
+  void loadPosts();
+});
 </script>
 
 <template>
   <div class="p-6 space-y-4 max-w-300 mx-auto">
     <PageHeader>
       <template #subtitle>
-        <p class="text-xs text-muted-foreground">회사 자료·검토 문서 모음 · 게시판</p>
+        <p class="text-xs text-muted-foreground">{{ subtitle }}</p>
       </template>
       <template #controls>
         <div v-if="!selected" class="flex items-center gap-2 self-end">
@@ -152,7 +172,9 @@ function back() { selected.value = null; }
           </tr>
           <tr v-if="!loading && !paged.length">
             <td colspan="4" class="text-center text-muted-foreground py-10">
-              {{ query || category !== '전체' ? '검색 결과가 없습니다.' : '문서가 없습니다.' }}
+              {{ query || category !== '전체'
+                ? '검색 결과가 없습니다.'
+                : (scope === 'personal' ? '등록된 개인 자료가 없습니다.' : '문서가 없습니다.') }}
             </td>
           </tr>
         </tbody>

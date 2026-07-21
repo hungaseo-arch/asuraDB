@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>홈트 상세 프로그램</title>
+<style>
+  :root{
+    --grey:#F0F0F0; --blue:#E3F2FD; --green:#E8F5E9;
+    --bluegrey:#ECEFF1; --ink:#546E7A;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--grey); color:var(--ink); padding:28px 20px; line-height:1.5;
+  }
+  .wrap{max-width:1180px; margin:0 auto;}
+  .top{display:flex; align-items:center; gap:12px; margin-bottom:22px; padding-left:6px;}
+  .top .bar{width:6px; height:30px; background:#90CAF9; border-radius:3px;}
+  .top h1{font-size:23px; font-weight:800; color:#455A64;}
+  .top .note{font-size:13px; color:#78909C; margin-left:auto;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  @media(max-width:760px){ .grid{grid-template-columns:1fr;} }
+
+  /* 주간 스케줄 — 주간 운동 캘린더(workout_calendar.html)와 동일 배치, 이 문서 톤(카드형)으로 맞춤 */
+  .sched{margin-bottom:24px;}
+  .sched h2{font-size:17px; font-weight:800; color:#455A64; margin-bottom:12px;
+    padding-left:9px; border-left:5px solid #90CAF9;}
+  .sched .days{display:grid; grid-template-columns:repeat(6,1fr); gap:10px;}
+  .sched .dh{background:var(--ink); color:#fff; text-align:center; font-size:13px;
+    font-weight:700; padding:9px 4px; border-radius:9px; margin-bottom:8px;}
+  .sched .db{background:#fff; border:1px solid #E1E6E9; border-radius:12px;
+    padding:14px 8px; text-align:center; min-height:96px;
+    box-shadow:0 1px 3px rgba(84,110,122,.06);}
+  .sched .db .t{font-size:14px; font-weight:800; color:#455A64;}
+  .sched .db .s{font-size:12.5px; color:#78909C; margin-top:5px;}
+  .sched .db .m{font-size:11.5px; color:#B0BEC5; margin-top:7px;}
+  .sched .golf .db{background:var(--green); border-color:#A5D6A7;}
+  .sched .golf .db .t{color:#2E7D32;}
+  .sched .rest .db{background:var(--bluegrey);}
+  .sched .memo{font-size:12.5px; color:#90A4AE; margin-top:11px; padding-left:4px;}
+  /* 좁은 화면: 6열 → 3열 → 2열 */
+  @media(max-width:900px){ .sched .days{grid-template-columns:repeat(3,1fr);} }
+  @media(max-width:520px){ .sched .days{grid-template-columns:repeat(2,1fr);} }
+  .card{
+    background:#fff; border:1px solid #E1E6E9; border-radius:16px;
+    padding:24px 26px; box-shadow:0 1px 3px rgba(84,110,122,.06);
+  }
+  /* 카드 머리 — 태그와 제목을 한 줄에 */
+  .chead{display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;}
+  .tag{
+    background:var(--blue); color:#455A64;
+    font-size:13px; font-weight:700; padding:5px 14px; border-radius:20px; white-space:nowrap;
+  }
+  .card h2{font-size:19px; font-weight:800; color:#455A64;}
+  /* 요일 카드 안에서 부위별 구분 (하체 / 코어 …) */
+  li.sub{
+    font-size:12px; font-weight:800; color:#90A4AE; letter-spacing:.04em;
+    padding:16px 0 5px; border-bottom:1px solid #ECEFF1;
+  }
+  ul > li.sub:first-child{padding-top:0;}
+  ul{list-style:none;}
+  li{padding:9px 0; border-bottom:1px dashed #EEF1F3;}
+  li:last-child{border-bottom:none;}
+  .row1{display:flex; align-items:baseline; gap:9px; font-size:15px;}
+  .row1 .dot{color:#90CAF9; font-size:11px;}
+  .row1 .ex{color:#37474F; font-weight:600;}
+  .row1 .rep{color:#90A4AE; font-size:13.5px;}
+  .row1 .play{
+    margin-left:auto; font-size:12px; color:#fff; text-decoration:none;
+    background:#EF5350; padding:3px 10px; border-radius:12px; white-space:nowrap; font-weight:600;
+  }
+  .row1 .play:hover{background:#E53935;}
+  .row2{font-size:12px; color:#B0BEC5; margin:3px 0 0 20px;}
+  .row2 b{color:#78909C; font-weight:600;}
+  /* 카드 하단 강도 지침 — 종목이 아니므로 목록(li)이 아닌 별도 줄 */
+  .tip{
+    margin-top:10px; padding-top:9px; border-top:1px dashed #ECEFF1;
+    font-size:12.5px; color:#90A4AE; line-height:1.6;
+  }
+  .tip b{color:#78909C; font-weight:700;}
+  .yt{background:var(--green); border-radius:12px; padding:14px 16px; margin-top:16px;}
+  .yt .h{font-size:14px; font-weight:800; color:#43A047; margin-bottom:8px;}
+  .yt .chs{display:flex; flex-wrap:wrap; gap:8px;}
+  .yt .chs a{
+    font-size:13px; font-weight:700; color:#2E7D32; text-decoration:none;
+    background:#fff; border:1px solid #A5D6A7; padding:5px 12px; border-radius:20px;
+  }
+  .yt .chs a:hover{background:#C8E6C9;}
+  .foot{margin-top:22px; font-size:12.5px; color:#90A4AE; text-align:center; line-height:1.7;}
+
+  /* 영상 모달 */
+  .modal{
+    position:fixed; inset:0; z-index:100; display:none;
+    align-items:center; justify-content:center;
+    padding:56px 20px 20px;              /* 상단은 닫기 버튼 자리 확보 */
+    background:rgba(0,0,0,.72);
+  }
+  .modal.open{display:flex;}
+  /* 폭뿐 아니라 "남은 높이 × 16/9" 로도 제한 — 세로가 짧은 화면에서 영상이 잘리지 않게 */
+  .modal .box{
+    position:relative;
+    width:min(900px, 100%, calc((100vh - 96px) * 16 / 9));
+    width:min(900px, 100%, calc((100dvh - 96px) * 16 / 9));
+  }
+  .modal .frame{
+    position:relative; width:100%; aspect-ratio:16/9;
+    background:#000; border-radius:12px; overflow:hidden;
+    box-shadow:0 12px 40px rgba(0,0,0,.45);
+  }
+  .modal iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+  .modal .close{
+    position:absolute; top:-40px; right:0; width:32px; height:32px; padding:0;
+    font-size:20px; line-height:1; color:#fff; cursor:pointer;
+    background:rgba(255,255,255,.15); border:0; border-radius:50%;
+  }
+  .modal .close:hover{background:rgba(255,255,255,.3);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 주간 스케줄 — 아래 요일 카드(월·화·수·금)와 같은 순서 — 운동하는 날만 카드로 상세화 -->
+  <div class="sched">
+    <div class="days">
+      <div>
+        <div class="dh">월 (Sen)</div>
+        <div class="db"><div class="t">하체+코어</div><div class="s">Bawah + Inti</div><div class="m">30분</div></div>
+      </div>
+      <div>
+        <div class="dh">화 (Sel)</div>
+        <div class="db"><div class="t">심폐+스트레칭</div><div class="s">Kardio</div><div class="m">20~30분</div></div>
+      </div>
+      <div>
+        <div class="dh">수 (Rab)</div>
+        <div class="db"><div class="t">상체+회전</div><div class="s">Atas + Rotasi</div><div class="m">30분</div></div>
+      </div>
+      <div class="rest">
+        <div class="dh">목 (Kam)</div>
+        <div class="db"><div class="t">휴식</div><div class="s">가벼운 산책</div><div class="m">—</div></div>
+      </div>
+      <div>
+        <div class="dh">금 (Jum)</div>
+        <div class="db"><div class="t">전신+모빌리티</div><div class="s">저강도 조절</div><div class="m">30분</div></div>
+      </div>
+      <div class="golf">
+        <div class="dh">토·일 (Sab·Min)</div>
+        <div class="db"><div class="t">⛳ 골프</div><div class="s">Golf 라운딩</div><div class="m">—</div></div>
+      </div>
+    </div>
+    <p class="memo">※ 골프 라운딩 전날(금)은 강도를 낮춰 컨디션을 남겨두는 배치입니다. 아래 카드가 이 표의 요일 순서 그대로, 각 날 할 종목과 영상을 담고 있습니다.</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- 월 -->
+    <div class="card">
+      <div class="chead"><span class="tag">월 (Sen) · 하체+코어</span><h2>30분</h2></div>
+      <ul>
+        <li class="sub">하체 · Bawah</li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">의자 스쿼트 (Chair squat)</span><span class="rep">12~15회 ×3</span><a class="play" href="https://www.youtube.com/watch?v=HTthpM84ILQ" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>빵느</b> · 기초체력 기르는 5분 스쿼트 (초급자 루틴)</div>
+        </li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">런지 (Lunge)</span><span class="rep">좌우 10회 ×3</span><a class="play" href="https://www.youtube.com/watch?v=grfrwXkwtNM" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>텐바디</b> · 매일 3분씩 런지 자세 하면 생기는 몸의 변화</div>
+        </li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">카프 레이즈 (Calf raise)</span><span class="rep">15회 ×3</span><a class="play" href="https://www.youtube.com/watch?v=iESdV0_YSLA" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>효환샘 운동처방</b> · 100세운동 카프레이즈·토레이즈 (발목·종아리)</div>
+        </li>
+        <li class="sub">코어 · Inti</li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">플랭크 (Plank)</span><span class="rep">30~40초 ×3</span><a class="play" href="https://www.youtube.com/watch?v=1-KnmYQMsE8" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>빵느</b> · 매일하는 5분 플랭크 운동 (코어·전신근력)</div>
+        </li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">러시안 트위스트 (Russian twist)</span><span class="rep">20회 ×3</span><a class="play" href="https://youtu.be/63J_WdcZWdg?si=z6umV6mpfD8tWy9s" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>동주쌤</b> · 러시안 트위스트 정확한 자세 (중년 뱃살)</div>
+        </li>
+      </ul>
+      <div class="tip"><b>구성</b> · 하체 3종 → 코어 2종, 종목당 세트 사이 60초 휴식.</div>
+    </div>
+
+    <!-- 화 -->
+    <div class="card">
+      <div class="chead"><span class="tag">화 (Sel) · 심폐+스트레칭</span><h2>20~30분</h2></div>
+      <ul>
+        <li class="sub">심폐 · Kardio</li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">빠르게 걷기 · 실내 자전거</span><span class="rep">20~30분</span><a class="play" href="https://www.youtube.com/watch?v=t70t-sklypk" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>땅끄부부</b> · 집에서 칼로리 불태우는 걷기 유산소 (칼소폭 순한맛)</div>
+        </li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">계단 오르내리기</span><span class="rep">10분 ×2</span><a class="play" href="https://www.youtube.com/watch?v=OD21bZ_jJT4" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>KBS 생로병사</b> · 무릎 통증 걱정 없는 계단 운동 4주 프로젝트</div>
+        </li>
+        <li class="sub">스트레칭 · Peregangan</li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">전신 스트레칭</span><span class="rep">10분</span><a class="play" href="https://www.youtube.com/watch?v=kB0_xQdt2ow" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>람PT</b> · 매일 10분 전신 스트레칭 체조 (목·어깨·등·허리·고관절)</div>
+        </li>
+      </ul>
+      <div class="tip"><b>강도</b> · 약간 숨찬 정도(RPE 6~7) — 대화는 되지만 노래는 힘든 수준. 끝나고 전신 스트레칭으로 마무리.</div>
+    </div>
+
+    <!-- 수 -->
+    <div class="card">
+      <div class="chead"><span class="tag">수 (Rab) · 상체+회전</span><h2>30분</h2></div>
+      <ul>
+        <li class="sub">상체 · Atas</li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">무릎 푸시업 (Knee push-up)</span><span class="rep">10~12회 ×3</span><a class="play" href="https://www.youtube.com/watch?v=CXmzmtlQetE" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>미스터황TV</b> · 초보자를 위한 7가지 단계별 푸쉬업</div>
+        </li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">밴드 로우 (Band row)</span><span class="rep">15회 ×3</span><a class="play" href="https://www.youtube.com/watch?v=KOk2OcEZHss" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>지니어트TV</b> · 3분만에 집에서 등살 빼는 밴드 벤트오버로우</div>
+        </li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">숄더 프레스 (Shoulder press)</span><span class="rep">덤벨 12회 ×3</span><a class="play" href="https://www.youtube.com/watch?v=OMCJoZfKhxM" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>탄단지혜</b> · 덤벨 숄더프레스 완전 기초 자세</div>
+        </li>
+        <li class="sub">회전 · Rotasi</li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">밴드 우드촙 (Band woodchop)</span><span class="rep">좌우 12회 ×2</span><a class="play" href="https://www.youtube.com/watch?v=QPb7juEhZnk" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>이고진 헬쇼</b> · 우드챱(회전운동) 기초 배우기</div>
+        </li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">러시안 트위스트 (Russian twist)</span><span class="rep">20회 ×3</span><a class="play" href="https://youtu.be/63J_WdcZWdg?si=z6umV6mpfD8tWy9s" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>동주쌤</b> · 러시안 트위스트 정확한 자세 (중년 뱃살)</div>
+        </li>
+      </ul>
+      <div class="tip"><b>구성</b> · 상체 3종 → 회전 2종. 러시안 트위스트는 월요일과 겹치므로 무리면 우드촙만.</div>
+    </div>
+
+
+    <!-- 금 -->
+    <div class="card">
+      <div class="chead"><span class="tag">금 (Jum) · 전신+모빌리티</span><h2>30분</h2></div>
+      <ul>
+        <li class="sub">전신 (택1) · Seluruh Tubuh</li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">전신 근력 서킷</span><span class="rep">10분</span><a class="play" href="https://www.youtube.com/watch?v=aKzE3NNFEi4" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>빵느</b> · 하루 한 번 10분 기본 전신근력 홈트 (층간소음 없음)</div>
+        </li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">관절부담 없는 전신 근력</span><span class="rep">10분</span><a class="play" href="https://www.youtube.com/watch?v=cOrigY7UDDc" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>건강되찾기 프로젝트</b> · 매일 10분 전신근력 (관절부담❌, 왕초보⭕)</div>
+        </li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">저강도 전신 순환</span><span class="rep">10~15분</span><a class="play" href="https://www.youtube.com/watch?v=pcyrlkHXAdE" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>땅끄부부</b> · 전신 다이어트 (점프❌·눕는동작❌, 층간소음 없음)</div>
+        </li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">전신 유산소 (초급)</span><span class="rep">10분</span><a class="play" href="https://www.youtube.com/watch?v=4svDlVTjwMM" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>제로키니</b> · 다이어트를 위한 10분 전신 유산소 (초급자 홈트 ver.)</div>
+        </li>
+        <li class="sub">모빌리티 · Mobilitas</li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">흉추 가동성 (Thoracic mobility)</span><span class="rep">3분 ×2</span><a class="play" href="https://www.youtube.com/watch?v=-rVuRocTEoM" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>피지오스튜디오</b> · 하루 3분 어깨와 등이 가벼워지는 흉추 가동성 운동</div>
+        </li>
+        <li>
+          <div class="row1"><span class="dot">●</span><span class="ex">고관절 가동성 (Hip mobility)</span><span class="rep">좌우 10회 ×2</span><a class="play" href="https://www.youtube.com/watch?v=7n8gknGTQKs" target="_blank">▶ 재생</a></div>
+          <div class="row2"><b>피지오스튜디오</b> · 고관절을 100% 사용할 수 있게 해주는 가동성 운동</div>
+        </li>
+      </ul>
+      <div class="tip"><b>라운딩 전날</b> · 전신은 <b>하나만</b> 골라 세트 수를 절반으로, 이어서 모빌리티로 마무리.</div>
+    </div>
+
+
+  </div>
+</div>
+
+<!-- 영상 모달 -->
+<div class="modal" id="ytModal" role="dialog" aria-modal="true" aria-label="영상 재생">
+  <div class="box">
+    <button class="close" type="button" aria-label="닫기">✕</button>
+    <div class="frame"><iframe id="ytFrame" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // 유튜브 URL에서 video id 추출 (watch?v= / youtu.be/ / embed/ 모두 지원)
+  function videoId(url) {
+    try {
+      var u = new URL(url, location.href);
+      if (u.hostname.indexOf('youtu.be') !== -1) return u.pathname.slice(1);
+      if (u.searchParams.get('v')) return u.searchParams.get('v');
+      var m = u.pathname.match(/\/(embed|shorts)\/([^/?#]+)/);
+      return m ? m[2] : '';
+    } catch (e) { return ''; }
+  }
+
+  var modal = document.getElementById('ytModal');
+  var frame = document.getElementById('ytFrame');
+
+  function close() {
+    modal.classList.remove('open');
+    frame.src = '';                 // src 를 비워야 재생이 실제로 멈춤
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a.play');
+    if (a) {
+      var id = videoId(a.href);
+      if (!id) return; // 추출 실패 시 기본 동작(새 탭)으로 폴백
+      e.preventDefault();
+      frame.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0';
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      modal.querySelector('.close').focus();
+      return;
+    }
+    // 배경(오버레이) 또는 닫기 버튼 클릭 시 닫기
+    if (e.target === modal || e.target.closest('#ytModal .close')) close();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal.classList.contains('open')) close();
+  });
+})();
+</script>
+</body>
+</html>

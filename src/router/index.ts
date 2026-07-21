@@ -80,10 +80,23 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '지점 판매 현황' },
       },
       {
+        path: 'labor-cost',
+        name: 'labor-cost',
+        component: () => import('@/views/LaborCost.vue'),
+        meta: { title: '인건비' },
+      },
+      {
         path: 'docs',
         name: 'docs',
         component: () => import('@/views/Docs.vue'),
-        meta: { title: '정리' },
+        meta: { title: '정리', scope: 'company' },
+      },
+      {
+        // 개인 자료실 — '정리'와 같은 게시판(Docs.vue)을 scope 로만 분리해 재사용
+        path: 'seo-docs',
+        name: 'seo-docs',
+        component: () => import('@/views/Docs.vue'),
+        meta: { title: 'SEO자료', scope: 'personal' },
       },
       {
         path: 'databases',

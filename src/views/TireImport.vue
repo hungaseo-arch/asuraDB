@@ -747,7 +747,7 @@ onMounted(loadData);
 
           <!-- Yearly totals table -->
           <div v-if="yearlyTrend.length" class="pt-2">
-            <div class="grid grid-cols-[1fr_auto_auto] gap-x-6 text-xs uppercase tracking-[0.18em] text-muted-foreground border-b border-border pb-2">
+            <div class="grid grid-cols-[1fr_10rem_5rem] gap-x-6 text-xs uppercase tracking-[0.18em] text-muted-foreground border-b border-border pb-2">
               <span>Year</span>
               <span class="text-right">Total</span>
               <span class="text-right">YoY</span>
@@ -755,13 +755,13 @@ onMounted(loadData);
             <div
               v-for="y in yearlyTrend"
               :key="'row-' + y.year"
-              class="grid grid-cols-[1fr_auto_auto] gap-x-6 items-baseline py-3 border-b border-border last:border-b-0"
+              class="grid grid-cols-[1fr_10rem_5rem] gap-x-6 items-baseline py-3 border-b border-border last:border-b-0"
             >
               <span class="font-serif text-lg" :class="y.total_usd === 0 && 'text-muted-foreground/60'">
                 {{ yearAxisLabel(y) }}
               </span>
               <span class="font-mono text-sm text-right tabular-nums" :class="y.total_usd === 0 && 'text-muted-foreground/60'">
-                {{ y.total_usd > 0 ? y.total_usd.toLocaleString() : '—' }}
+                {{ y.total_usd > 0 ? Math.round(y.total_usd).toLocaleString('en-US') : '—' }}
               </span>
               <span class="text-right text-sm" :class="deltaClass(y.yoy)">
                 <span class="font-semibold">{{ deltaText(y.yoy) }}</span>

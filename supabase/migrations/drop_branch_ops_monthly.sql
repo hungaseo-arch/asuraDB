@@ -1,0 +1,46 @@
+-- 2026-07-21 — 고아 테이블 branch_ops_monthly 삭제 (적용 완료)
+--
+-- 배경: 지점(BranchSales) '인원 및 비용' 탭이 인건비 탭(LaborCost, 정적 payrollMonthly.ts)과
+--       중복되어 제거되면서, 이 테이블을 읽던 코드(sectionIV 병합·BranchOpsModal 입력)도 함께 삭제됨.
+--       삭제 시점 기준 앱/수집기 코드 참조 0, 외래키·RLS 정책·뷰·함수 의존성 없음(2026-07-21 확인).
+--
+-- 스키마 원본: supabase/migrations 의 branch_ops_monthly 최초 생성 마이그레이션 참조.
+-- 컬럼: branch text, year int, month int, sales_hc int, admin_hc int, deliv_hc int, petty numeric, salary numeric.
+--
+-- ⚠ 삭제된 29행 백업(복구 필요 시 아래 JSON 을 재삽입) — 지점 인원/Petty 월별 수기 입력분:
+-- [
+--   {"branch":"semarang","year":2025,"month":10,"sales_hc":2,"admin_hc":1,"deliv_hc":null,"petty":0.3,"salary":null},
+--   {"branch":"semarang","year":2025,"month":11,"sales_hc":2,"admin_hc":1,"deliv_hc":null,"petty":1,"salary":null},
+--   {"branch":"semarang","year":2025,"month":12,"sales_hc":1,"admin_hc":1,"deliv_hc":null,"petty":2.2,"salary":null},
+--   {"branch":"semarang","year":2026,"month":1,"sales_hc":3,"admin_hc":1,"deliv_hc":null,"petty":8.9,"salary":null},
+--   {"branch":"semarang","year":2026,"month":2,"sales_hc":4,"admin_hc":1,"deliv_hc":null,"petty":7.5,"salary":null},
+--   {"branch":"semarang","year":2026,"month":3,"sales_hc":4,"admin_hc":1,"deliv_hc":null,"petty":5.2,"salary":null},
+--   {"branch":"semarang","year":2026,"month":4,"sales_hc":3,"admin_hc":1,"deliv_hc":null,"petty":10.7,"salary":null},
+--   {"branch":"semarang","year":2026,"month":5,"sales_hc":3,"admin_hc":1,"deliv_hc":null,"petty":5.4,"salary":null},
+--   {"branch":"semarang","year":2026,"month":6,"sales_hc":3,"admin_hc":1,"deliv_hc":null,"petty":null,"salary":null},
+--   {"branch":"semarang","year":2026,"month":7,"sales_hc":3,"admin_hc":1,"deliv_hc":null,"petty":null,"salary":20.227367},
+--   {"branch":"surabaya","year":2025,"month":1,"sales_hc":2,"admin_hc":2,"deliv_hc":1,"petty":10,"salary":null},
+--   {"branch":"surabaya","year":2025,"month":2,"sales_hc":2,"admin_hc":2,"deliv_hc":1,"petty":11,"salary":null},
+--   {"branch":"surabaya","year":2025,"month":3,"sales_hc":3,"admin_hc":3,"deliv_hc":1,"petty":11,"salary":null},
+--   {"branch":"surabaya","year":2025,"month":4,"sales_hc":3,"admin_hc":3,"deliv_hc":1,"petty":10,"salary":null},
+--   {"branch":"surabaya","year":2025,"month":5,"sales_hc":3,"admin_hc":3,"deliv_hc":1,"petty":14,"salary":null},
+--   {"branch":"surabaya","year":2025,"month":6,"sales_hc":3,"admin_hc":3,"deliv_hc":1,"petty":11,"salary":null},
+--   {"branch":"surabaya","year":2025,"month":7,"sales_hc":3,"admin_hc":2,"deliv_hc":1,"petty":14,"salary":null},
+--   {"branch":"surabaya","year":2025,"month":8,"sales_hc":2,"admin_hc":2,"deliv_hc":1,"petty":16,"salary":null},
+--   {"branch":"surabaya","year":2025,"month":9,"sales_hc":3,"admin_hc":2,"deliv_hc":1,"petty":18,"salary":null},
+--   {"branch":"surabaya","year":2025,"month":10,"sales_hc":3,"admin_hc":2,"deliv_hc":2,"petty":15,"salary":null},
+--   {"branch":"surabaya","year":2025,"month":11,"sales_hc":3,"admin_hc":2,"deliv_hc":2,"petty":19,"salary":null},
+--   {"branch":"surabaya","year":2025,"month":12,"sales_hc":3,"admin_hc":2,"deliv_hc":2,"petty":13,"salary":null},
+--   {"branch":"surabaya","year":2026,"month":1,"sales_hc":3,"admin_hc":2,"deliv_hc":2,"petty":15,"salary":null},
+--   {"branch":"surabaya","year":2026,"month":2,"sales_hc":4,"admin_hc":2,"deliv_hc":3,"petty":9,"salary":null},
+--   {"branch":"surabaya","year":2026,"month":3,"sales_hc":3,"admin_hc":2,"deliv_hc":3,"petty":15,"salary":null},
+--   {"branch":"surabaya","year":2026,"month":4,"sales_hc":3,"admin_hc":2,"deliv_hc":3,"petty":11,"salary":null},
+--   {"branch":"surabaya","year":2026,"month":5,"sales_hc":2,"admin_hc":2,"deliv_hc":4,"petty":8,"salary":null},
+--   {"branch":"surabaya","year":2026,"month":6,"sales_hc":2,"admin_hc":2,"deliv_hc":4,"petty":6,"salary":null},
+--   {"branch":"surabaya","year":2026,"month":7,"sales_hc":2,"admin_hc":2,"deliv_hc":4,"petty":null,"salary":48.74139}
+-- ]
+--
+-- drop table 은 이 테이블에 종속된 인덱스·RLS 정책을 자동으로 함께 제거한다
+-- (다른 객체가 이 테이블을 참조하지 않음을 확인했으므로 cascade 불필요).
+
+drop table if exists public.branch_ops_monthly;

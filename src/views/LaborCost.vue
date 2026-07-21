@@ -88,7 +88,7 @@ const notes = computed(() => {
 </script>
 
 <template>
-  <div class="p-4 sm:p-5 space-y-4">
+  <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
     <PageHeader
       title="인건비"
       :subtitle="`지점별·월별 인원 / 인건비(Gross) / 평균 인건비 · 단위: 인원=명, 인건비=백만 IDR(Juta) · 기준 ${PAYROLL_UPDATED}`"
@@ -125,7 +125,7 @@ const notes = computed(() => {
     <!-- 월별 추이 차트 -->
     <div class="rounded-xl border border-border bg-card p-4">
       <h2 class="text-sm font-semibold mb-3">2026년 월별 추이 — 인건비(막대) · 인원(선)</h2>
-      <div class="relative h-[300px]">
+      <div class="relative h-75">
         <Bar :data="chartData" :options="chartOptions" />
       </div>
     </div>
@@ -140,7 +140,7 @@ const notes = computed(() => {
               <th rowspan="2" class="text-left font-semibold px-2 py-2 border-b border-border">구분 (Kategori)</th>
               <th rowspan="2" class="px-2 py-2 border-b border-border bg-muted/40">2025<br>평균</th>
               <th :colspan="PAYROLL_MONTHS_2026.length" class="px-2 py-1 border-b border-border">2026</th>
-              <th rowspan="2" class="px-2 py-2 border-b border-border bg-emerald-500/10">2026<br>Avg</th>
+              <th rowspan="2" class="px-2 py-2 border-b border-border bg-primary/10 text-primary">2026<br>Avg</th>
             </tr>
             <tr class="text-muted-foreground">
               <th v-for="m in PAYROLL_MONTHS_2026" :key="m" class="px-2 py-1.5 border-b border-border font-semibold">{{ m }}</th>
@@ -151,21 +151,21 @@ const notes = computed(() => {
               <td class="text-left px-2 py-2 text-foreground/90">{{ r.label }}</td>
               <td class="text-center px-2 py-2 bg-muted/20">{{ fmt(r.avg2025, 1) }}</td>
               <td v-for="(v, i) in r.m2026" :key="i" class="text-center px-2 py-2">{{ fmt(v, 0) }}</td>
-              <td class="text-center px-2 py-2 bg-emerald-500/5">{{ fmt(r.avg2026, 1) }}</td>
+              <td class="text-center px-2 py-2 bg-primary/5">{{ fmt(r.avg2026, 1) }}</td>
             </tr>
-            <tr class="border-b border-border bg-primary/10 font-bold">
+            <tr class="border-b border-border bg-muted/40 font-bold">
               <td class="text-left px-2 py-2">인원 합계 (명)</td>
               <td class="text-center px-2 py-2">{{ fmt(tab.total.avg2025, 1) }}</td>
               <td v-for="(v, i) in tab.total.m2026" :key="i" class="text-center px-2 py-2">{{ fmt(v, 0) }}</td>
-              <td class="text-center px-2 py-2 bg-emerald-500/10">{{ fmt(tab.total.avg2026, 1) }}</td>
+              <td class="text-center px-2 py-2">{{ fmt(tab.total.avg2026, 1) }}</td>
             </tr>
-            <tr class="border-b border-border bg-emerald-500/10 font-bold text-emerald-700">
+            <tr class="border-b border-border bg-primary/10 font-bold text-primary">
               <td class="text-left px-2 py-2">인건비 Gross (백만IDR)</td>
               <td class="text-center px-2 py-2">{{ fmt(tab.salary.avg2025, 1) }}</td>
               <td v-for="(v, i) in tab.salary.m2026" :key="i" class="text-center px-2 py-2">{{ fmt(v, 1) }}</td>
               <td class="text-center px-2 py-2">{{ fmt(tab.salary.avg2026, 1) }}</td>
             </tr>
-            <tr class="bg-amber-500/5">
+            <tr class="bg-muted/20">
               <td class="text-left px-2 py-2">평균 인건비 (백만IDR/인)</td>
               <td class="text-center px-2 py-2">{{ fmt(tab.avgcost.avg2025, 1) }}</td>
               <td v-for="(v, i) in tab.avgcost.m2026" :key="i" class="text-center px-2 py-2">{{ fmt(v, 1) }}</td>

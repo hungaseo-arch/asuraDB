@@ -574,7 +574,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-6 space-y-6 max-w-300 mx-auto">
+  <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
 
     <!-- Header -->
     <PageHeader title="KPI 모니터링" subtitle="사업 실적 · 산업 핵심 지표 대시보드">
@@ -585,10 +585,10 @@ onMounted(async () => {
             v-for="y in availableYears"
             :key="y"
             :class="[
-              'px-3 py-1 rounded-full text-xs font-medium transition-colors tabular-nums',
+              'px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors tabular-nums',
               selectedYear === y
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-card border border-border text-muted-foreground hover:bg-accent',
+                ? 'bg-primary/15 border-primary/40 text-primary'
+                : 'bg-card border-border text-foreground/80 hover:bg-accent',
             ]"
             @click="selectedYear = y"
           >
@@ -750,10 +750,10 @@ onMounted(async () => {
         v-for="tab in (['all','daily','weekly','monthly'] as const)"
         :key="tab"
         :class="[
-          'px-3 py-1 rounded-full text-xs font-medium transition-colors',
+          'px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors',
           activeTab === tab
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-card border border-border text-muted-foreground hover:bg-accent',
+            ? 'bg-primary/15 border-primary/40 text-primary'
+            : 'bg-card border-border text-foreground/80 hover:bg-accent',
         ]"
         @click="activeTab = tab"
       >
@@ -765,10 +765,10 @@ onMounted(async () => {
           v-for="cat in categories"
           :key="cat"
           :class="[
-            'px-3 py-1 rounded-full text-xs font-medium transition-colors',
+            'px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors',
             activeCategory === cat
-              ? 'bg-muted text-foreground'
-              : 'bg-card border border-border text-muted-foreground hover:bg-accent',
+              ? 'bg-primary/15 border-primary/40 text-primary'
+              : 'bg-card border-border text-foreground/80 hover:bg-accent',
           ]"
           @click="activeCategory = cat"
         >

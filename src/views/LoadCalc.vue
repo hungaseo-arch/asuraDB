@@ -620,15 +620,15 @@ function onResultClick(e: MouseEvent) {
 </script>
 
 <template>
-  <div class="p-6 space-y-4 max-w-300 mx-auto">
+  <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
     <PageHeader title="하중계산" subtitle="차량별 적정 타이어 적재하중 · TKPH · CPK 통합 분석 (ASCENDO + TECHKING)" />
 
     <!-- 탭 -->
-    <div class="flex gap-2 flex-wrap">
+    <div class="inline-flex items-center gap-1 h-9 bg-card rounded-lg border border-border p-1">
       <button
         v-for="tb in TABS" :key="tb.key"
-        class="flex-1 min-w-28 text-center rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors"
-        :class="tab === tb.key ? 'bg-primary/15 border-primary/40 text-primary' : 'bg-card border-border text-muted-foreground hover:bg-accent'"
+        class="text-xs font-semibold px-3.5 py-1.5 rounded-md transition-colors"
+        :class="tab === tb.key ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'"
         @click="switchTab(tb.key)"
       >
         {{ tb.label }}

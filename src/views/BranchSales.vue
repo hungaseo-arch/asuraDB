@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { Download, Upload, Loader2, Pencil, MoreHorizontal } from 'lucide-vue-next';
+import { Download, Upload, Loader2, MoreHorizontal } from 'lucide-vue-next';
 import PageHeader from '@/components/PageHeader.vue';
-import BranchOpsModal from '@/components/BranchOpsModal.vue';
 import { exportCsv } from '@/lib/csv';
 import { sbGetAll, sbPost, sbDelete } from '@/lib/supabase';
-
-// 인원·인건비·Petty 입력창 (branch_ops_monthly)
-const opsOpen = ref(false);
 
 // ⋯ 액션 메뉴 (엑셀·업로드·데이터입력) — 바깥 클릭으로 닫힘
 const actMenu = ref(false);
@@ -72,7 +68,7 @@ const PNL_ROWS_META: { key: string; label: string; sub: string; kind: PnlKind; f
   { key: 'admin',      label: '기타관리비',    sub: 'Other Admin',   kind: 'cost',   fmt: 'amt', indent: 1 },
   { key: 'opprofit',   label: '영업이익',      sub: 'Laba Operasi',  kind: 'profit', fmt: 'amt', indent: 0 },
   { key: 'opprofitPct',label: '영업이익률',    sub: '% Sales',       kind: 'pct',    fmt: 'pct', indent: 1 },
-  // '인원'(emp) 행 삭제 — '인원 및 비용' 탭(섹션 Ⅳ)과 중복이라 그쪽을 단일 출처로 둔다.
+  // '인원'(emp) 행 삭제 — 인원/인건비는 경영·성과 「인건비」 탭(LaborCost)을 단일 출처로 둔다.
   { key: 'bepQty',     label: '손익분기 수량', sub: 'BEP Qty',       kind: 'bep',    fmt: 'qty', indent: 0 },
   { key: 'bepAmt',     label: '손익분기 매출', sub: 'BEP Amt',       kind: 'bep',    fmt: 'amt', indent: 0 },
 ];
@@ -122,12 +118,6 @@ interface MonthlyRow {
   branch: string; year: number; month: number; category: string;
   pic: string; is_excluded: boolean; qty: number; so_amt: number;
 }
-// 인원·Petty·인건비 — 거래 CSV 에서 도출 불가한 값(branch_ops_monthly)
-interface OpsRow {
-  branch: string; year: number; month: number;
-  sales_hc: number | null; admin_hc: number | null; deliv_hc: number | null;
-  salary: number | null; petty: number | null;
-}
 const MON_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nop', 'Des'];
 // 표에 노출할 카테고리 순서 (그 외 값은 뒤에 등장순으로 붙음)
 const CAT_ORDER = ['RADIAL', 'AGR', 'OTR', 'BIAS', 'SOLID', 'PNEUMATIC', 'TUBE', 'FLAP', 'VULKANISIRJADI'];
@@ -147,7 +137,7 @@ const avgOfArr = (a: (number | null)[]): number | null =>
   a.length ? Math.round((a.reduce((s: number, v) => s + (v ?? 0), 0) / a.length) * 10) / 10 : null;
 
 /** 지점 1곳의 DB 행 → Branch 구조. 해당 연도 행이 없으면 legacy 값을 그대로 둔다. */
-function buildBranch(rows: MonthlyRow[], legacy: Branch, ops: OpsRow[] = [], metric: 'qty' | 'amt' = 'qty'): Branch {
+function buildBranch(rows: MonthlyRow[], legacy: Branch, metric: 'qty' | 'amt' = 'qty'): Branch {
   const out: Branch = JSON.parse(JSON.stringify(legacy));
 
   for (const y of [2025, 2026] as const) {
@@ -231,37 +221,7 @@ function buildBranch(rows: MonthlyRow[], legacy: Branch, ops: OpsRow[] = [], met
     out.sectionI   = { rows: merge(out.sectionI.rows, s1.rows),     grandTotal: mergeAgg(out.sectionI.grandTotal, s1.grandTotal),     amount: mergeAgg(out.sectionI.amount, s1.amount) };
     out.sectionII  = { rows: merge(out.sectionII.rows, s2.rows),    grandTotal: mergeAgg(out.sectionII.grandTotal, s2.grandTotal),    amount: mergeAgg(out.sectionII.amount, s2.amount) };
     out.sectionIII = { people: merge(out.sectionIII.people, s3.rows), grandTotal: mergeAgg(out.sectionIII.grandTotal, s3.grandTotal), amount: mergeAgg(out.sectionIII.amount, s3.amount) };
-
-    // 섹션 Ⅳ(인원·인건비·Petty) — branch_ops_monthly 기준. 해당 연도 ops 행이 없으면 legacy 유지.
-    const opsY = ops.filter(o => o.year === y);
-    if (opsY.length) {
-      const pick = (f: (o: OpsRow) => number | null) =>
-        monthsN.map(m => { const o = opsY.find(x => x.month === m); return o ? f(o) : null; });
-      const agg = (v: (number | null)[]): Agg =>
-        ({ v25: [], a25: null, v26: [], a26: null, [vKey]: v, [aKey]: avgOfArr(v) } as unknown as Agg);
-      const hc = monthsN.map(m => {
-        const o = opsY.find(x => x.month === m);
-        if (!o) return null;
-        const s = (o.sales_hc ?? 0) + (o.admin_hc ?? 0) + (o.deliv_hc ?? 0);
-        return s || null;
-      });
-      const totalKey = out.sectionIV['Total (Person)'] ? 'Total (Person)' : 'Sub. Total';
-      const s4next: Record<string, Agg> = {
-        Sales:        agg(pick(o => o.sales_hc)),
-        Admin:        agg(pick(o => o.admin_hc)),
-        Delivery:     agg(pick(o => o.deliv_hc)),
-        [totalKey]:   agg(hc),
-        Salary:       agg(pick(o => o.salary)),   // 추후 입력 — 현재 전부 null → '–'
-        Petty:        agg(pick(o => o.petty)),
-      };
-      for (const [k, v] of Object.entries(s4next)) {
-        const prev = out.sectionIV[k];
-        out.sectionIV[k] = prev
-          ? ({ ...prev, [vKey]: (v as unknown as Record<string, unknown>)[vKey],
-                        [aKey]: (v as unknown as Record<string, unknown>)[aKey] } as Agg)
-          : v;
-      }
-    }
+    // 섹션 Ⅳ(인원·Petty)는 「인건비」 탭(LaborCost) 신설로 미표시 → legacy 값 그대로 둔다.
   }
   return out;
 }
@@ -269,10 +229,9 @@ function buildBranch(rows: MonthlyRow[], legacy: Branch, ops: OpsRow[] = [], met
 async function loadData() {
   loading.value = true; loadError.value = '';
   try {
-    const [rows, excl, ops] = await Promise.all([
+    const [rows, excl] = await Promise.all([
       sbGetAll<MonthlyRow>('branch_sales_monthly?select=*'),
       sbGetAll<{ branch: string; buyer: string }>('branch_excluded_buyers?select=*').catch(() => []),
-      sbGetAll<OpsRow>('branch_ops_monthly?select=*').catch(() => [] as OpsRow[]),
     ]);
     if (!rows.length) { loadError.value = 'DB에 지점 판매 데이터가 없습니다 — 기존 값으로 표시합니다.'; return; }
     const next: Record<string, Branch> = {};
@@ -280,14 +239,13 @@ async function loadData() {
     for (const key of Object.keys(LEGACY_DATA)) {
       const legacy = LEGACY_DATA[key];
       const mine = rows.filter(r => r.branch === key);
-      const myOps = ops.filter(o => o.branch === key);
       const ex = excl.filter(e => e.branch === key).map(e => e.buyer);
 
-      const b = buildBranch(mine, legacy, myOps, 'qty');
+      const b = buildBranch(mine, legacy, 'qty');
       if (ex.length) b.excluded = ex;
       next[key] = b;
 
-      const bAmt = buildBranch(mine, legacy, myOps, 'amt');
+      const bAmt = buildBranch(mine, legacy, 'amt');
       if (ex.length) bAmt.excluded = ex;
       nextAmt[key] = bAmt;
     }
@@ -461,23 +419,6 @@ function buildRows(section: { rows?: MetricRow[]; people?: MetricRow[]; grandTot
   return rows;
 }
 
-const S4_LABEL: Record<string, string> = {
-  Sales: 'Sales (영업)', Admin: 'Admin (관리)', Delivery: 'Delivery (배송)',
-  'Sub. Total': 'Total (인원/Person)', 'Total (Person)': 'Total (인원/Person)',
-  Salary: 'Salary Total (M.IDR)', Petty: 'Petty Cost (M.IDR)',
-};
-const s4rows = computed<Row[]>(() => {
-  const s4 = branch.value.sectionIV;
-  const totalKey = branchKey.value === 'semarang' ? 'Total (Person)' : 'Sub. Total';
-  // Total(인원) 하부에 Salary Total → Petty 순
-  const order = ['Sales', 'Admin', 'Delivery', totalKey, 'Salary', 'Petty'];
-  return order.filter(k => s4[k]).map(k => ({
-    label: S4_LABEL[k] ?? k,
-    kind: (k === 'Petty' || k === 'Salary' ? 'amount' : k.includes('Total') ? 'total' : 'cat') as Row['kind'],
-    v25: s4[k].v25, a25: s4[k].a25, v26: s4[k].v26, a26: s4[k].a26,
-  }));
-});
-
 // 매출 하위탭(전체/순매출/담당자별)
 const TABS = [
   { n: 'I',   label: '전체매출' },
@@ -497,18 +438,15 @@ const activeRows = computed<Row[]>(() => {
     : buildRows(b.sectionIII, 'person');
 });
 
-// 상위 3개 탭: 매출 / 운영 손익 / 인원 및 비용
+// 상위 2개 탭: 매출 / 운영 손익 ('인원 및 비용'은 인건비 탭과 중복이라 제거)
 const MAIN_TABS = [
   { k: 'sales', label: '매출' },
   { k: 'pnl',   label: '운영 손익' },
-  { k: 'cost',  label: '인원 및 비용' },
 ] as const;
-const mainTab = ref<'sales' | 'pnl' | 'cost'>('sales');
-// 활성 상위탭에 표시할 표 행(매출=선택 하위탭 / 비용=섹션 Ⅳ)
+const mainTab = ref<'sales' | 'pnl'>('sales');
+// 활성 상위탭에 표시할 표 행(매출=선택 하위탭)
 const tabRows = computed<Row[]>(() =>
-  mainTab.value === 'sales' ? activeRows.value
-  : mainTab.value === 'cost' ? s4rows.value
-  : []);
+  mainTab.value === 'sales' ? activeRows.value : []);
 
 // ── 담당자별 표 정렬 (실적순) ────────────────────────────────────────────────
 // 매트릭스 표 중 '담당자별 매출'만 컬럼(월/Avg) 클릭 정렬. 합계·금액 행은 하단 고정.
@@ -531,32 +469,6 @@ const displayRows = computed<Row[]>(() => {
     .sort((a, b) => ((getv(a) ?? -Infinity) - (getv(b) ?? -Infinity)) * mult);
   const rest = rows.filter(r => r.kind !== 'cat');
   return [...cats, ...rest];
-});
-
-// 인원 및 비용 탭 요약 KPI — 섹션 Ⅳ(인원·Petty) 기준, 최근 데이터 월
-const costKpi = computed(() => {
-  const s4 = branch.value.sectionIV;
-  const totalKey = branchKey.value === 'semarang' ? 'Total (Person)' : 'Sub. Total';
-  const total = s4[totalKey];
-  const ms = months.value;
-  const tv = total ? valsOf(total) : [];
-  const idx: number[] = [];
-  tv.forEach((x, i) => { if (x !== null && x !== undefined) idx.push(i); });
-  const last = idx.length ? idx[idx.length - 1] : -1;
-  const prev = idx.length >= 2 ? idx[idx.length - 2] : -1;
-  const at = (a?: Agg) => (a && last >= 0 ? valsOf(a)[last] : null);
-  const atPrev = (a?: Agg) => (a && prev >= 0 ? valsOf(a)[prev] : null);
-  const pct = (now: number | null | undefined, was: number | null | undefined) =>
-    (now !== null && now !== undefined && was !== null && was !== undefined && was !== 0) ? ((now - was) / Math.abs(was)) * 100 : null;
-  const yoy = (a?: Agg) => pct(a ? avgOf(a) : null, a ? prevAvgOf(a) : null);
-  return {
-    label: last >= 0 ? `${year.value} ${monthKo(ms[last])}` : '-',
-    totalNow: at(total), totalMom: pct(at(total), atPrev(total)),
-    sales: at(s4['Sales']), admin: at(s4['Admin']), delivery: at(s4['Delivery']),
-    pettyNow: at(s4['Petty']), pettyMom: pct(at(s4['Petty']), atPrev(s4['Petty'])),
-    totalAvg: total ? avgOf(total) : null, totalAvgYoy: yoy(total),
-    pettyAvg: s4['Petty'] ? avgOf(s4['Petty']) : null, pettyAvgYoy: yoy(s4['Petty']),
-  };
 });
 
 function rowCls(kind: Row['kind']): string {
@@ -637,7 +549,7 @@ const PNL_GROUPS: { head: string; children: string[] }[] = [
   { head: 'opcost',   children: ['opcostPct', 'labor', 'rent', 'depr', 'trans', 'admin'] },
   { head: 'opprofit', children: ['opprofitPct'] },
 ];
-const PNL_STANDALONE = ['bepQty', 'bepAmt'];   // 'emp' 제거 — '인원 및 비용' 탭과 중복
+const PNL_STANDALONE = ['bepQty', 'bepAmt'];   // 'emp' 제거 — 인원/인건비는 「인건비」 탭(LaborCost)이 단일 출처
 
 const openSections = ref<Set<string>>(new Set()); // 기본: 모두 접힘
 function toggleSection(key: string) {
@@ -717,8 +629,7 @@ function downloadCurrentCsv() {
   const rows = displayRows.value.map(r => [
     r.label, ...(hp ? [prevAvgOf(r)] : []), ...ms.map((_, i) => valsOf(r)[i]), avgOf(r),
   ]);
-  const tag = mainTab.value === 'cost' ? '인원비용'
-    : activeTab.value === 'I' ? '전체매출' : activeTab.value === 'II' ? '순매출' : '담당자별매출';
+  const tag = activeTab.value === 'I' ? '전체매출' : activeTab.value === 'II' ? '순매출' : '담당자별매출';
   exportCsv(`지점${tag}_${b}_${yr}`, headers, rows);
 }
 
@@ -873,14 +784,14 @@ async function onUpload(e: Event) {
 </script>
 
 <template>
-  <div class="p-6 space-y-6 max-w-300 mx-auto">
+  <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
     <!-- 헤더 + 컨트롤 -->
     <PageHeader
       title="지점 판매 관리"
       :subtitle="`단위: 본/EA, 매출 백만 루피아`"
     >
       <template #controls>
-        <div class="inline-flex items-center gap-1.5 self-end bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-primary">
+        <div class="inline-flex items-center gap-1.5 self-end h-9 bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-primary">
           <span class="text-[11px] font-semibold text-muted-foreground shrink-0">지점</span>
           <select
             v-model="branchKey"
@@ -889,7 +800,7 @@ async function onUpload(e: Event) {
             <option v-for="b in (['surabaya','semarang'] as const)" :key="b" :value="b">{{ BRANCH_LABEL[b] }}</option>
           </select>
         </div>
-        <div class="inline-flex items-center gap-1.5 self-end bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-primary">
+        <div class="inline-flex items-center gap-1.5 self-end h-9 bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-primary">
           <span class="text-[11px] font-semibold text-muted-foreground shrink-0">연도</span>
           <select
             v-model.number="year"
@@ -898,11 +809,11 @@ async function onUpload(e: Event) {
             <option v-for="y in YEARS" :key="y" :value="y">{{ y }}</option>
           </select>
         </div>
-        <!-- 상위 탭 + 매출 하위 선택 -->
-        <div class="inline-flex bg-muted rounded-lg p-1 gap-1 self-end">
+        <!-- 상위 탭(매출 / 운영 손익) — 드롭다운과 동일한 아웃라인 카드·높이로 통일 -->
+        <div class="inline-flex items-center gap-1 self-end h-9 bg-card rounded-lg border border-border p-1">
           <button
             v-for="t in MAIN_TABS" :key="t.k"
-            :class="['text-xs font-semibold px-4 py-2 rounded-md transition-colors', mainTab === t.k ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground']"
+            :class="['text-xs font-semibold px-3.5 py-1.5 rounded-md transition-colors', mainTab === t.k ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground']"
             @click="mainTab = t.k"
           >{{ t.label }}</button>
         </div>
@@ -937,25 +848,10 @@ async function onUpload(e: Event) {
               <Upload :size="14" class="text-muted-foreground" />
               <span>판매 CSV 업로드<span class="block text-[10px] text-muted-foreground">{{ bn }} 데이터 전량 교체</span></span>
             </button>
-            <button
-              v-if="mainTab === 'cost'"
-              class="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-accent text-left"
-              @click="actMenu = false; opsOpen = true"
-            >
-              <Pencil :size="14" class="text-muted-foreground" />
-              <span>인원 · 인건비 입력<span class="block text-[10px] text-muted-foreground">CSV 에서 안 나오는 값</span></span>
-            </button>
           </div>
         </div>
       </template>
     </PageHeader>
-
-    <BranchOpsModal
-      v-if="opsOpen"
-      :branch="branchKey" :branch-label="bn" :year="year"
-      @close="opsOpen = false"
-      @saved="loadData"
-    />
 
     <!-- 로드/업로드 상태 -->
     <p v-if="loading" class="text-xs text-muted-foreground">DB에서 불러오는 중…</p>
@@ -973,9 +869,9 @@ async function onUpload(e: Event) {
     <!-- ════════════ 매출 탭 ════════════ -->
     <!-- KPI 카드 -->
     <div v-if="mainTab === 'sales'" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="rounded-xl border bg-card p-4">
-        <div class="text-[11px] text-muted-foreground font-semibold">최근월 판매량 · 타이어 ({{ kpi.monthLabel }})</div>
-        <div class="text-2xl font-bold mt-1.5 tabular-nums text-foreground">{{ fmt(kpi.qtyNow) }}<span class="text-xs font-medium text-muted-foreground ml-1">EA</span></div>
+      <div class="rounded-xl border border-border bg-card p-4">
+        <div class="text-[11.5px] text-muted-foreground font-semibold">최근월 판매량 · 타이어 ({{ kpi.monthLabel }})</div>
+        <div class="text-2xl font-extrabold mt-1.5 tabular-nums text-foreground">{{ fmt(kpi.qtyNow) }}<span class="text-xs font-medium text-muted-foreground ml-1">EA</span></div>
         <div class="text-[11px] mt-1 text-muted-foreground">
           전월 대비
           <span v-if="kpi.mom === null">–</span>
@@ -984,23 +880,23 @@ async function onUpload(e: Event) {
           </span>
         </div>
       </div>
-      <div class="rounded-xl border bg-card p-4">
-        <div class="text-[11px] text-muted-foreground font-semibold">최근월 매출 ({{ kpi.monthLabel }})</div>
-        <div class="text-2xl font-bold mt-1.5 tabular-nums text-foreground">{{ fmt(kpi.amtNow) }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
+      <div class="rounded-xl border border-border bg-card p-4">
+        <div class="text-[11.5px] text-muted-foreground font-semibold">최근월 매출 ({{ kpi.monthLabel }})</div>
+        <div class="text-2xl font-extrabold mt-1.5 tabular-nums text-foreground">{{ fmt(kpi.amtNow) }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
         <div class="text-[11px] mt-1 text-muted-foreground">
           전월 대비 <span :class="deltaClass(kpi.amtMom)">{{ deltaText(kpi.amtMom) }}</span>
         </div>
       </div>
-      <div class="rounded-xl border bg-card p-4">
-        <div class="text-[11px] text-muted-foreground font-semibold">{{ year }} 월평균 판매량 · 타이어</div>
-        <div class="text-2xl font-bold mt-1.5 tabular-nums text-foreground">{{ fmt(kpi.qtyAvg) }}<span class="text-xs font-medium text-muted-foreground ml-1">EA</span></div>
+      <div class="rounded-xl border border-border bg-card p-4">
+        <div class="text-[11.5px] text-muted-foreground font-semibold">{{ year }} 월평균 판매량 · 타이어</div>
+        <div class="text-2xl font-extrabold mt-1.5 tabular-nums text-foreground">{{ fmt(kpi.qtyAvg) }}<span class="text-xs font-medium text-muted-foreground ml-1">EA</span></div>
         <div class="text-[11px] mt-1 text-muted-foreground">
           전년 대비 <span :class="deltaClass(kpi.qtyYoy)">{{ deltaText(kpi.qtyYoy) }}</span>
         </div>
       </div>
-      <div class="rounded-xl border bg-card p-4">
-        <div class="text-[11px] text-muted-foreground font-semibold">{{ year }} 월평균 매출</div>
-        <div class="text-2xl font-bold mt-1.5 tabular-nums text-foreground">{{ fmt(kpi.amtAvg) }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
+      <div class="rounded-xl border border-border bg-card p-4">
+        <div class="text-[11.5px] text-muted-foreground font-semibold">{{ year }} 월평균 매출</div>
+        <div class="text-2xl font-extrabold mt-1.5 tabular-nums text-foreground">{{ fmt(kpi.amtAvg) }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
         <div class="text-[11px] mt-1 text-muted-foreground">
           전년 대비 <span :class="deltaClass(kpi.amtYoy)">{{ deltaText(kpi.amtYoy) }}</span>
         </div>
@@ -1008,41 +904,8 @@ async function onUpload(e: Event) {
     </div>
 
 
-    <!-- 인원 및 비용 탭 요약 KPI -->
-    <div v-if="mainTab === 'cost'" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="rounded-xl border bg-card p-4">
-        <div class="text-[11px] text-muted-foreground font-semibold">최근월 총 인원 ({{ costKpi.label }})</div>
-        <div class="text-2xl font-bold mt-1.5 tabular-nums text-foreground">{{ fmt(costKpi.totalNow) }}<span class="text-xs font-medium text-muted-foreground ml-1">명</span></div>
-        <div class="text-[11px] mt-1 text-muted-foreground">
-          영업 {{ fmt(costKpi.sales) }} · 관리 {{ fmt(costKpi.admin) }} · 배송 {{ fmt(costKpi.delivery) }}
-          · 전월 대비 <span :class="deltaClass(costKpi.totalMom)">{{ deltaText(costKpi.totalMom) }}</span>
-        </div>
-      </div>
-      <div class="rounded-xl border bg-card p-4">
-        <div class="text-[11px] text-muted-foreground font-semibold">최근월 Petty Cost · 소액경비 ({{ costKpi.label }})</div>
-        <div class="text-2xl font-bold mt-1.5 tabular-nums text-foreground">{{ fmt(costKpi.pettyNow) }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
-        <div class="text-[11px] mt-1 text-muted-foreground">
-          전월 대비 <span :class="deltaClass(costKpi.pettyMom)">{{ deltaText(costKpi.pettyMom) }}</span>
-        </div>
-      </div>
-      <div class="rounded-xl border bg-card p-4">
-        <div class="text-[11px] text-muted-foreground font-semibold">{{ year }} 월평균 인원</div>
-        <div class="text-2xl font-bold mt-1.5 tabular-nums text-foreground">{{ fmt(costKpi.totalAvg) }}<span class="text-xs font-medium text-muted-foreground ml-1">명</span></div>
-        <div class="text-[11px] mt-1 text-muted-foreground">
-          영업·관리·배송 합 · 전년 대비 <span :class="deltaClass(costKpi.totalAvgYoy)">{{ deltaText(costKpi.totalAvgYoy) }}</span>
-        </div>
-      </div>
-      <div class="rounded-xl border bg-card p-4">
-        <div class="text-[11px] text-muted-foreground font-semibold">{{ year }} 월평균 Petty Cost</div>
-        <div class="text-2xl font-bold mt-1.5 tabular-nums text-foreground">{{ fmt(costKpi.pettyAvg) }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
-        <div class="text-[11px] mt-1 text-muted-foreground">
-          전년 대비 <span :class="deltaClass(costKpi.pettyAvgYoy)">{{ deltaText(costKpi.pettyAvgYoy) }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 섹션 표 (매출=선택 하위탭 / 인원및비용=섹션 Ⅳ) -->
-    <div v-if="mainTab !== 'pnl'" class="space-y-2">
+    <!-- 섹션 표 (매출=선택 하위탭) -->
+    <div v-if="mainTab === 'sales'" class="space-y-2">
       <!-- 표 설정: 매출 구분 + 수량/금액. 표를 보면서 바꾸는 값이라 표 바로 위에 둔다. -->
       <div v-if="mainTab === 'sales'" class="flex items-center justify-between gap-2 flex-wrap">
         <div class="inline-flex bg-muted/40 rounded-lg p-0.5">
@@ -1077,30 +940,30 @@ async function onUpload(e: Event) {
               <th :colspan="months.length + 1" class="px-2 py-1.5 bg-primary/10 text-primary font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
             </tr>
             <tr>
-              <th v-if="hasPrev" class="px-2 py-1 bg-indigo-500/10 text-indigo-700 font-semibold text-right border-b border-border/50">평균</th>
+              <th v-if="hasPrev" class="px-2 py-1 bg-muted/30 text-muted-foreground font-semibold text-right border-b border-border/50">평균</th>
               <th
                 v-for="(m, mi) in months" :key="'h'+m"
-                class="px-2 py-1 bg-teal-500/10 text-teal-700 font-medium text-right border-b border-border/50"
-                :class="isPersonTab ? 'cursor-pointer select-none hover:bg-teal-500/20' : ''"
+                class="px-2 py-1 bg-muted/20 text-muted-foreground font-medium text-right border-b border-border/50"
+                :class="isPersonTab ? 'cursor-pointer select-none hover:bg-primary/15' : ''"
                 @click="toggleSort(mi)"
               >{{ monthKo(m) }}<span v-if="isPersonTab && sortCol === mi" class="ml-0.5">{{ sortDir === 'desc' ? '▾' : '▴' }}</span></th>
               <th
-                class="px-2 py-1 bg-teal-500/20 text-teal-700 font-semibold text-right border-b border-border/50"
-                :class="isPersonTab ? 'cursor-pointer select-none hover:bg-teal-500/30' : ''"
+                class="px-2 py-1 bg-primary/15 text-primary font-semibold text-right border-b border-border/50"
+                :class="isPersonTab ? 'cursor-pointer select-none hover:bg-primary/25' : ''"
                 @click="toggleSort('avg')"
               >Avg<span v-if="isPersonTab && sortCol === 'avg'" class="ml-0.5">{{ sortDir === 'desc' ? '▾' : '▴' }}</span></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(r, ri) in displayRows" :key="ri" :class="rowCls(r.kind)">
-              <td :class="['sticky left-0 z-10 text-left px-2.5 py-1.5 font-medium min-w-30 shadow-[1px_0_0_var(--border)] border-b border-border/40', r.kind === 'amount' ? 'bg-teal-500/15 text-teal-700' : r.kind === 'total' ? 'bg-muted/40 text-foreground' : r.kind === 'subtotal' ? 'bg-teal-500/15 text-teal-700' : 'bg-card text-foreground/90']">{{ r.label }}</td>
-              <td v-if="hasPrev" :class="['px-2 py-1.5 text-right tabular-nums font-semibold border-b border-r border-border/40', r.kind === 'amount' ? '' : 'bg-indigo-500/10 text-indigo-700']">
+              <td :class="['sticky left-0 z-10 text-left px-2.5 py-1.5 font-medium min-w-30 shadow-[1px_0_0_var(--border)] border-b border-border/40', r.kind === 'amount' ? 'bg-primary/10 text-primary' : r.kind === 'total' ? 'bg-muted/40 text-foreground' : r.kind === 'subtotal' ? 'bg-primary/10 text-primary' : 'bg-card text-foreground/90']">{{ r.label }}</td>
+              <td v-if="hasPrev" :class="['px-2 py-1.5 text-right tabular-nums font-semibold border-b border-r border-border/40', r.kind === 'amount' ? '' : 'bg-muted/20 text-muted-foreground']">
                 <span v-if="prevAvgOf(r) === null || prevAvgOf(r) === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ fmt(prevAvgOf(r)) }}</template>
               </td>
-              <td v-for="(_, i) in months" :key="'v'+i" :class="['px-2 py-1.5 text-right tabular-nums border-b border-border/40', r.kind === 'amount' ? '' : r.kind === 'subtotal' ? 'bg-teal-500/15 text-teal-800' : 'bg-teal-500/5 text-foreground']">
+              <td v-for="(_, i) in months" :key="'v'+i" :class="['px-2 py-1.5 text-right tabular-nums border-b border-border/40', r.kind === 'amount' ? '' : r.kind === 'subtotal' ? 'bg-primary/10 text-primary' : 'text-foreground']">
                 <span v-if="valsOf(r)[i] === null || valsOf(r)[i] === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ fmt(valsOf(r)[i]) }}</template>
               </td>
-              <td :class="['px-2 py-1.5 text-right tabular-nums font-semibold border-b border-border/40', r.kind === 'amount' ? '' : r.kind === 'subtotal' ? 'bg-teal-500/25 text-teal-700' : 'bg-teal-500/15 text-teal-700']">
+              <td :class="['px-2 py-1.5 text-right tabular-nums font-semibold border-b border-border/40', r.kind === 'amount' ? '' : r.kind === 'subtotal' ? 'bg-primary/15 text-primary' : 'bg-primary/10 text-primary']">
                 <span v-if="avgOf(r) === null || avgOf(r) === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ fmt(avgOf(r)) }}</template>
               </td>
             </tr>
@@ -1121,32 +984,32 @@ async function onUpload(e: Event) {
 
       <!-- P&L KPI -->
       <div v-if="hasPnl" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="rounded-xl border bg-card p-4">
-          <div class="text-[11px] text-muted-foreground font-semibold">최근월 매출 ({{ pnlKpi.label }})</div>
-          <div class="text-2xl font-bold mt-1.5 tabular-nums text-foreground">{{ pnlFmt(pnlKpi.sales, 'amt') }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
+        <div class="rounded-xl border border-border bg-card p-4">
+          <div class="text-[11.5px] text-muted-foreground font-semibold">최근월 매출 ({{ pnlKpi.label }})</div>
+          <div class="text-2xl font-extrabold mt-1.5 tabular-nums text-foreground">{{ pnlFmt(pnlKpi.sales, 'amt') }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
           <div class="text-[11px] mt-1 text-muted-foreground">
             전월 대비 <span :class="deltaClass(pnlKpi.salesMom)">{{ deltaText(pnlKpi.salesMom) }}</span>
           </div>
         </div>
-        <div class="rounded-xl border bg-card p-4">
-          <div class="text-[11px] text-muted-foreground font-semibold">매출총이익 · 마진율</div>
-          <div class="text-2xl font-bold mt-1.5 tabular-nums text-foreground">{{ pnlFmt(pnlKpi.margin, 'amt') }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
+        <div class="rounded-xl border border-border bg-card p-4">
+          <div class="text-[11.5px] text-muted-foreground font-semibold">매출총이익 · 마진율</div>
+          <div class="text-2xl font-extrabold mt-1.5 tabular-nums text-foreground">{{ pnlFmt(pnlKpi.margin, 'amt') }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
           <div class="text-[11px] mt-1 text-muted-foreground">
-            <span class="text-teal-700 font-semibold">{{ pnlFmt(pnlKpi.marginPct, 'pct') }}</span>
+            <span class="text-primary font-semibold">{{ pnlFmt(pnlKpi.marginPct, 'pct') }}</span>
             · 전월 대비 <span :class="deltaClass(pnlKpi.marginMom)">{{ deltaText(pnlKpi.marginMom) }}</span>
           </div>
         </div>
-        <div class="rounded-xl border bg-card p-4">
-          <div class="text-[11px] text-muted-foreground font-semibold">영업이익 · 이익률</div>
-          <div class="text-2xl font-bold mt-1.5 tabular-nums" :class="(pnlKpi.opprofit ?? 0) >= 0 ? 'text-foreground' : 'text-red-600'">{{ pnlFmt(pnlKpi.opprofit, 'amt') }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
+        <div class="rounded-xl border border-border bg-card p-4">
+          <div class="text-[11.5px] text-muted-foreground font-semibold">영업이익 · 이익률</div>
+          <div class="text-2xl font-extrabold mt-1.5 tabular-nums" :class="(pnlKpi.opprofit ?? 0) >= 0 ? 'text-foreground' : 'text-red-600'">{{ pnlFmt(pnlKpi.opprofit, 'amt') }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
           <div class="text-[11px] mt-1 text-muted-foreground">
             <span class="font-semibold" :class="(pnlKpi.opprofitPct ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'">{{ pnlFmt(pnlKpi.opprofitPct, 'pct') }}</span>
             · 전월 대비 <span :class="deltaClass(pnlKpi.opprofitMom)">{{ deltaText(pnlKpi.opprofitMom) }}</span>
           </div>
         </div>
-        <div class="rounded-xl border bg-card p-4">
-          <div class="text-[11px] text-muted-foreground font-semibold">손익분기 매출(BEP)</div>
-          <div class="text-2xl font-bold mt-1.5 tabular-nums text-foreground">{{ pnlFmt(pnlKpi.bepAmt, 'amt') }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
+        <div class="rounded-xl border border-border bg-card p-4">
+          <div class="text-[11.5px] text-muted-foreground font-semibold">손익분기 매출(BEP)</div>
+          <div class="text-2xl font-extrabold mt-1.5 tabular-nums text-foreground">{{ pnlFmt(pnlKpi.bepAmt, 'amt') }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
           <div class="text-[11px] mt-1 text-muted-foreground">
             전월 대비 <span :class="deltaClass(pnlKpi.bepMom)">{{ deltaText(pnlKpi.bepMom) }}</span>
           </div>
@@ -1169,9 +1032,9 @@ async function onUpload(e: Event) {
               <th :colspan="pnlMonths.length + 1" class="px-2 py-1.5 bg-primary/10 text-primary font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
             </tr>
             <tr>
-              <th class="px-2 py-1 bg-indigo-500/10 text-indigo-700 font-semibold text-right border-b border-border/50">평균</th>
-              <th v-for="m in pnlMonths" :key="'ph'+m" class="px-2 py-1 bg-amber-500/10 text-amber-700/90 font-medium text-right border-b border-border/50">{{ monthKo(m) }}</th>
-              <th class="px-2 py-1 bg-amber-500/20 text-amber-700 font-semibold text-right border-b border-border/50">평균</th>
+              <th class="px-2 py-1 bg-muted/30 text-muted-foreground font-semibold text-right border-b border-border/50">평균</th>
+              <th v-for="m in pnlMonths" :key="'ph'+m" class="px-2 py-1 bg-muted/20 text-muted-foreground font-medium text-right border-b border-border/50">{{ monthKo(m) }}</th>
+              <th class="px-2 py-1 bg-primary/15 text-primary font-semibold text-right border-b border-border/50">평균</th>
             </tr>
           </thead>
           <tbody>
@@ -1180,17 +1043,17 @@ async function onUpload(e: Event) {
               :class="[pnlRowCls(r.kind), r._head && r._hasChildren ? 'cursor-pointer select-none hover:bg-muted/30' : '']"
               @click="r._head && r._hasChildren ? toggleSection(r.key) : null"
             >
-              <td :class="['sticky left-0 z-10 text-left px-2.5 py-1.5 min-w-32 shadow-[1px_0_0_var(--border)] border-b border-border/40', r.kind === 'profit' ? 'bg-teal-500/15 text-teal-700 font-bold' : r.kind === 'head' ? 'bg-card text-foreground font-bold' : 'bg-card']" :style="{ paddingLeft: (10 + r.indent * 12) + 'px' }">
+              <td :class="['sticky left-0 z-10 text-left px-2.5 py-1.5 min-w-32 shadow-[1px_0_0_var(--border)] border-b border-border/40', r.kind === 'profit' ? 'bg-primary/10 text-primary font-bold' : r.kind === 'head' ? 'bg-card text-foreground font-bold' : 'bg-card']" :style="{ paddingLeft: (10 + r.indent * 12) + 'px' }">
                 <span v-if="r._head && r._hasChildren" class="inline-block w-3 mr-1 text-muted-foreground transition-transform" :class="r._open ? 'rotate-90' : ''">▸</span>
                 {{ r.label }}
               </td>
-              <td class="px-2 py-1.5 text-right tabular-nums font-semibold border-b border-r border-border/40 bg-indigo-500/10 text-indigo-700">
+              <td class="px-2 py-1.5 text-right tabular-nums font-semibold border-b border-r border-border/40 bg-muted/20 text-muted-foreground">
                 <span v-if="r.prev === null || r.prev === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ pnlFmt(r.prev, r.fmt) }}</template>
               </td>
               <td v-for="(_, i) in pnlMonths" :key="'pv'+i" class="px-2 py-1.5 text-right tabular-nums border-b border-border/40">
                 <span v-if="r.v[i] === null || r.v[i] === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ pnlFmt(r.v[i], r.fmt) }}</template>
               </td>
-              <td class="px-2 py-1.5 text-right tabular-nums font-semibold border-b border-l border-border/40 bg-amber-500/5">
+              <td class="px-2 py-1.5 text-right tabular-nums font-semibold border-b border-l border-border/40 bg-primary/5">
                 <span v-if="r.a === null || r.a === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ pnlFmt(r.a, r.fmt) }}</template>
               </td>
             </tr>
@@ -1200,7 +1063,7 @@ async function onUpload(e: Event) {
     </div>
 
     <!-- 제외 거래처 (매출 탭) — 3분할: 제목 | 내용1 | 내용2 -->
-    <div v-if="mainTab === 'sales'" class="rounded-xl border bg-card p-4 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+    <div v-if="mainTab === 'sales'" class="rounded-xl border border-border bg-card p-4 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
       <!-- ① 제목 -->
       <div class="min-w-0">
         <h4 class="text-sm font-bold text-foreground mb-1">제외 거래처</h4>

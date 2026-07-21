@@ -912,7 +912,7 @@ const TAB_LABEL: Record<Tab, string> = {
 </script>
 
 <template>
-  <div class="p-6 space-y-6 max-w-300 mx-auto">
+  <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
 
     <!-- Header -->
     <PageHeader title="마진 분석">
@@ -1094,34 +1094,34 @@ const TAB_LABEL: Record<Tab, string> = {
     <!-- KPI cards -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div class="rounded-xl border border-border bg-card p-4 space-y-1">
-        <p class="text-xs text-muted-foreground">총 매출{{ anyFilter ? ' · 필터' : '' }}</p>
-        <p class="text-lg font-bold tabular-nums">{{ fmtIdr(viewTotals.sales) }} <span class="text-xs text-muted-foreground font-normal">IDR</span></p>
+        <p class="text-[11.5px] text-muted-foreground">총 매출{{ anyFilter ? ' · 필터' : '' }}</p>
+        <p class="text-2xl font-extrabold tabular-nums">{{ fmtIdr(viewTotals.sales) }} <span class="text-xs text-muted-foreground font-normal">IDR</span></p>
         <p class="text-xs flex items-center gap-1" :class="momClass(salesMoM)">
           <component :is="(salesMoM ?? 0) >= 0 ? TrendingUp : TrendingDown" :size="10" />
           {{ compareLabel }} {{ fmtMoM(salesMoM) }}
         </p>
       </div>
       <div class="rounded-xl border border-border bg-card p-4 space-y-1">
-        <p class="text-xs text-muted-foreground">총 마진{{ anyFilter ? ' · 필터' : '' }}</p>
-        <p class="text-lg font-bold tabular-nums">{{ fmtIdr(viewTotals.margin) }} <span class="text-xs text-muted-foreground font-normal">IDR</span></p>
+        <p class="text-[11.5px] text-muted-foreground">총 마진{{ anyFilter ? ' · 필터' : '' }}</p>
+        <p class="text-2xl font-extrabold tabular-nums">{{ fmtIdr(viewTotals.margin) }} <span class="text-xs text-muted-foreground font-normal">IDR</span></p>
         <p class="text-xs flex items-center gap-1" :class="momClass(marginMoM)">
           <component :is="(marginMoM ?? 0) >= 0 ? TrendingUp : TrendingDown" :size="10" />
           {{ compareLabel }} {{ fmtMoM(marginMoM) }}
         </p>
       </div>
       <div class="rounded-xl border border-border bg-card p-4 space-y-1">
-        <p class="text-xs text-muted-foreground">마진율</p>
-        <p class="text-lg font-bold tabular-nums" :class="marginPctClass(marginPct)">{{ fmtPct(marginPct, 1) }}</p>
+        <p class="text-[11.5px] text-muted-foreground">마진율</p>
+        <p class="text-2xl font-extrabold tabular-nums" :class="marginPctClass(marginPct)">{{ fmtPct(marginPct, 1) }}</p>
         <p class="text-xs text-muted-foreground">매출 대비</p>
       </div>
       <div class="rounded-xl border border-border bg-card p-4 space-y-1">
         <template v-if="anyFilter">
-          <p class="text-xs text-muted-foreground">전체 대비 비중</p>
-          <p class="text-lg font-bold tabular-nums text-primary">{{ fmtPct(viewMarginShare, 1) }}</p>
+          <p class="text-[11.5px] text-muted-foreground">전체 대비 비중</p>
+          <p class="text-2xl font-extrabold tabular-nums text-primary">{{ fmtPct(viewMarginShare, 1) }}</p>
           <p class="text-xs text-muted-foreground">마진 기준 · 매출 {{ fmtPct(viewSalesShare, 1) }}</p>
         </template>
         <template v-else>
-          <p class="text-xs text-muted-foreground">최대 마진 브랜드</p>
+          <p class="text-[11.5px] text-muted-foreground">최대 마진 브랜드</p>
           <p class="text-base font-bold truncate flex items-center gap-1.5">
             <span v-if="topBrand" class="w-2 h-2 rounded-full shrink-0" :style="{ background: BRAND_COLOR[topBrand.brand] }" />
             {{ topBrand?.brand ?? '—' }}

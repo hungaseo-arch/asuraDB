@@ -89,7 +89,7 @@ watch(scope, () => {
 </script>
 
 <template>
-  <div class="p-6 space-y-4 max-w-300 mx-auto">
+  <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
     <PageHeader>
       <template #subtitle>
         <p class="text-xs text-muted-foreground">{{ subtitle }}</p>
@@ -102,7 +102,7 @@ watch(scope, () => {
               v-model="query"
               type="text"
               placeholder="제목 검색…"
-              class="w-48 bg-card border border-border rounded-lg pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal-400"
+              class="w-48 bg-card border border-border rounded-lg pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
@@ -120,7 +120,7 @@ watch(scope, () => {
         </button>
         <a
           :href="docSrc(selected)" target="_blank" rel="noopener noreferrer"
-          class="text-xs text-teal-600 hover:text-teal-700 font-medium"
+          class="text-xs text-primary hover:text-primary/80 font-medium"
         >새 탭에서 열기 ↗</a>
       </div>
       <div class="rounded-xl border border-border bg-card overflow-hidden">
@@ -163,7 +163,7 @@ watch(scope, () => {
             <td class="text-center text-muted-foreground tabular-nums px-3 py-3">{{ rowNo(i) }}</td>
             <td class="px-3 py-3">
               <div class="flex items-center gap-2 min-w-0">
-                <FileText :size="15" class="text-teal-600 shrink-0" />
+                <FileText :size="15" class="text-primary shrink-0" />
                 <span class="font-medium text-foreground truncate">{{ p.title }}</span>
               </div>
             </td>

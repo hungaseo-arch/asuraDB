@@ -116,7 +116,7 @@ onUnmounted(() => window.removeEventListener('asura:refresh', onRefresh));
 </script>
 
 <template>
-  <div class="p-6 space-y-6 max-w-300 mx-auto">
+  <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
     <PageHeader>
       <template #subtitle>
         <p class="text-xs text-muted-foreground">회사 자료를 한곳에서 — 검색·분석·관리 (상단 '시스템 정상' 버튼으로 새로고침)</p>
@@ -126,9 +126,9 @@ onUnmounted(() => window.removeEventListener('asura:refresh', onRefresh));
     <!-- 로컬 검색 · AI Q&A (가로 2분할) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <!-- 로컬 검색 -->
-      <div class="rounded-2xl border bg-card p-5 shadow-sm">
+      <div class="rounded-xl border border-border bg-card p-5 shadow-sm">
         <div class="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
-          <Search :size="16" class="text-teal-600" /> 로컬 검색
+          <Search :size="16" class="text-primary" /> 로컬 검색
         </div>
         <div class="flex gap-2">
           <div class="relative flex-1">
@@ -137,12 +137,12 @@ onUnmounted(() => window.removeEventListener('asura:refresh', onRefresh));
               v-model="q"
               type="text"
               placeholder="문서·메일·노트 전체에서 검색…"
-              class="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-teal-500/40"
+              class="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
               @keydown.enter="runSearch"
             />
           </div>
           <button
-            class="inline-flex items-center gap-1.5 bg-teal-600 text-white text-sm font-semibold rounded-xl px-5 py-2.5 hover:bg-teal-700 transition-colors shrink-0"
+            class="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-sm font-semibold rounded-xl px-5 py-2.5 hover:bg-primary/90 transition-colors shrink-0"
             @click="runSearch"
           >
             검색 <ArrowRight :size="16" />
@@ -151,7 +151,7 @@ onUnmounted(() => window.removeEventListener('asura:refresh', onRefresh));
       </div>
 
       <!-- AI 지식 Q&A -->
-      <div class="rounded-2xl border bg-card p-5 shadow-sm">
+      <div class="rounded-xl border border-border bg-card p-5 shadow-sm">
         <div class="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
           <BrainCircuit :size="16" class="text-primary" /> AI 지식 Q&A
         </div>
@@ -178,7 +178,7 @@ onUnmounted(() => window.removeEventListener('asura:refresh', onRefresh));
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <!-- 데이터 소스 현황 -->
-      <div class="rounded-xl border bg-card p-4">
+      <div class="rounded-xl border border-border bg-card p-4">
         <h2 class="text-sm font-bold text-foreground mb-3">데이터 소스</h2>
         <div v-if="loadingSources" class="space-y-2">
           <div v-for="i in 5" :key="i" class="h-9 rounded-lg bg-muted animate-pulse" />
@@ -198,10 +198,10 @@ onUnmounted(() => window.removeEventListener('asura:refresh', onRefresh));
       </div>
 
       <!-- 최근 자료 -->
-      <div class="rounded-xl border bg-card p-4">
+      <div class="rounded-xl border border-border bg-card p-4">
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-sm font-bold text-foreground">최근 자료</h2>
-          <RouterLink to="/search" class="text-[11px] text-teal-600 hover:text-teal-700 font-medium inline-flex items-center gap-0.5">
+          <RouterLink to="/search" class="text-[11px] text-primary hover:text-primary/80 font-medium inline-flex items-center gap-0.5">
             전체 검색 <ArrowRight :size="12" />
           </RouterLink>
         </div>
@@ -216,7 +216,7 @@ onUnmounted(() => window.removeEventListener('asura:refresh', onRefresh));
               class="flex items-center gap-3 py-2 group"
             >
               <SourceIcon :source="d.source" :size="16" class="shrink-0" />
-              <span class="text-sm text-foreground/90 flex-1 truncate group-hover:text-teal-700 transition-colors">{{ d.title || '(제목 없음)' }}</span>
+              <span class="text-sm text-foreground/90 flex-1 truncate group-hover:text-primary transition-colors">{{ d.title || '(제목 없음)' }}</span>
               <span class="text-[11px] text-muted-foreground tabular-nums shrink-0">{{ localDate(d.updated_at).slice(5) }}</span>
               <ExternalLink :size="13" class="text-muted-foreground/50 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
             </a>

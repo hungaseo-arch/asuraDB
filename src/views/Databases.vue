@@ -276,7 +276,7 @@ function downloadCustomers() {
 </script>
 
 <template>
-  <div class="p-6 space-y-4 max-w-300 mx-auto">
+  <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
     <!-- 1차 카테고리 탭 + 설명 (1행) -->
     <div class="flex items-center gap-2 border-b border-border">
       <button
@@ -308,7 +308,7 @@ function downloadCustomers() {
             · FOB/CIF/Landed는 확장 컬럼(미입력 시 —)
           </p>
           <div class="flex items-center gap-2 ml-auto">
-            <div class="inline-flex items-center gap-1.5 bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-teal-400">
+            <div class="inline-flex items-center gap-1.5 bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-primary">
               <span class="text-[11px] font-semibold text-muted-foreground shrink-0">분류</span>
               <select v-model="category" class="text-xs font-semibold bg-transparent text-foreground py-2 pr-6 focus:outline-none cursor-pointer">
                 <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
@@ -317,7 +317,7 @@ function downloadCustomers() {
             <div class="relative">
               <Search :size="14" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input v-model="query" type="text" placeholder="제품·브랜드·SKU 검색…"
-                class="w-56 bg-card border border-border rounded-lg pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal-400" />
+                class="w-56 bg-card border border-border rounded-lg pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
             </div>
             <button class="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors whitespace-nowrap" title="엑셀(CSV) 다운로드" @click="downloadPrice">
               <Download :size="14" /> 엑셀
@@ -338,7 +338,7 @@ function downloadCustomers() {
             <div class="relative">
               <Search :size="14" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input v-model="specQuery" type="text" placeholder="패턴·규격·SKU 검색…"
-                class="w-56 bg-card border border-border rounded-lg pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal-400" />
+                class="w-56 bg-card border border-border rounded-lg pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
             </div>
             <button class="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors whitespace-nowrap" title="엑셀(CSV) 다운로드" @click="downloadSpec">
               <Download :size="14" /> 엑셀
@@ -375,7 +375,7 @@ function downloadCustomers() {
                   <td class="px-3 py-2.5"><span class="inline-block px-1.5 py-0.5 rounded bg-muted text-[11px] text-foreground/80">{{ catOf(p) }}</span></td>
                   <td class="px-3 py-2.5">
                     <div class="flex items-center gap-2 min-w-0">
-                      <Package :size="14" class="text-teal-600 shrink-0" />
+                      <Package :size="14" class="text-primary shrink-0" />
                       <div class="min-w-0">
                         <div class="font-medium text-foreground">{{ txt(p.description) }}</div>
                         <div class="text-[11px] text-muted-foreground">{{ txt(p.brand) }}<span v-if="p.sku"> · {{ p.sku }}</span><span v-if="p.unit"> · {{ p.unit }}</span></div>
@@ -387,7 +387,7 @@ function downloadCustomers() {
                   <td class="px-3 py-2.5 text-right tabular-nums">{{ fmt(p.landed_cost) }}</td>
                   <td class="px-3 py-2.5 text-right tabular-nums font-medium">{{ fmt(p.wh_price) }}</td>
                   <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmt(p.wh_price_set) }}</td>
-                  <td class="px-3 py-2.5 text-right tabular-nums font-semibold text-teal-700">{{ fmt(sellingOf(p)) }}</td>
+                  <td class="px-3 py-2.5 text-right tabular-nums font-semibold text-primary">{{ fmt(sellingOf(p)) }}</td>
                 </tr>
                 <tr v-if="!loading && !loadError && !paged.length">
                   <td colspan="9" class="text-center text-muted-foreground py-10">{{ query || category !== '전체' ? '검색 결과가 없습니다.' : '제품이 없습니다.' }}</td>
@@ -466,7 +466,7 @@ function downloadCustomers() {
           <div class="relative">
             <Search :size="14" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input v-model="custQuery" type="text" placeholder="코드·고객명·담당자 검색…"
-              class="w-56 bg-card border border-border rounded-lg pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal-400" />
+              class="w-56 bg-card border border-border rounded-lg pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
           <button class="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors whitespace-nowrap" title="엑셀(CSV) 다운로드" @click="downloadCustomers">
             <Download :size="14" /> 엑셀

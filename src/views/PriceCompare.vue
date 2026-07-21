@@ -406,7 +406,7 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
 </script>
 
 <template>
-  <div class="p-6 space-y-4 max-w-300 mx-auto">
+  <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
     <PageHeader title="가격비교" subtitle="타이어 세트(타이어+튜브+플랩) · 동일 고객등급 기준">
       <template #actions>
         <div class="flex items-center gap-2 print:hidden flex-wrap">

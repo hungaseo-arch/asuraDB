@@ -507,7 +507,7 @@ onMounted(loadData);
 </script>
 
 <template>
-  <div class="p-6 space-y-6 max-w-300 mx-auto">
+  <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
 
     <!-- Header -->
     <PageHeader title="인도네시아 타이어 수입량">
@@ -549,7 +549,7 @@ onMounted(loadData);
         </button>
         <button
           v-if="IS_HOST"
-          class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-teal-500/10 text-teal-500 border border-teal-500/20 hover:bg-teal-500/20 transition-colors disabled:opacity-50"
+          class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors disabled:opacity-50"
           :disabled="collecting"
           @click="fetchLatest"
         >
@@ -596,12 +596,12 @@ onMounted(loadData);
       <!-- KPI cards -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div class="rounded-xl border border-border bg-card p-4 space-y-1">
-          <p class="text-xs text-muted-foreground">연간 수입금액</p>
-          <p class="text-lg font-bold tabular-nums">{{ fmtUsd(yearTotal) }}</p>
+          <p class="text-[11.5px] text-muted-foreground">연간 수입금액</p>
+          <p class="text-2xl font-extrabold tabular-nums">{{ fmtUsd(yearTotal) }}</p>
           <p class="text-xs" :class="deltaClass(yoyPct)">YoY {{ deltaText(yoyPct, { arrow: true }) }}</p>
         </div>
         <div class="rounded-xl border border-border bg-card p-4 space-y-1">
-          <p class="text-xs text-muted-foreground">최대 카테고리</p>
+          <p class="text-[11.5px] text-muted-foreground">최대 카테고리</p>
           <p class="text-base font-bold truncate">
             {{ catBreakdown[0] ? CATEGORY_LABEL[catBreakdown[0].cat] : '—' }}
           </p>
@@ -610,7 +610,7 @@ onMounted(loadData);
           </p>
         </div>
         <div class="rounded-xl border border-border bg-card p-4 space-y-1">
-          <p class="text-xs text-muted-foreground">최대 원산지</p>
+          <p class="text-[11.5px] text-muted-foreground">최대 원산지</p>
           <p class="text-base font-bold truncate">
             {{ countryBreakdown[0]?.country ?? '—' }}
           </p>
@@ -624,10 +624,10 @@ onMounted(loadData);
       <div class="flex flex-col-2 md:flex-row gap-4">
         
         <!-- Annual trajectory bar chart -->
-        <div class="w-[50%] rounded-xl border border-border bg-card p-5 space-y-4">
+        <div class="w-[50%] rounded-xl border border-border bg-card p-4 space-y-4">
           <div class="flex items-baseline justify-between">
             <p class="text-xs font-semibold tracking-[0.2em] uppercase">
-              <span class="text-red-600">§ 01</span>
+              <span class="text-primary">§ 01</span>
               <span class="text-muted-foreground"> · </span>
               <span>Annual Trajectory</span>
               <span v-if="selectedCategory" class="text-primary normal-case tracking-normal"> · {{ CATEGORY_LABEL[selectedCategory] }}</span>
@@ -774,7 +774,7 @@ onMounted(loadData);
         <div class="w-[50%] grid grid-row-1 gap-4">
 
           <!-- Category breakdown -->
-          <div class="rounded-xl border border-border bg-card p-5 space-y-3">
+          <div class="rounded-xl border border-border bg-card p-4 space-y-3">
             <p class="text-sm font-semibold">{{ yearLabel }} · 카테고리별 수입금액</p>
             <div v-if="!catBreakdown.filter(c => c.usd > 0).length" class="text-sm text-muted-foreground py-4 text-center">
               선택 연도 데이터 없음
@@ -812,7 +812,7 @@ onMounted(loadData);
           </div>
 
           <!-- Country ranking -->
-          <div class="rounded-xl border border-border bg-card p-5 space-y-3">
+          <div class="rounded-xl border border-border bg-card p-4 space-y-3">
             <p class="text-sm font-semibold">{{ yearLabel }} · 원산지별 수입금액 Top 7</p>
             <div v-if="!countryBreakdown.length" class="text-sm text-muted-foreground py-4 text-center">
               국가별 데이터 없음<br />
@@ -858,7 +858,7 @@ onMounted(loadData);
         <p class="text-[11px] text-muted-foreground/60">
           HS 코드 확인: INSW (insw.go.id) · BTKI (beacukai.go.id/arsip/lan/BTKI-2022.html)
         </p>
-        <p class="text-[11px] text-emerald-500/80 pt-1 border-t border-border/50">
+        <p class="text-[11px] text-primary pt-1 border-t border-border/50">
           ⚡ 일괄 적재(무키): 포털에서 XLSX 다운로드 후
           <code class="bg-muted px-1 rounded">node scripts/ingest-bps-file.mjs &lt;파일.xlsx&gt; [--dry-run]</code>
           — 32종 HS 월별·국가별로 파싱해 upsert. KG 표는 <code class="bg-muted px-1 rounded">--metric=weight</code>

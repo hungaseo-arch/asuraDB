@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인도네시아 타이어 수입 분석 보고서 · 2026</title>
+<style>
+  :root{
+    --bg:#F0F0F0; --card:#FFFFFF; --soft-blue:#E3F2FD; --sage:#E8F5E9;
+    --blue-grey:#ECEFF1; --ink:#37474F; --ink2:#546E7A; --border:#CFD8DC;
+    --fy:#90CAF9; --ttm:#1565C0; --fy-peak:#1565C0; --fy-part:#CFD8DC;
+    --grow:#2E7D32; --decline:#607D8B; --alert:#B85C4A; --line:#1565C0;
+    --conn-bad:#E0A69B; --conn-good:#A5D6A7; --sni:#C77A2E; --ban:#B91C1C;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    line-height:1.62; -webkit-font-smoothing:antialiased; font-size:14px;}
+  .wrap{max-width:1000px; margin:0 auto; padding:30px 26px 70px;}
+  header.doc{background:var(--soft-blue); border:1px solid #C5E1F7; border-radius:14px; padding:26px 30px; margin-bottom:22px;}
+  header.doc .eyebrow{font-size:12px; letter-spacing:.14em; color:var(--ink2); font-weight:700; text-transform:uppercase;}
+  header.doc h1{margin:8px 0 6px; font-size:25px; color:var(--ink); font-weight:750; line-height:1.3;}
+  header.doc .meta{margin:0; color:var(--ink2); font-size:12.5px;}
+  section{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:24px 28px; margin-bottom:20px;}
+  h2.sec{margin:0 0 4px; font-size:18px; color:var(--ink); font-weight:750;}
+  h2.sec .num{color:var(--ttm); font-weight:800; margin-right:8px;}
+  .sec-sub{margin:0 0 18px; font-size:12.5px; color:var(--ink2);}
+  h3{font-size:14.5px; color:var(--ink); font-weight:700; margin:22px 0 8px;}
+  p{margin:0 0 12px;}
+  .lead{font-size:14px;}
+  b{color:var(--ink);} .em-blue{color:var(--ttm);font-weight:700;} .em-red{color:var(--alert);font-weight:700;} .em-grn{color:var(--grow);font-weight:700;}
+  .summary{background:var(--sage); border:1px solid #CFE8D1; border-radius:12px; padding:18px 22px; margin-bottom:22px;}
+  .summary h2{margin:0 0 10px; font-size:15px; color:var(--ink); font-weight:750;}
+  .summary ul{margin:0; padding-left:20px;} .summary li{margin:6px 0;}
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0 6px;}
+  .kpi{background:var(--blue-grey); border:1px solid var(--border); border-radius:10px; padding:13px 14px;}
+  .kpi .label{font-size:11px; color:var(--ink2); font-weight:600; margin-bottom:6px;}
+  .kpi .val{font-size:21px; font-weight:750;}
+  .kpi .sub{font-size:11px; color:var(--ink2); margin-top:4px;}
+  .kpi.down .val{color:var(--alert);} .kpi.up .val{color:var(--grow);} .kpi.warn .val{color:var(--ttm);}
+  table{width:100%; border-collapse:collapse; font-size:12.5px; margin:10px 0 4px;}
+  th,td{padding:7px 10px; text-align:right; border-bottom:1px solid var(--blue-grey);}
+  th:first-child,td:first-child{text-align:left;} th{color:var(--ink2); font-weight:600; background:var(--blue-grey);}
+  td.l,th.l{text-align:left;}
+  .tag{font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:20px; white-space:nowrap;}
+  .t-sni{background:#F6E4CE; color:var(--sni);} .t-ban{background:#F6D5D5; color:var(--ban);} .t-na{background:var(--blue-grey); color:var(--ink2);}
+  .t-in{background:var(--sage); color:var(--grow);} .t-out{background:#FBEDE9; color:var(--alert);}
+  .t-bad{background:#FBEDE9; color:var(--alert);} .t-good{background:var(--sage); color:var(--grow);} .t-flat{background:var(--blue-grey); color:var(--ink2);}
+  .up-txt{color:var(--alert);font-weight:700;} .grn-txt{color:var(--grow);font-weight:700;}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; margin:6px 0 12px; font-size:12px; color:var(--ink2); align-items:center;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;} .dot{width:12px;height:12px;border-radius:50%;display:inline-block;}
+  svg{display:block; width:100%; overflow:visible;}
+  .axislabel{font-size:11px; fill:var(--ink2);} .barlabel{font-size:12px; fill:var(--ink); font-weight:600;}
+  .val-out{font-size:11.5px; font-weight:700;} .grid-line{stroke:var(--blue-grey); stroke-width:1;} .zero-line{stroke:var(--ink2); stroke-width:1.5;}
+  .callout{background:var(--blue-grey); border-left:4px solid var(--ttm); border-radius:8px; padding:12px 16px; font-size:12.5px; color:var(--ink); margin:12px 0;}
+  .callout.warn{border-left-color:var(--alert); background:#FBEDE9;}
+  code{background:var(--blue-grey); padding:1px 6px; border-radius:5px; font-size:12px; color:var(--ink);}
+  .foot{font-size:11px; color:var(--ink2); margin-top:4px; line-height:1.7;}
+  ol.rec{margin:6px 0; padding-left:22px;} ol.rec li{margin:9px 0;}
+  .tip{position:fixed; pointer-events:none; background:var(--ink); color:#fff; font-size:12px; padding:7px 10px; border-radius:8px; opacity:0; transition:opacity .12s; z-index:50; white-space:nowrap; box-shadow:0 4px 14px rgba(0,0,0,.18);}
+  @media(max-width:720px){.kpis{grid-template-columns:repeat(2,1fr);} header.doc h1{font-size:20px;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="doc">
+    <div class="eyebrow">PT ASCENDO INTERNATIONAL · 시장 인텔리전스</div>
+    <h1>인도네시아 타이어 수입 분석 보고서 · 2026</h1>
+    <p class="meta">데이터: Supabase <code>tire_imports</code> (BPS EXIM) · 분류 근거: <code>hsMaster.json</code>(32 HS·16 DB카테고리) · 기준일 2026-07-21 (최신월 2026-05)</p>
+  </header>
+
+  <div class="summary">
+    <h2>요약 (Executive Summary)</h2>
+    <ul>
+      <li>본계열 타이어 시장(솔리드 외)은 <b>FY2024 $909M 피크 → FY2025 $642M(<span class="em-red">−29.4%</span>)</b>, 직전 12개월(TTM)로도 <span class="em-red">−32.4%</span>로 <b>구조적 위축</b>이 확정됩니다.</li>
+      <li>쿼터·저빈도 품목은 5개월 YTD 비교가 방향을 오판시킵니다(예 TBR YTD +12% ↔ 실제 FY −35%). 완료연도 <b>FY</b>·최신 <b>TTM</b> 병행이 필수입니다.</li>
+      <li>비쿼터 품목 <b>솔리드는 실제 붕괴</b>: TTM 피크 $2.19M(’24.8) → $0.18M(’26.5), <span class="em-red">−92%</span>. HS 40129017 단일코드로 재분류 이력 없음.</li>
+      <li>최대 품목 <b>OTR −32%</b>의 <b>59%가 일본산 붕괴</b>(FY $232M→$165M). 중국은 방어(−3M), 유럽산 동반 급감.</li>
+      <li>부자재 <b>이너튜브도 −29%(FY)·−42%(TTM)</b>로 모품목(TBR·OTR) 추세에 연동. 다만 <b>광산 튜브만 +19%</b>로 광산 라인의 상대적 방어를 재확인.</li>
+    </ul>
+  </div>
+
+  <!-- §1 시장 개관 -->
+  <section>
+    <h2 class="sec"><span class="num">§1</span>본계열 시장 개관 — 쿼터군(솔리드 외)</h2>
+    <p class="sec-sub">쿼터군 = 본계열 − 솔리드. 완료연도 FY 기준(쿼터 배정 사이클 정합) + 최신 TTM 병기.</p>
+    <div class="kpis">
+      <div class="kpi down"><div class="label">FY2025 규모</div><div class="val">$642.0M</div><div class="sub">FY2024 $909M · ▼29.4%</div></div>
+      <div class="kpi down"><div class="label">TTM YoY (’26.5)</div><div class="val">−32.4%</div><div class="sub">$903.2M → $610.7M</div></div>
+      <div class="kpi down"><div class="label">OTR 감소 주도</div><div class="val">일본 59%</div><div class="sub">FY $232M → $165M</div></div>
+      <div class="kpi up"><div class="label">방어 품목</div><div class="val">중국 OTR</div><div class="sub">점유 확대 · 산업/지게차 보합</div></div>
+    </div>
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--fy)"></i>연간($M)</span>
+      <span><i class="swatch" style="background:var(--fy-peak)"></i>피크 FY2024</span>
+      <span><i class="swatch" style="background:var(--fy-part)"></i>2026 진행중(5개월)</span>
+    </div>
+    <svg id="chartFY" aria-label="쿼터군 FY 추이"></svg>
+    <p>FY2024는 Permendag 36/2023 개정·통관 적체 해소(Permendag 8/2024) 국면에서 <b>하반기 통관이 몰린 과열 피크</b>였습니다. FY2025 −29.4%는 그 반동과 실수요 둔화가 겹친 결과이며, TTM(−32.4%)도 같은 방향으로 <b>착시가 아닌 실제 수축</b>을 확인합니다.</p>
+  </section>
+
+  <!-- §2 카테고리 이원화 -->
+  <section>
+    <h2 class="sec"><span class="num">§2</span>카테고리별 FY × TTM 이원화 + 모멘텀</h2>
+    <p class="sec-sub">각 품목의 FY YoY(연한 점)와 TTM YoY(진한 점)를 연결. 연결선이 <span class="em-red">붉으면 최근 악화</span>, <span class="em-grn">초록이면 회복</span>. 쿼터군 본계열, TTM 낮은 순.</p>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--fy)"></i>FY YoY</span>
+      <span><i class="dot" style="background:var(--ttm)"></i>TTM YoY</span>
+      <span><i class="swatch" style="background:var(--conn-bad)"></i>악화</span>
+      <span><i class="swatch" style="background:var(--conn-good)"></i>회복</span>
+    </div>
+    <svg id="chartDB" aria-label="FY TTM 덤벨"></svg>
+    <p>두 기준 모두 −30%대 수축을 확인하지만, <b>FY만 보면 놓치는 반전</b>이 있습니다. <span class="em-red">광산트럭(FY +2.8% → TTM −12.7%)·농업용(FY +37% → TTM −20.2%)</span>은 2025년 반짝 성장 후 2026년 초 하락 반전했습니다 — 특히 광산은 자사 핵심 라인이라 주의가 필요합니다. 반대로 <span class="em-grn">항공기·플랩</span>은 TTM에서 회복 중이고, <b>최대 품목 TBR·OTR은 두 기준 모두 −32~35%로 일관</b>돼 감소가 구조적임을 보여줍니다.</p>
+    <table>
+      <thead><tr><th class="l">카테고리</th><th>FY25($M)</th><th>FY YoY</th><th>TTM YoY</th><th>모멘텀</th><th class="l">판정</th></tr></thead>
+      <tbody id="momTbl"></tbody>
+    </table>
+  </section>
+
+  <!-- §3 OTR -->
+  <section>
+    <h2 class="sec"><span class="num">§3</span>OTR 원산지 분석 — 일본산 붕괴</h2>
+    <p class="sec-sub">OTR(HS 40118040 등) FY2024 $358M → FY2025 $243M(−32%). 감소액 −$115M의 <b>59%가 일본산</b>.</p>
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--fy)"></i>FY2024($M)</span>
+      <span><i class="swatch" style="background:var(--ttm)"></i>FY2025($M)</span>
+    </div>
+    <svg id="chartOTR" aria-label="OTR 원산지"></svg>
+    <p>일본산은 $232M → $165M(<span class="em-red">−$67M</span>)로 감소를 주도했고, 유럽산(브라질 −$16M·스페인 −$11M·프랑스 −$9M)도 동반 급감했습니다. <b>중국은 −$3M로 사실상 방어</b>하며 상대 점유를 높였습니다. 프리미엄 일본산 공급 위축을 중국산이 메우는 <b>원산지 재편</b>이 진행 중이며, 자사 소싱·재고 전략에 직접 시사점을 줍니다.</p>
+  </section>
+
+  <!-- §4 Solid -->
+  <section>
+    <h2 class="sec"><span class="num">§4</span>솔리드(비쿼터) 심층 — TTM 추이</h2>
+    <p class="sec-sub">솔리드(HS 40129017)는 비쿼터·저빈도 품목이라 TTM(직전 12개월)이 가장 매끄러운 지표.</p>
+    <div class="legend"><span><i class="swatch" style="background:var(--line)"></i>솔리드 TTM($K)</span></div>
+    <svg id="chartSolid" aria-label="솔리드 TTM"></svg>
+    <p>2024-08 피크 $2.19M 후 지속 하락해 ’26.5월 $0.18M(<span class="em-red">−92%</span>)입니다. 2026년 5개월이 전량 적재된 상태의 값이므로 <b>데이터 미완성이 아닌 실제 물량 붕괴</b>이며(3월 China 컨테이너 1건이 사실상 전부), HS 코드도 5년 내내 단일(40129017)로 재분류 이력이 없습니다. 즉 솔리드 급락만은 쿼터·기간 착시로 설명되지 않는 <b>실수요 소멸</b>입니다.</p>
+  </section>
+
+  <!-- §5 Inner Tube (NEW) -->
+  <section>
+    <h2 class="sec"><span class="num">§5</span>이너튜브(부자재) 수입 평가</h2>
+    <p class="sec-sub">튜브(category=<code>tube</code>, HS 4013 계열 9종)는 본계열 집계 제외 부자재이나, 튜브타입(bias) 타이어 수요의 <b>선행·동행 지표</b>로 별도 평가. 최대 세부는 LT/TB 튜브(40131021, SNI Wajib)로 튜브의 약 71%.</p>
+    <div class="kpis">
+      <div class="kpi down"><div class="label">튜브 FY YoY</div><div class="val">−29.0%</div><div class="sub">$18.6M → $13.2M</div></div>
+      <div class="kpi down"><div class="label">튜브 TTM YoY</div><div class="val">−41.6%</div><div class="sub">$19.2M → $11.2M · 가속</div></div>
+      <div class="kpi warn"><div class="label">최대 원산지</div><div class="val">중국 67%</div><div class="sub">한국↓ · 베트남↑(+162%)</div></div>
+      <div class="kpi up"><div class="label">유일 증가 세부</div><div class="val">광산 튜브</div><div class="sub">40139011 · +19%</div></div>
+    </div>
+    <h3>원산지별 · FY2024 → FY2025</h3>
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--fy)"></i>FY2024($M)</span>
+      <span><i class="swatch" style="background:var(--ttm)"></i>FY2025($M)</span>
+    </div>
+    <svg id="chartTube" aria-label="튜브 원산지"></svg>
+    <h3>세부 HS별 · FY2024 → FY2025 ($K)</h3>
+    <table>
+      <thead><tr><th class="l">세부 (HS)</th><th class="l">규제</th><th>FY24</th><th>FY25</th><th>증감</th></tr></thead>
+      <tbody id="tubeTbl"></tbody>
+    </table>
+    <p style="margin-top:12px">튜브 −29%(FY)·−42%(TTM)는 모품목인 <b>TBR(−35%)·OTR(−32%) 감소와 동행</b>하며, 특히 최대 세부인 LT/TB 튜브(SNI Wajib)가 하락을 주도했습니다. 반면 <span class="em-grn">광산 튜브(40139011)만 +19%</span>로 §2의 광산트럭 FY 방어와 일치합니다. 소싱은 <b>중국 집중(67%)</b>의 범용 구조이며, <b>베트남이 신규 대체 공급처로 부상</b>($0.6M→$1.6M)한 점이 프리미엄 일본산 중심의 OTR과 대비됩니다. 튜브는 부자재라 자체 마진 기여는 작지만, <b>튜브타입 타이어(TBR·OTR·광산) 수요의 실시간 대리지표</b>로 발주·재고 계획에 활용 가치가 있습니다.</p>
+  </section>
+
+  <!-- §6 규제 -->
+  <section>
+    <h2 class="sec"><span class="num">§6</span>규제(Lartas) 관점</h2>
+    <p>HS 마스터 기준 규제 강도는 세 층입니다. <b>SNI Wajib</b>(SPPT-SNI+Pertek+PI): 승용(PC)·경트럭(LT)·트럭버스(TB)·오토바이(MC) 외피 및 일부 이너튜브(40131011·40131021·40139020). <b>수입금지</b>: 중고(40122000). <b>na</b>(SNI 비대상): OTR·광산·산업/지게차·농업·자전거·솔리드·플랩 등 — 단 PI/LS 등 개별 규제는 INSW에서 HS별 확인 필요.</p>
+    <p>시사점: 규제가 강한 SNI Wajib 품목(PC·LT·TB·MC + LT/TB 튜브)은 <b>쿼터·인증 병목이 통관 타이밍을 좌우</b>하므로 반드시 FY/TTM로 판단해야 하며, YTD는 부적합합니다. 반면 자사 주력인 OTR·광산·지게차·솔리드는 SNI 비대상이나 대형·저빈도 특성상 <b>단건 선적이 월별 수치를 크게 흔들어</b> 역시 TTM이 적합합니다.</p>
+  </section>
+
+  <!-- §7 권고 -->
+  <section>
+    <h2 class="sec"><span class="num">§7</span>결론 및 권고</h2>
+    <p class="lead">시장은 <b>전 품목 −30%대 광범위 수축</b>이 실체이며(쿼터군 FY −29.4%·TTM −32.4%), “온로드 소비재 급증”은 YTD 착시였습니다. 자사 관점 최우선 관찰 대상은 <b>일본산 OTR 공급 위축</b>, <b>광산·농업의 최근 반전</b>, <b>솔리드 실수요 소멸</b>입니다.</p>
+    <h3>지표 운영 권고</h3>
+    <ol class="rec">
+      <li><b>이원화 지표:</b> 완료연도(2022~2025)는 <b>FY YoY</b>, 진행연도(2026)는 <b>TTM(직전 12개월) + 전년 동기 YTD</b>를 함께 봅니다. 단일 YTD 비교는 쿼터·저빈도 품목에서 방향을 오판시킵니다.</li>
+      <li><b>규제 축 병행:</b> HS 마스터 <code>lartas</code>(SNI Wajib/na)로 쿼터성 품목과 비쿼터를 구분해, SNI Wajib은 FY, 대형·저빈도는 TTM을 기본 지표로 사용합니다.</li>
+      <li><b>부자재 연동 지표:</b> 이너튜브를 튜브타입 타이어(TBR·OTR·광산) 수요의 대리지표로 모니터링합니다(현재 −42% TTM = 모품목 위축 선반영).</li>
+    </ol>
+    <h3>영업·소싱 권고</h3>
+    <p>광산트럭 라인은 FY 성장에 안주하지 말고 TTM 반전(−12.7%)을 근거로 <b>재고·발주 축소를 검토</b>하되, 일본산 OTR 공백을 <b>중국산으로 대체 소싱</b>하는 기회를 병행 평가하십시오. 솔리드는 실수요 소멸이 확인되므로 <b>재고 최소화·주문생산 전환</b>을, 튜브는 <b>중국 편중 완화를 위한 베트남 공급처 검토</b>를 권고합니다.</p>
+  </section>
+
+  <!-- 별첨 · 분류 체계 -->
+  <section>
+    <h2 class="sec"><span class="num">별첨.</span>분류 체계 — HS 코드 마스터 기준</h2>
+    <p class="sec-sub">모든 집계는 <code>hsMaster.json</code>의 HS→DB카테고리 매핑을 근간으로 합니다. 규제(Lartas)는 HS 단위로 확정: <b>SNI Wajib</b>(SPPT-SNI+Pertek+PI 필요)=승용·경트럭·트럭버스·오토바이 외피 및 일부 튜브, <b>수입금지</b>=중고, 그 외 <b>na</b>(SNI 비대상, PI/LS는 개별 확인).</p>
+    <table>
+      <thead><tr><th class="l">DB 카테고리</th><th class="l">HS 코드</th><th class="l">Lartas(규제)</th><th class="l">집계</th><th>FY25 규모</th></tr></thead>
+      <tbody id="clsTbl"></tbody>
+    </table>
+    <p class="foot">집계 = 앱 <code>TIRE_CATEGORIES</code> 본계열(신품 타이어) 포함 여부. aircraft·retread·used는 참고용, tube·flap은 부자재로 <b>본계열 집계 제외</b>이나, 이너튜브는 §5에서 별도 평가. 쿼터/비쿼터 구분은 귀사 기준(<b>솔리드만 비쿼터</b>)을 따르되, 규제 강도는 위 Lartas로 병기.</p>
+  </section>
+
+  <p class="foot">
+    출처: Supabase <code>subatvlyfglztdmyexfl · public.tire_imports</code> (BPS EXIM 월간, 2026-07-21 조회) · 분류 <code>src/data/hsMaster.json</code>.<br>
+    산출 기준: FY=1~12월 합계 YoY(FY24→FY25) · TTM=직전 12개월 누계 YoY(’25.5월말→’26.5월말) · YTD=1~5월 · 금액 USD·원산지 합산 · 규제 근거 SNI Wajib Ban(Permenperin)·Permendag 8/2024·중고 수입금지.
+  </p>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const CLS=[
+ {ko:'Passenger Car (승용차)',hs:'40111000',lartas:'sni',scope:1,fy25:24.0},
+ {ko:'Light Truck (경트럭)',hs:'40112011/12',lartas:'sni',scope:1,fy25:39.7},
+ {ko:'Truck & Bus (TBR)',hs:'40112013/19/90',lartas:'sni',scope:1,fy25:265.8},
+ {ko:'Motorcycle (오토바이)',hs:'40114000',lartas:'sni',scope:1,fy25:4.6},
+ {ko:'Bicycle (자전거)',hs:'40115000',lartas:'na',scope:1,fy25:2.8},
+ {ko:'Agricultural (농업용)',hs:'40117000',lartas:'na',scope:1,fy25:8.1},
+ {ko:'Industrial/Pneumatic (지게차)',hs:'40118011',lartas:'na',scope:1,fy25:18.6},
+ {ko:'Mining Truck (광산)',hs:'40118019',lartas:'na',scope:1,fy25:35.0},
+ {ko:'OTR',hs:'40118021/29/40',lartas:'na',scope:1,fy25:243.3},
+ {ko:'Solid (솔리드·비쿼터)',hs:'40129016/17',lartas:'na',scope:1,fy25:0.6},
+ {ko:'Other New',hs:'40119000',lartas:'na',scope:1,fy25:0.0},
+ {ko:'Aircraft (참고용)',hs:'40113000',lartas:'na',scope:0,fy25:8.7},
+ {ko:'Retreaded (참고용)',hs:'401211/12/19',lartas:'na',scope:0,fy25:0.1},
+ {ko:'Used (수입금지)',hs:'40122000',lartas:'ban',scope:0,fy25:0.0},
+ {ko:'Inner Tube (부자재·§5)',hs:'4013·9종',lartas:'sni',scope:0,fy25:13.2},
+ {ko:'Flap (부자재)',hs:'40129080',lartas:'na',scope:0,fy25:7.4},
+];
+const D=[
+ {ko:'트럭·버스(TBR)',fy:-34.7,ttm:-34.9,mom:-0.2,f25:265.8},
+ {ko:'OTR',fy:-32.0,ttm:-37.5,mom:-5.5,f25:243.3},
+ {ko:'경트럭(LT)',fy:-18.5,ttm:-21.0,mom:-2.5,f25:39.7},
+ {ko:'광산트럭',fy:2.8,ttm:-12.7,mom:-15.5,f25:35.0},
+ {ko:'승용차(PC)',fy:-13.3,ttm:-17.7,mom:-4.4,f25:24.0},
+ {ko:'산업/지게차',fy:-3.0,ttm:-1.7,mom:1.3,f25:18.6},
+ {ko:'농업용',fy:37.0,ttm:-20.2,mom:-57.2,f25:8.1},
+ {ko:'오토바이(MC)',fy:-20.1,ttm:-17.1,mom:3.0,f25:4.6},
+ {ko:'자전거(BC)',fy:-3.6,ttm:-4.5,mom:-0.9,f25:2.8},
+];
+const FYq=[{y:'2022',v:766.7},{y:'2023',v:729.0},{y:'2024',v:909.0,peak:true},{y:'2025',v:642.0},{y:'2026',v:187.2,part:true}];
+const OTRc=[{ko:'일본',a:232.1,b:164.9},{ko:'중국',a:59.7,b:56.6},{ko:'브라질',a:23.7,b:7.3},{ko:'스페인',a:19.7,b:8.6},{ko:'프랑스',a:9.5,b:0.1},{ko:'인도',a:6.0,b:2.3}];
+const TUBEc=[{ko:'중국',a:13.4,b:8.9},{ko:'한국',a:3.1,b:1.6},{ko:'베트남',a:0.6,b:1.6},{ko:'인도',a:0.9,b:0.8},{ko:'태국',a:0.2,b:0.2},{ko:'일본',a:0.1,b:0.1}];
+const TUBEhs=[
+ {ko:'LT/TB 튜브 ≤450mm',hs:'40131021',lartas:'sni',a:14013,b:9313},
+ {ko:'광산 튜브 ≤450mm',hs:'40139011',lartas:'na',a:911,b:1081},
+ {ko:'PC·LT 튜브',hs:'40131011',lartas:'sni',a:620,b:666},
+ {ko:'OTR 튜브 >450mm',hs:'40139039',lartas:'na',a:863,b:663},
+ {ko:'광산 튜브 >450mm',hs:'40139019',lartas:'na',a:624,b:545},
+ {ko:'OTR 튜브 <450mm',hs:'40139031',lartas:'na',a:872,b:335},
+];
+const TTM=[['22.12',78.9],['23.1',78.9],['23.2',104.0],['23.3',238.5],['23.4',240.4],['23.5',383.2],['23.6',383.2],['23.7',604.7],['23.8',751.7],['23.9',860.2],['23.10',1156.5],['23.11',1156.6],['23.12',1246.7],['24.1',1458.1],['24.2',1591.0],['24.3',1531.8],['24.4',1907.6],['24.5',1824.8],['24.6',2089.9],['24.7',2124.9],['24.8',2194.9],['24.9',2096.3],['24.10',1931.4],['24.11',2035.2],['24.12',2086.6],['25.1',1875.2],['25.2',1867.8],['25.3',1792.5],['25.4',1542.3],['25.5',1627.9],['25.6',1364.9],['25.7',1109.7],['25.8',893.4],['25.9',887.2],['25.10',755.8],['25.11',786.2],['25.12',581.9],['26.1',582.6],['26.2',433.0],['26.3',455.3],['26.4',328.4],['26.5',183.9]];
+const NS='http://www.w3.org/2000/svg';const tip=document.getElementById('tip');
+function el(n,a){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function showTip(ev,h){tip.innerHTML=h;tip.style.opacity=1;tip.style.left=(ev.clientX+14)+'px';tip.style.top=(ev.clientY-10)+'px';}
+function hideTip(){tip.style.opacity=0;}
+function bind(e,h){e.addEventListener('mousemove',ev=>showTip(ev,h));e.addEventListener('mouseleave',hideTip);e.style.cursor='default';}
+const pc=v=>(v>=0?'+':'')+v+'%';
+
+(function(){const L={sni:['SNI Wajib','t-sni'],ban:['수입금지','t-ban'],na:['na','t-na']};
+ document.getElementById('clsTbl').innerHTML=CLS.map(c=>{const lg=L[c.lartas];
+  return `<tr><td class="l">${c.ko}</td><td class="l" style="font-family:monospace">${c.hs}</td>`+
+   `<td class="l"><span class="tag ${lg[1]}">${c.lartas!=='na'?'🚩 ':''}${lg[0]}</span></td>`+
+   `<td class="l"><span class="tag ${c.scope?'t-in':'t-out'}">${c.scope?'포함':'제외'}</span></td>`+
+   `<td>${c.fy25>0?'$'+c.fy25+'M':'—'}</td></tr>`;}).join('');})();
+
+(function(){const tag=d=>d.mom<=-10?'<span class="tag t-bad">급악화</span>':d.mom<0?'<span class="tag t-flat">소폭 악화</span>':d.mom>=10?'<span class="tag t-good">회복</span>':'<span class="tag t-good">개선</span>';
+ document.getElementById('momTbl').innerHTML=[...D].sort((a,b)=>b.f25-a.f25).map(d=>
+  `<tr><td class="l">${d.ko}</td><td>${d.f25}</td><td class="${d.fy<0?'up-txt':'grn-txt'}">${pc(d.fy)}</td>`+
+  `<td class="${d.ttm<0?'up-txt':'grn-txt'}">${pc(d.ttm)}</td><td>${(d.mom>=0?'+':'')+d.mom}pp</td><td class="l">${tag(d)}</td></tr>`).join('');})();
+
+(function(){const L={sni:['SNI','t-sni'],na:['na','t-na']};
+ document.getElementById('tubeTbl').innerHTML=TUBEhs.map(t=>{const p=Math.round((t.b-t.a)/t.a*100);const lg=L[t.lartas];
+  return `<tr><td class="l">${t.ko} <span style="color:#546E7A;font-family:monospace;font-size:11px">${t.hs}</span></td>`+
+   `<td class="l"><span class="tag ${lg[1]}">${t.lartas!=='na'?'🚩':''}${lg[0]}</span></td>`+
+   `<td>$${t.a.toLocaleString()}</td><td>$${t.b.toLocaleString()}</td>`+
+   `<td class="${p<0?'up-txt':'grn-txt'}">${p>=0?'+':''}${p}%</td></tr>`;}).join('');})();
+
+// FY bars
+(function(){const W=940,left=48,right=14,top=24,bottom=40,H=260,plotW=W-left-right,plotH=H-top-bottom,max=1000;
+ const svg=document.getElementById('chartFY');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+ [0,250,500,750,1000].forEach(t=>{const yy=top+plotH*(1-t/max);svg.appendChild(el('line',{x1:left,y1:yy,x2:W-right,y2:yy,class:'grid-line'}));
+  const g=el('text',{x:left-8,y:yy+4,'text-anchor':'end',class:'axislabel'});g.textContent='$'+t+'M';svg.appendChild(g);});
+ const bw=plotW/FYq.length*0.5;
+ FYq.forEach((d,i)=>{const cx=left+plotW*((i+0.5)/FYq.length),h=plotH*(d.v/max),y=top+plotH-h;
+  const col=d.part?'#CFD8DC':(d.peak?'#1565C0':'#90CAF9');const r=el('rect',{x:cx-bw/2,y:y,width:bw,height:Math.max(h,2),rx:4,fill:col});
+  bind(r,`<b>${d.y}${d.part?' (5개월 진행중)':''}</b><br>$${d.v}M`);svg.appendChild(r);
+  const mt=el('text',{x:cx,y:y-8,'text-anchor':'middle',class:'val-out',fill:d.part?'#546E7A':'#37474F'});mt.textContent='$'+d.v+'M';svg.appendChild(mt);
+  const xl=el('text',{x:cx,y:H-20,'text-anchor':'middle',class:'barlabel'});xl.textContent=d.y;svg.appendChild(xl);
+  if(d.part){const s=el('text',{x:cx,y:H-6,'text-anchor':'middle',class:'axislabel'});s.textContent='진행중';svg.appendChild(s);}
+  if(i===3){const yy=el('text',{x:cx,y:y-24,'text-anchor':'middle',class:'val-out',fill:'#B85C4A'});yy.textContent='▼29.4%';svg.appendChild(yy);}});})();
+
+// dumbbell
+(function(){const data=[...D].sort((a,b)=>a.ttm-b.ttm);const rowH=28,top=12,W=940,labelGut=110,plotStart=124,plotEnd=790,valEnd=930;
+ const plotW=plotEnd-plotStart,lim=45,zeroX=plotStart+plotW*0.5;const xpos=v=>zeroX+plotW*0.5*(Math.max(-lim,Math.min(lim,v))/lim);
+ const H=top+data.length*rowH;const svg=document.getElementById('chartDB');svg.setAttribute('viewBox',`0 0 ${W} ${H+18}`);
+ [-40,-20,0,20,40].forEach(t=>{const xx=xpos(t);svg.appendChild(el('line',{x1:xx,y1:top-4,x2:xx,y2:H,class:t===0?'zero-line':'grid-line'}));
+  const g=el('text',{x:xx,y:H+14,'text-anchor':'middle',class:'axislabel'});g.textContent=(t>0?'+':'')+t+'%';svg.appendChild(g);});
+ data.forEach((d,i)=>{const y=top+i*rowH+rowH/2,xf=xpos(d.fy),xt=xpos(d.ttm);const conn=d.mom<0?'#E0A69B':'#A5D6A7';
+  svg.appendChild(el('line',{x1:xf,y1:y,x2:xt,y2:y,stroke:conn,'stroke-width':4,'stroke-linecap':'round'}));
+  const c1=el('circle',{cx:xf,cy:y,r:6,fill:'#90CAF9',stroke:'#fff','stroke-width':2});bind(c1,`<b>${d.ko}</b> · FY YoY ${pc(d.fy)}`);svg.appendChild(c1);
+  const c2=el('circle',{cx:xt,cy:y,r:6,fill:'#1565C0',stroke:'#fff','stroke-width':2});bind(c2,`<b>${d.ko}</b> · TTM YoY ${pc(d.ttm)}`);svg.appendChild(c2);
+  const lab=el('text',{x:labelGut,y:y+4,'text-anchor':'end',class:'barlabel'});lab.textContent=d.ko;svg.appendChild(lab);
+  const vt=el('text',{x:valEnd,y:y+4,'text-anchor':'end',class:'val-out',fill:'#546E7A'});vt.textContent=`${pc(d.fy)} → ${pc(d.ttm)}`;svg.appendChild(vt);});})();
+
+// grouped bars generic
+function grouped(svgId,data,max,unit){const rowH=17,inner=4,groupGap=15,top=8,left=56,right=64,W=940;
+ const plotW=W-left-right,H=top+data.length*(rowH*2+inner+groupGap);const svg=document.getElementById(svgId);svg.setAttribute('viewBox',`0 0 ${W} ${H+4}`);
+ const ticks=[0,.25,.5,.75,1].map(f=>Math.round(max*f));
+ ticks.forEach(t=>{const xx=left+plotW*(t/max);svg.appendChild(el('line',{x1:xx,y1:top,x2:xx,y2:H-groupGap+4,class:'grid-line'}));
+  const g=el('text',{x:xx,y:H+0,'text-anchor':'middle',class:'axislabel'});g.textContent='$'+t+unit;svg.appendChild(g);});
+ data.forEach((d,i)=>{const y=top+i*(rowH*2+inner+groupGap);
+  const lab=el('text',{x:left-10,y:y+rowH+2,'text-anchor':'end',class:'barlabel'});lab.textContent=d.ko;svg.appendChild(lab);
+  [['a','#90CAF9',0,'FY24'],['b','#1565C0',rowH+inner,'FY25']].forEach(([k,c,off,yr])=>{const w=plotW*(d[k]/max);
+   const r=el('rect',{x:left,y:y+off,width:Math.max(w,1),height:rowH,rx:3,fill:c});bind(r,`<b>${d.ko}</b> · ${yr}<br>$${d[k]}${unit}`);svg.appendChild(r);
+   if(d[k]>=max*0.03){const vt=el('text',{x:left+w+6,y:y+off+rowH-3,class:'val-out',fill:'#37474F'});vt.textContent='$'+d[k]+unit;svg.appendChild(vt);}});});}
+grouped('chartOTR',OTRc,240,'M');
+grouped('chartTube',TUBEc,14,'M');
+
+// solid TTM line
+(function(){const W=940,left=50,right=18,top=18,bottom=38,H=250,plotW=W-left-right,plotH=H-top-bottom,max=2400,n=TTM.length;
+ const svg=document.getElementById('chartSolid');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+ [0,600,1200,1800,2400].forEach(t=>{const yy=top+plotH*(1-t/max);svg.appendChild(el('line',{x1:left,y1:yy,x2:W-right,y2:yy,class:'grid-line'}));
+  const g=el('text',{x:left-8,y:yy+4,'text-anchor':'end',class:'axislabel'});g.textContent=(t/1000).toFixed(1)+'M';svg.appendChild(g);});
+ const X=i=>left+plotW*(i/(n-1)),Y=v=>top+plotH*(1-v/max);let dP='',aP=`M ${X(0)} ${top+plotH}`;
+ TTM.forEach((p,i)=>{const cx=X(i),cy=Y(p[1]);dP+=(i?' L ':'M ')+cx+' '+cy;aP+=' L '+cx+' '+cy;});aP+=` L ${X(n-1)} ${top+plotH} Z`;
+ svg.appendChild(el('path',{d:aP,fill:'#E3F2FD',opacity:'0.7'}));svg.appendChild(el('path',{d:dP,fill:'none',stroke:'#1565C0','stroke-width':'2.5','stroke-linejoin':'round'}));
+ TTM.forEach((p,i)=>{if(p[0]==='23.1'||p[0]==='24.1'||p[0]==='25.1'||p[0]==='26.1'){const cx=X(i);
+  const g=el('text',{x:cx,y:H-14,'text-anchor':'middle',class:'axislabel'});g.textContent='20'+p[0].split('.')[0];svg.appendChild(g);}});
+ const peakI=TTM.findIndex(p=>p[1]===2194.9),endI=n-1;
+ [[peakI,'피크 $2.19M','#1565C0'],[endI,'$0.18M','#B85C4A']].forEach(([idx,txt,c])=>{const cx=X(idx),cy=Y(TTM[idx][1]);
+  const m=el('circle',{cx:cx,cy:cy,r:5,fill:c,stroke:'#fff','stroke-width':2});bind(m,`<b>20${TTM[idx][0]}</b><br>TTM $${(TTM[idx][1]/1000).toFixed(2)}M`);svg.appendChild(m);
+  const t=el('text',{x:idx===endI?cx-4:cx,y:cy-12,'text-anchor':idx===endI?'end':'middle',class:'val-out',fill:c});t.textContent=txt;svg.appendChild(t);});})();
+</script>
+</body>
+</html>

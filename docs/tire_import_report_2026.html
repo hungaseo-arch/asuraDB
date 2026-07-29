@@ -55,6 +55,12 @@
   .val-out{font-size:11.5px; font-weight:700;} .grid-line{stroke:var(--blue-grey); stroke-width:1;} .zero-line{stroke:var(--ink2); stroke-width:1.5;}
   .callout{background:var(--blue-grey); border-left:4px solid var(--ttm); border-radius:8px; padding:12px 16px; font-size:12.5px; color:var(--ink); margin:12px 0;}
   .callout.warn{border-left-color:var(--alert); background:#FBEDE9;}
+  .gloss{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:14px 0 4px;}
+  .gloss .term{background:var(--blue-grey); border:1px solid var(--border); border-radius:10px; padding:13px 15px;}
+  .gloss .term .t{font-size:13.5px; font-weight:750; color:var(--ttm); margin-bottom:5px;}
+  .gloss .term .d{font-size:12px; color:var(--ink2); line-height:1.55;}
+  .gloss .term .d b{color:var(--ink);}
+  @media(max-width:720px){.gloss{grid-template-columns:1fr;}}
   code{background:var(--blue-grey); padding:1px 6px; border-radius:5px; font-size:12px; color:var(--ink);}
   .foot{font-size:11px; color:var(--ink2); margin-top:4px; line-height:1.7;}
   ol.rec{margin:6px 0; padding-left:22px;} ol.rec li{margin:9px 0;}
@@ -80,6 +86,27 @@
       <li>부자재 <b>이너튜브도 −29%(FY)·−42%(TTM)</b>로 모품목(TBR·OTR) 추세에 연동. 다만 <b>광산 튜브만 +19%</b>로 광산 라인의 상대적 방어를 재확인.</li>
     </ul>
   </div>
+
+  <!-- 용어 정의 -->
+  <section>
+    <h2 class="sec"><span class="num">§0</span>지표 용어 — FY · YTD · TTM</h2>
+    <p class="sec-sub">본 보고서는 기간 기준을 세 가지로 병행합니다. 쿼터·저빈도 품목은 하나만 보면 방향을 오판하므로 <b>완료연도 FY</b>와 <b>최신 TTM</b>을 함께 봅니다.</p>
+    <div class="gloss">
+      <div class="term">
+        <div class="t">FY <span style="font-weight:600;color:var(--ink2);font-size:11.5px">· Fiscal Year (회계연도)</span></div>
+        <div class="d"><b>고정 1년</b> 기간(통상 1/1~12/31)의 합계. 연간 보고·예산·쿼터 배정의 기준. 본 보고서는 <b>완료연도(2022~2025)</b>에 사용.</div>
+      </div>
+      <div class="term">
+        <div class="t">YTD <span style="font-weight:600;color:var(--ink2);font-size:11.5px">· Year-to-Date (연초부터 현재까지)</span></div>
+        <div class="d">해당 연도 <b>1/1부터 현재까지 누적</b>(예: 2026은 1~5월). 진행연도의 진척을 보지만, 저빈도 품목에선 <b>방향 착시</b>가 커 단독 사용은 부적합.</div>
+      </div>
+      <div class="term">
+        <div class="t">TTM <span style="font-weight:600;color:var(--ink2);font-size:11.5px">· Trailing Twelve Months (최근 12개월)</span></div>
+        <div class="d">현재 시점 기준 <b>직전 12개월 누계</b>. 계절성·단건 선적을 평활화해 <b>최근 1년 성과</b>를 가장 매끄럽게 반영. 대형·저빈도 품목의 기본 지표.</div>
+      </div>
+    </div>
+    <p class="foot" style="margin-top:10px">요약: <b>FY</b>=고정 1년 단위, <b>YTD</b>=올해 누적, <b>TTM</b>=과거 12개월 누적. YTD는 현재 진행 상황을, TTM은 최근 1년 성과를 보여주며, FY는 연간 보고·예산의 기준입니다.</p>
+  </section>
 
   <!-- §1 시장 개관 -->
   <section>

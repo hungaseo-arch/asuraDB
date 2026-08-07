@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>앞대가리 공식 30 · 문장 여는 덩어리</title>
+<style>
+  :root{
+    color-scheme:light;
+    /* AsuraDB 앱 시맨틱 토큰 (src/style.css 와 1:1) */
+    --background:oklch(0.99 0.002 260); --foreground:oklch(0.15 0.01 260);
+    --card:oklch(0.98 0.003 260);
+    --primary:oklch(0.45 0.18 260); --primary-foreground:oklch(0.98 0.003 260);
+    --muted:oklch(0.94 0.008 260); --muted-foreground:oklch(0.48 0.02 260);
+    --border:oklch(0.88 0.01 260);
+    /* 기존 변수 → 앱 토큰 별칭 */
+    --grey:var(--background);
+    --bluegrey:var(--muted);
+    --blue:color-mix(in oklch, var(--primary) 12%, var(--card));
+    --sage:color-mix(in oklch, var(--primary) 9%, var(--card));
+    --ink:var(--muted-foreground);
+    --ink-strong:var(--foreground);
+    --line:var(--border);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--grey);color:var(--ink-strong);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",Roboto,sans-serif;
+    line-height:1.55;-webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:0 16px 56px}
+
+  header{padding:24px 0 12px}
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink);font-weight:700;margin:0 0 6px}
+  h1{margin:0;font-size:24px;line-height:1.25;letter-spacing:-.01em}
+  h1 em{font-style:normal;color:var(--ink);font-weight:400}
+  .lede{margin:10px 0 0;font-size:13px;color:var(--ink);line-height:1.7}
+  .lede b{color:var(--ink-strong)}
+
+  .tabs{display:flex;gap:6px;margin:16px 0 0}
+  .tab{
+    flex:1;background:var(--bluegrey);border:1px solid var(--line);border-radius:10px;
+    padding:11px 6px;font-size:13px;font-weight:700;color:var(--ink);
+    font-family:inherit;cursor:pointer;letter-spacing:.01em;
+  }
+  .tab[aria-selected="true"]{background:color-mix(in oklch,var(--primary) 15%,transparent);color:var(--primary);border-color:color-mix(in oklch,var(--primary) 35%,var(--line))}
+  .tab:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .tab .s{display:block;font-size:10.5px;font-weight:400;opacity:.75;margin-top:2px}
+
+  .panel[hidden]{display:none}
+
+  /* ============ DECK ============ */
+  .deckhint{font-size:11.5px;color:var(--ink);text-align:center;margin:16px 0 10px;letter-spacing:.03em}
+  .viewport{overflow:hidden;touch-action:pan-y;border-radius:16px}
+  .track{display:flex;transition:transform .38s cubic-bezier(.4,.1,.2,1);will-change:transform}
+  .slide{flex:0 0 100%;padding:0 2px}
+
+  .scene{perspective:1600px}
+  .card{
+    position:relative;width:100%;min-height:500px;
+    transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,.1,.2,1);
+    cursor:pointer;
+  }
+  .card.flipped{transform:rotateY(180deg)}
+  .face{
+    position:absolute;inset:0;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:16px 16px 14px;display:flex;flex-direction:column;overflow:hidden;
+  }
+  .back{transform:rotateY(180deg);overflow-y:auto}
+  .tagrow{display:flex;justify-content:space-between;align-items:center}
+  .tag{font-size:10px;font-weight:800;letter-spacing:.12em;background:var(--sage);color:var(--ink);padding:4px 9px;border-radius:5px}
+  .cnt{font-size:10.5px;color:var(--ink);opacity:.8;letter-spacing:.04em}
+  .art{flex:1;display:flex;align-items:center;justify-content:center;margin:6px 0 2px;min-height:0}
+  .art svg{width:100%;height:auto;max-height:230px}
+  .particle{font-size:30px;font-weight:800;letter-spacing:-.02em;text-align:center;margin:2px 0 0}
+  .sub{text-align:center;font-size:12px;color:var(--ink);margin:2px 0 0;letter-spacing:.02em}
+  .core{text-align:center;font-size:13.5px;color:var(--ink);margin:8px 0 0;padding-top:9px;border-top:1px solid var(--line)}
+  .core b{color:var(--ink-strong);font-weight:700}
+  .flipnote{text-align:center;font-size:10px;color:var(--ink);opacity:.7;margin:9px 0 0;letter-spacing:.06em}
+
+  .back h2{margin:0 0 10px;font-size:18px;letter-spacing:-.01em}
+  .img{background:var(--blue);border-radius:9px;padding:9px 11px;margin-bottom:7px}
+  .img:nth-of-type(even){background:var(--bluegrey)}
+  .ih{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .in{font-size:9.5px;font-weight:800;color:var(--primary-foreground);background:var(--primary);width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .it{font-size:14px;font-weight:700}
+  .form{font-size:9.5px;font-weight:700;letter-spacing:.04em;background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:4px;padding:1px 6px}
+  .idsc{font-size:11.5px;color:var(--ink);margin:3px 0 0 23px}
+  .exbox{background:var(--sage);border-radius:9px;padding:9px 11px;margin-top:auto}
+  .exbox p{margin:0;font-size:12.5px}
+  .exbox .kr{font-size:11px;color:var(--ink);margin-top:2px}
+  .note{font-size:10.5px;color:var(--ink);margin:7px 0 0;line-height:1.5}
+
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 0}
+  .arrow{
+    background:var(--bluegrey);border:1px solid var(--line);border-radius:9px;
+    width:44px;height:38px;font-size:15px;color:var(--ink);font-family:inherit;cursor:pointer;flex:0 0 auto;
+  }
+  .arrow:disabled{opacity:.35;cursor:default}
+  .arrow:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;flex:1}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--line);border:none;padding:0;cursor:pointer}
+  .dot[aria-current="true"]{background:var(--primary);transform:scale(1.35)}
+  .pos{text-align:center;font-size:11.5px;color:var(--ink);margin:9px 0 0;letter-spacing:.04em}
+
+  /* ============ LIST ============ */
+  .controls{position:sticky;top:0;z-index:20;background:var(--grey);padding:12px 0 8px;border-bottom:1px solid var(--line);margin-bottom:12px}
+  .searchrow{display:flex;gap:8px}
+  input[type=search]{
+    flex:1;min-width:0;appearance:none;-webkit-appearance:none;background:var(--blue);
+    border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:16px;
+    color:var(--ink-strong);font-family:inherit;
+  }
+  input[type=search]::placeholder{color:var(--ink);opacity:.75}
+  input[type=search]:focus{outline:2px solid var(--ink);outline-offset:1px}
+  .toggle{flex:0 0 auto;background:var(--bluegrey);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:13px;font-weight:600;color:var(--ink);font-family:inherit;cursor:pointer;white-space:nowrap}
+  .toggle[aria-pressed="true"]{background:var(--sage);color:var(--ink-strong)}
+  .rail{display:flex;gap:6px;overflow-x:auto;padding:9px 0 3px;scrollbar-width:none}
+  .rail::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;background:var(--bluegrey);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--ink);font-family:inherit;cursor:pointer}
+  .chip .n{font-weight:400;opacity:.65;margin-left:5px;font-size:11px}
+  .chip[aria-pressed="true"]{background:color-mix(in oklch,var(--primary) 15%,transparent);color:var(--primary);border-color:color-mix(in oklch,var(--primary) 35%,var(--line))}
+  .count{font-size:12px;color:var(--ink);padding:6px 2px 0}
+  .group{margin:22px 0 0}
+  .ghead{display:flex;align-items:baseline;gap:10px;padding:0 2px 8px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .ghead .p{font-size:18px;font-weight:800;letter-spacing:.01em}
+  .ghead .g{font-size:12px;color:var(--ink)}
+  .jump{margin-left:auto;font-size:11px;color:var(--ink);background:var(--bluegrey);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-family:inherit;cursor:pointer}
+  .lcard{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:12px;padding:10px 12px;margin-bottom:8px;
+    display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+  /* 1칸: 숫자 박스 */
+  .nbox{flex:0 0 auto;width:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:var(--bluegrey);border-radius:8px;padding:6px}
+  .idx{font-size:14px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+  /* 2칸: 표제어 박스 (영어 · 인니어뜻 · 한국어뜻) */
+  .wbox{flex:1 1 180px;min-width:160px;max-width:280px;display:flex;flex-direction:column;justify-content:center;gap:4px;
+    background:var(--blue);border-radius:8px;padding:9px 12px;overflow-wrap:break-word}
+  .v{font-size:17px;font-weight:700;letter-spacing:-.01em}
+  .ko{font-size:13.5px;font-weight:600}
+  .id{font-size:12.5px;color:var(--ink)}
+  /* 3칸: 예문 박스 */
+  .ex{flex:2 1 300px;min-width:220px;margin:0;padding:10px 12px;background:var(--bluegrey);border-radius:8px;
+    display:flex;flex-direction:column;justify-content:center;overflow-wrap:break-word}
+  .ex .en{margin:0;font-size:14px}
+  .ex .idex{margin:4px 0 0;font-size:12.5px;color:var(--ink-strong)}
+  .ex .kr{margin:3px 0 0;font-size:12.5px;color:var(--ink)}
+  /* 예문 박스 안 실무 주의 */
+  .tip{margin:6px 0 0;font-size:11.5px;color:var(--ink);line-height:1.6}
+  .tip::before{content:"실무 주의";font-size:9px;font-weight:800;letter-spacing:.06em;background:var(--card);color:var(--ink);padding:1.5px 5px;border-radius:4px;margin-right:6px;vertical-align:1px}
+  .say{border:none;background:var(--sage);color:var(--ink-strong);border-radius:5px;
+    width:24px;height:20px;font-size:11px;line-height:1;padding:0;margin-left:7px;
+    cursor:pointer;vertical-align:1px;font-family:inherit}
+  .say:hover{filter:brightness(.96)}
+  .say:active{transform:scale(.9)}
+  .say.playing{background:var(--primary);color:var(--primary-foreground)}
+  .say:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  body.study .ko, body.study .id, body.study .ex .kr, body.study .idtx{background:var(--ink);color:transparent;border-radius:4px;user-select:none;cursor:pointer}
+  body.study .revealed{background:transparent!important;color:inherit!important;cursor:auto}
+  .empty{padding:32px 4px;color:var(--ink);font-size:14px}
+
+  /* ============ DRILL ============ */
+  .drill{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 16px;margin:16px 0 0}
+  .dmeta{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--ink);letter-spacing:.04em}
+  .dtag{font-size:10px;font-weight:800;letter-spacing:.1em;background:var(--sage);color:var(--ink);padding:4px 9px;border-radius:5px}
+  .dq{margin:16px 0 0;font-size:19px;font-weight:700;line-height:1.5}
+  .dsit{margin:6px 0 0;font-size:13px;color:var(--ink)}
+  .dslot{margin:16px 0 0;background:var(--blue);border-radius:10px;padding:14px;min-height:96px;display:flex;flex-direction:column;justify-content:center}
+  .dslot .hide{font-size:13px;color:var(--ink);text-align:center;letter-spacing:.03em}
+  .dans{font-size:22px;font-weight:800;letter-spacing:-.01em}
+  .dform{display:inline-block;margin-left:8px;font-size:10px;font-weight:700;background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:4px;padding:2px 7px;vertical-align:3px}
+  .dex{margin:9px 0 0;font-size:14px}
+  .dexid{margin:3px 0 0;font-size:12.5px;color:var(--ink-strong)}
+  .dexkr{margin:2px 0 0;font-size:12px;color:var(--ink)}
+  .dbtns{display:flex;gap:8px;margin:14px 0 0}
+  .btn{flex:1;border-radius:10px;padding:12px 8px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;border:1px solid var(--line)}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.ghost{background:var(--bluegrey);color:var(--ink)}
+  .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  /* ============ VIDEO ============ */
+  .vcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0 0}
+  .vhead{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px}
+  .vn{font-size:10px;font-weight:800;color:#fff;background:var(--ink);width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .vt{font-size:14.5px;font-weight:700}
+  .vuse{font-size:10px;font-weight:700;letter-spacing:.04em;background:var(--sage);color:var(--ink);border-radius:4px;padding:2px 7px}
+  .frame{position:relative;width:100%;aspect-ratio:16/9;background:var(--bluegrey);border-radius:10px;overflow:hidden}
+  .frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .vfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px;flex-wrap:wrap}
+  .vdsc{font-size:11.5px;color:var(--ink);flex:1;min-width:180px;line-height:1.6}
+  .vlink{font-size:11.5px;font-weight:600;color:var(--ink);background:var(--bluegrey);border:1px solid var(--line);border-radius:8px;padding:7px 11px;text-decoration:none;white-space:nowrap}
+  .vlink:hover{background:var(--blue)}
+  .vlink:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  footer{margin-top:30px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink);line-height:1.7}
+  /* ===== 아이폰/모바일 반응형 (portrait 폭 ~430px 커버) ===== */
+  @media (max-width:560px){
+    .wrap{padding:0 14px 48px}
+    header{padding:18px 0 10px}
+    h1{font-size:21px}
+    .card{min-height:480px}
+    /* 목록 카드: [번호 + 표제어] 한 줄 → [예문] 아랫줄로 접힘 */
+    .lcard{gap:8px}
+    .nbox{width:40px}
+    .wbox{flex:1 1 auto;min-width:0;max-width:none}
+    .ex{flex:1 1 100%;min-width:0}
+    /* 🔊 탭 영역 확대 */
+    .say{width:30px;height:24px;font-size:12px}
+    .tab{font-size:12px;padding:10px 4px}
+  }
+  @media (max-width:380px){
+    .tab{padding:10px 6px;font-size:12.5px}
+    .tab{padding:10px 3px;font-size:11.5px}
+    .tab .s{font-size:9.5px}
+    .v{font-size:16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Sentence Openers · Pembuka Kalimat · 앞대가리</p>
+  <h1>앞대가리 공식 30 <em>— 문장을 여는 덩어리</em></h1>
+  <p class="lede">한국어는 뒤에서 결론이 나지만, 영어는 <b>앞대가리에서 이미 결론이 납니다.</b>
+  “I’m going to”라고 뱉는 순간 뒤에는 동사원형만 오면 됩니다.
+  단어를 조립하지 말고, <b>덩어리를 먼저 뱉고 뒤를 채우는</b> 순서로 연습하십시오.</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-deck" role="tab" aria-selected="true" aria-controls="panel-deck">카드 덱<span class="s">기능 6분류</span></button>
+    <button class="tab" id="tab-list" role="tab" aria-selected="false" aria-controls="panel-list">전체 목록<span class="s">공식 30개</span></button>
+    <button class="tab" id="tab-drill" role="tab" aria-selected="false" aria-controls="panel-drill">말하기 드릴<span class="s">랜덤 출제</span></button>
+    <button class="tab" id="tab-video" role="tab" aria-selected="false" aria-controls="panel-video">원본 강의<span class="s">영상 3편</span></button>
+  </div>
+</header>
+
+<!-- ========== DECK ========== -->
+<section class="panel" id="panel-deck" role="tabpanel">
+  <p class="deckhint">좌우로 스와이프하면 넘어가고, 카드를 탭하면 뒤집힙니다</p>
+  <div class="viewport" id="viewport"><div class="track" id="track"></div></div>
+  <div class="nav">
+    <button class="arrow" id="prev" aria-label="이전 카드">‹</button>
+    <div class="dots" id="dots"></div>
+    <button class="arrow" id="next" aria-label="다음 카드">›</button>
+  </div>
+  <p class="pos" id="pos"></p>
+</section>
+
+<!-- ========== LIST ========== -->
+<section class="panel" id="panel-list" role="tabpanel" hidden>
+  <div class="controls">
+    <div class="searchrow">
+      <input type="search" id="q" placeholder="검색 (예: shipment, 지연, harus, supposed)" autocomplete="off">
+      <button class="toggle" id="study" aria-pressed="false">뜻 가리기</button>
+    </div>
+    <div class="rail" id="rail"></div>
+    <div class="count" id="count"></div>
+  </div>
+  <div id="list"></div>
+</section>
+
+<!-- ========== DRILL ========== -->
+<section class="panel" id="panel-drill" role="tabpanel" hidden>
+  <p class="deckhint">한국어를 보고 앞대가리를 소리 내어 말한 뒤, 정답을 확인하십시오</p>
+  <div class="drill">
+    <div class="dmeta"><span class="dtag" id="d-tag">—</span><span id="d-count">—</span></div>
+    <p class="dq" id="d-q">—</p>
+    <p class="dsit" id="d-sit">—</p>
+    <div class="dslot" id="d-slot"><p class="hide">입으로 먼저 말해 보세요</p></div>
+    <div class="dbtns">
+      <button class="btn ghost" id="d-show">정답 보기</button>
+      <button class="btn primary" id="d-next">다음 문제</button>
+    </div>
+  </div>
+</section>
+
+<!-- ========== VIDEO ========== -->
+<section class="panel" id="panel-video" role="tabpanel" hidden>
+  <p class="deckhint">이 자료의 근거가 된 원본 강의입니다 · 영상은 처음 열 때 불러옵니다</p>
+  <div id="videos"></div>
+</section>
+
+<footer>
+  <b>학습 순서:</b> 카드 덱(기능별 이미지) → 전체 목록(30개 정독) → 말하기 드릴(입으로 출력). 눈으로 읽고 끝내면 앞대가리는 절대 입에 붙지 않습니다.<br>
+  <b>연결 형태 4종:</b> <b>+ V원형</b>(to 뒤 동사원형) · <b>+ -ing</b> · <b>+ 주어＋동사</b>(절) · <b>+ 명사</b>. 앞대가리를 외울 때 이 형태를 함께 외워야 뒤가 막히지 않습니다.<br>
+  원 출처: 유튜브 강의 3편(「원본 강의」 탭) 및 이를 정리한 릴리스AI 다이제스트 「영어 문장 80% 해결 앞대가리 공식 모음: 핵심 표현 30가지」. 예문·인도네시아어 대응·실무 주의는 타이어 수입·유통 업무 맥락에 맞추어 재작성했습니다.
+</footer>
+
+</div>
+
+<script>
+/* ===================== SVG ===================== */
+const SVG = {
+plan:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<line x1="36" y1="150" x2="268" y2="150" stroke="#546E7A" stroke-width="2.5" opacity=".5"/>
+<circle cx="66" cy="128" r="12" fill="#37474F"/>
+<path d="M66 140 L66 150" stroke="#37474F" stroke-width="4" stroke-linecap="round"/>
+<path d="M86 118 L214 118" stroke="#37474F" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 9"/>
+<path d="M232 118 L208 104 L208 132 Z" fill="#37474F"/>
+<path d="M244 150 L244 52" stroke="#546E7A" stroke-width="3.5" stroke-linecap="round"/>
+<path d="M244 56 L292 70 L244 84 Z" fill="#E8F5E9" stroke="#546E7A" stroke-width="2.5" stroke-linejoin="round"/>
+<g stroke="#546E7A" stroke-width="2.5" opacity=".45" stroke-linecap="round">
+<line x1="48" y1="112" x2="40" y2="106"/><line x1="52" y1="98" x2="48" y2="88"/></g></svg>`,
+
+habit:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<circle cx="150" cy="96" r="58" fill="none" stroke="#546E7A" stroke-width="3" stroke-dasharray="9 9" opacity=".55"/>
+<path d="M150 38 a58 58 0 0 1 50 29" fill="none" stroke="#37474F" stroke-width="6" stroke-linecap="round"/>
+<path d="M212 74 L196 52 L182 76 Z" fill="#37474F"/>
+<circle cx="150" cy="96" r="22" fill="#ECEFF1" stroke="#546E7A" stroke-width="2.5"/>
+<path d="M150 84 L150 96 L160 102" fill="none" stroke="#37474F" stroke-width="3" stroke-linecap="round"/>
+<g fill="#546E7A" opacity=".4"><circle cx="60" cy="160" r="6"/><circle cx="86" cy="160" r="6"/><circle cx="112" cy="160" r="6"/></g>
+<g fill="#37474F"><circle cx="138" cy="160" r="6"/><circle cx="164" cy="160" r="6"/><circle cx="190" cy="160" r="6"/><circle cx="216" cy="160" r="6"/><circle cx="242" cy="160" r="6"/></g></svg>`,
+
+must:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<rect x="52" y="34" width="130" height="124" rx="9" fill="#fff" stroke="#546E7A" stroke-width="2.5"/>
+<g stroke="#546E7A" stroke-width="2.5" stroke-linecap="round" opacity=".55">
+<line x1="98" y1="62" x2="162" y2="62"/><line x1="98" y1="96" x2="162" y2="96"/><line x1="98" y1="130" x2="162" y2="130"/></g>
+<g fill="none" stroke="#37474F" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+<path d="M70 62 L78 70 L92 54"/><path d="M70 96 L78 104 L92 88"/></g>
+<rect x="68" y="122" width="16" height="16" rx="3" fill="none" stroke="#546E7A" stroke-width="2.5"/>
+<path d="M214 44 L214 132" stroke="#546E7A" stroke-width="3" stroke-linecap="round"/>
+<path d="M214 146 L200 118 L228 118 Z" fill="#37474F"/>
+<rect x="196" y="150" width="60" height="16" rx="6" fill="#E8F5E9" stroke="#546E7A" stroke-width="2"/></svg>`,
+
+feel:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<path d="M58 142 A76 76 0 0 1 210 142" fill="none" stroke="#546E7A" stroke-width="11" opacity=".2" stroke-linecap="round"/>
+<path d="M134 68 A76 76 0 0 1 210 142" fill="none" stroke="#37474F" stroke-width="11" stroke-linecap="round"/>
+<circle cx="134" cy="142" r="9" fill="#37474F"/>
+<line x1="134" y1="142" x2="182" y2="96" stroke="#37474F" stroke-width="5" stroke-linecap="round"/>
+<circle cx="252" cy="72" r="24" fill="#E8F5E9" stroke="#546E7A" stroke-width="2.5"/>
+<path d="M252 84 c-14 -10 -18 -18 -12 -24 c4 -4 9 -2 12 3 c3 -5 8 -7 12 -3 c6 6 2 14 -12 24 z" fill="#546E7A"/>
+<g stroke="#546E7A" stroke-width="2.5" opacity=".5" stroke-linecap="round">
+<line x1="72" y1="120" x2="84" y2="124"/><line x1="196" y1="120" x2="184" y2="124"/></g></svg>`,
+
+ask:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<circle cx="74" cy="112" r="17" fill="#37474F"/>
+<path d="M50 158 a24 24 0 0 1 48 0 z" fill="#37474F"/>
+<circle cx="226" cy="112" r="17" fill="#546E7A" opacity=".5"/>
+<path d="M202 158 a24 24 0 0 1 48 0 z" fill="#546E7A" opacity=".5"/>
+<path d="M104 40 h92 a10 10 0 0 1 10 10 v34 a10 10 0 0 1 -10 10 h-52 l-18 16 v-16 h-22 a10 10 0 0 1 -10 -10 v-34 a10 10 0 0 1 10 -10 z" fill="#fff" stroke="#546E7A" stroke-width="2.5"/>
+<path d="M140 60 a10 10 0 0 1 19 4 c0 7 -9 7 -9 14" fill="none" stroke="#37474F" stroke-width="3.5" stroke-linecap="round"/>
+<circle cx="150" cy="84" r="3" fill="#37474F"/></svg>`,
+
+tell:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<rect x="44" y="52" width="104" height="86" rx="9" fill="#ECEFF1" stroke="#546E7A" stroke-width="2.5"/>
+<path d="M44 62 q0 -10 10 -10 h84 q10 0 10 10 v6 h-104 z" fill="#546E7A" opacity=".3"/>
+<path d="M96 82 L96 130" stroke="#546E7A" stroke-width="3" stroke-dasharray="6 6" opacity=".6"/>
+<path d="M156 95 L206 95" stroke="#37474F" stroke-width="5" stroke-linecap="round"/>
+<path d="M222 95 L198 81 L198 109 Z" fill="#37474F"/>
+<path d="M236 48 h34 a8 8 0 0 1 8 8 v56 a8 8 0 0 1 -8 8 h-34 l-14 14 v-14 a8 8 0 0 1 -8 -8 v-56 a8 8 0 0 1 8 -8 z" fill="#E8F5E9" stroke="#546E7A" stroke-width="2.5" opacity="0"/>
+<circle cx="252" cy="95" r="30" fill="#E8F5E9" stroke="#546E7A" stroke-width="2.5"/>
+<g stroke="#37474F" stroke-width="3" stroke-linecap="round"><line x1="238" y1="86" x2="266" y2="86"/><line x1="238" y1="96" x2="266" y2="96"/><line x1="238" y1="106" x2="256" y2="106"/></g></svg>`
+};
+
+/* ===================== DATA =====================
+   [0]그룹  [1]앞대가리  [2]연결형태  [3]한국어 뜻  [4]Bahasa  [5]영어 예문  [6]한국어 예문  [7]실무 주의 */
+const DATA = [
+["의도·계획","I'm going to / I wanna","+ V원형","~할 겁니다 / ~하고 싶어요","Saya akan ~ / Saya mau ~","I'm going to send the revised quotation today.","오늘 수정 견적서를 보내겠습니다.","wanna는 want to의 구어 축약형입니다. 대외 이메일·공문에는 쓰지 않습니다.","Saya akan mengirim penawaran revisi hari ini."],
+["의도·계획","I'm about to","+ V원형","막 ~하려던 참입니다","Saya baru mau ~","I'm about to call the shipping line.","지금 막 선사에 전화하려던 참입니다.","5분 내에 벌어질 일에만 씁니다. 오늘 중이면 I'm going to.","Saya baru mau menelepon pihak pelayaran."],
+["의도·계획","I'm ready to","+ V원형","~할 준비가 됐습니다","Saya siap untuk ~","We're ready to place the order.","주문을 넣을 준비가 되었습니다.","","Kami siap melakukan pemesanan."],
+["의도·계획","I'm here to","+ V원형","~하러 왔습니다","Saya di sini untuk ~","I'm here to inspect the container seal.","컨테이너 실을 확인하러 왔습니다.","현장 방문·미팅 첫마디로 목적을 바로 밝힐 때 유용합니다.","Saya di sini untuk memeriksa segel kontainer."],
+["의도·계획","It's time to","+ V원형","이제 ~할 때입니다","Sudah waktunya untuk ~","It's time to review the 2026 price list.","이제 2026년 가격표를 검토할 때입니다.","","Sudah waktunya meninjau daftar harga 2026."],
+["습관·경향","I used to","+ V원형","예전에는 ~했습니다 (지금은 아님)","Dulu saya ~","We used to import from India.","예전에는 인도에서 수입했습니다.","be used to + -ing(~에 익숙하다)와 형태가 비슷하나 뜻이 전혀 다릅니다.","Dulu kami mengimpor dari India."],
+["습관·경향","I tend to","+ V원형","~하는 편입니다","Saya cenderung ~","Buyers tend to order before the rainy season.","바이어들은 우기 전에 주문하는 편입니다.","단정을 피하고 경향만 말할 때 씁니다. 보고서 문장으로도 안전합니다.","Pembeli cenderung memesan sebelum musim hujan."],
+["습관·경향","kind of","+ 형용사 / V","좀, 약간","agak; lumayan","The delivery schedule is kind of tight.","납기 일정이 좀 빡빡합니다.","회화 전용입니다. 문서에는 slightly 또는 somewhat을 쓰십시오.","Jadwal pengirimannya agak mepet."],
+["습관·경향","for some reason","+ 주어＋동사","무슨 이유인지, 왠지","entah kenapa","For some reason, the L/C hasn't been issued yet.","무슨 이유인지 L/C가 아직 개설되지 않았습니다.","원인을 아직 모른다는 신호입니다. 책임 소재를 흐릴 때 오해를 살 수 있습니다.","Entah kenapa, L/C-nya belum diterbitkan."],
+["습관·경향","just in case","+ 주어＋동사 / 단독","혹시 모르니","untuk berjaga-jaga","Bring the packing list, just in case.","혹시 모르니 패킹 리스트를 가져오세요.","뒤에 절이 오면 현재시제를 씁니다. just in case it rains.","Bawa packing list-nya, untuk jaga-jaga."],
+["의무·필요","I have to","+ V원형","~해야 합니다 (상황상 필수)","Saya harus ~","We have to clear customs by Friday.","금요일까지 통관을 마쳐야 합니다.","외부 사정에 의한 강제입니다. 내 판단이면 I should.","Kami harus menyelesaikan bea cukai paling lambat Jumat."],
+["의무·필요","I'm supposed to","+ V원형","~하기로 되어 있습니다","Saya seharusnya ~","The vessel is supposed to arrive on the 15th.","선박은 15일에 도착하기로 되어 있습니다.","약속·규정상 예정을 뜻하며, 실제로는 안 지켜졌다는 뉘앙스를 자주 동반합니다.","Kapalnya seharusnya tiba tanggal 15."],
+["의무·필요","I'd better","+ V원형","~하는 게 좋겠습니다 (안 하면 문제)","Sebaiknya saya ~","We'd better confirm the booking today.","오늘 부킹을 확정하는 게 좋겠습니다.","경고 뉘앙스가 있습니다. 상급자·고객에게는 I suggest we로 바꾸십시오.","Sebaiknya kita konfirmasi booking-nya hari ini."],
+["의무·필요","I just need to","+ V원형","~만 하면 됩니다","Saya hanya perlu ~","I just need to confirm the HS code.","HS 코드만 확인하면 됩니다.","남은 일이 하나뿐임을 강조해 상대를 안심시킬 때 씁니다.","Saya hanya perlu memastikan kode HS-nya."],
+["의무·필요","I forgot to","+ V원형","~하는 걸 깜빡했습니다","Saya lupa ~","I forgot to attach the invoice.","인보이스를 첨부하는 걸 깜빡했습니다.","forgot to + V는 안 한 것, forgot + -ing는 한 것을 잊은 것입니다.","Saya lupa melampirkan fakturnya."],
+["감정·바람","I can't wait to","+ V원형","빨리 ~하고 싶습니다","Saya tidak sabar untuk ~","I can't wait to see the new tread pattern.","새 트레드 패턴을 빨리 보고 싶습니다.","","Saya tidak sabar melihat pola tapak yang baru."],
+["감정·바람","I'm trying to","+ V원형","~하려고 애쓰는 중입니다","Saya sedang berusaha ~","We're trying to reduce demurrage costs.","체선료를 줄이려고 노력 중입니다.","아직 결과가 안 나왔다는 뜻입니다. 완료 보고에는 쓰지 마십시오.","Kami sedang berusaha menekan biaya demurrage."],
+["감정·바람","I can't help","+ -ing","~하지 않을 수 없습니다","Saya tidak bisa menahan ~","I can't help thinking the price is too high.","가격이 너무 높다는 생각을 지울 수가 없습니다.","can't help + -ing 또는 can't help but + V원형. 두 형태를 섞지 마십시오.","Saya tidak bisa tidak berpikir harganya terlalu tinggi."],
+["감정·바람","I'm afraid","+ 주어＋동사","유감이지만 ~입니다","Maaf, sepertinya ~","I'm afraid the shipment will be delayed.","유감이지만 선적이 지연될 것 같습니다.","나쁜 소식을 여는 비즈니스 표준 완충 표현입니다. 무섭다는 뜻이 아닙니다.","Sepertinya pengirimannya akan tertunda."],
+["감정·바람","I'd like to","+ V원형","~하고 싶습니다 (정중)","Saya ingin ~","I'd like to propose a revised payment term.","수정된 결제 조건을 제안드리고 싶습니다.","I want to의 정중형입니다. 대외 문서 기본값으로 삼으십시오.","Saya ingin mengusulkan termin pembayaran yang direvisi."],
+["요청·제안","Would you mind","+ -ing","~해 주시겠습니까?","Apakah Anda keberatan ~?","Would you mind sending the B/L copy today?","오늘 B/L 사본을 보내 주시겠습니까?","승낙의 대답이 No입니다. Yes로 답하면 거절이 되니 주의하십시오.","Bisakah Anda mengirim salinan B/L hari ini?"],
+["요청·제안","Why don't we / you","+ V원형","~하는 게 어떨까요?","Bagaimana kalau ~?","Why don't we split the shipment into two?","선적을 두 건으로 나누는 게 어떨까요?","부정문처럼 보이지만 제안입니다. 회의에서 대안을 낼 때 씁니다.","Bagaimana kalau kita bagi pengirimannya menjadi dua?"],
+["요청·제안","Feel free to","+ V원형","편하게 ~하십시오","Silakan ~","Feel free to contact me anytime.","언제든 편하게 연락 주십시오.","메일 맺음말로 자주 쓰입니다.","Jangan sungkan menghubungi saya kapan saja."],
+["요청·제안","Do you happen to","+ V원형","혹시 ~하십니까?","Apakah Anda kebetulan ~?","Do you happen to have the mill certificate?","혹시 밀 시트를 가지고 계십니까?","부담을 줄여 묻는 표현입니다. 없어도 괜찮다는 신호를 함께 줍니다.","Apakah Anda kebetulan punya sertifikat pabrik?"],
+["요청·제안","How come","+ 주어＋동사","어째서 ~인가요?","Kok bisa ~?","How come the container is still at the port?","어째서 컨테이너가 아직 항구에 있습니까?","why와 달리 도치하지 않습니다. 구어체이며 추궁조로 들릴 수 있습니다.","Kok kontainernya masih di pelabuhan?"],
+["설명·전달","The thing is","+ 주어＋동사","문제는 ~라는 겁니다","Masalahnya adalah ~","The thing is, the buyer wants 90-day credit.","문제는 바이어가 90일 여신을 원한다는 것입니다.","본론의 걸림돌을 꺼내는 신호입니다.","Masalahnya, pembeli minta kredit 90 hari."],
+["설명·전달","That's why","+ 주어＋동사","그래서 ~인 것입니다","Itulah sebabnya ~","That's why we raised the CIF price.","그래서 CIF 가격을 올린 것입니다.","앞 문장이 원인, 뒤 문장이 결과입니다. 순서를 바꾸지 마십시오.","Itulah sebabnya kami menaikkan harga CIF."],
+["설명·전달","It turns out","+ 주어＋동사","알고 보니 ~였습니다","Ternyata ~","It turns out the delay was caused by a port strike.","알고 보니 지연은 항만 파업 때문이었습니다.","원인 규명 보고의 첫 문장으로 유용합니다.","Ternyata keterlambatannya disebabkan oleh mogok kerja di pelabuhan."],
+["설명·전달","I'm looking for","+ 명사","~를 찾고 있습니다","Saya sedang mencari ~","We're looking for a reliable distributor in Kalimantan.","칼리만탄에서 믿을 만한 유통업체를 찾고 있습니다.","","Kami sedang mencari distributor yang andal di Kalimantan."],
+["설명·전달","I'm good at / bad at","+ -ing / 명사","~를 잘합니다 / 못합니다","Saya pandai ~ / Saya kurang ~","She's good at handling customs issues.","그녀는 통관 문제를 잘 처리합니다.","전치사 at 뒤에는 동사원형이 올 수 없습니다. 반드시 -ing입니다.","Dia pandai menangani urusan bea cukai."]
+];
+
+const GROUP_LABEL = {
+  "의도·계획":"앞으로 할 일을 선언한다",
+  "습관·경향":"평소 어떤지, 왜 그런지를 말한다",
+  "의무·필요":"해야 하는 일과 남은 일을 말한다",
+  "감정·바람":"바람·노력·유감을 부드럽게 전한다",
+  "요청·제안":"상대를 움직이되 부담을 낮춘다",
+  "설명·전달":"사실과 배경을 정리해 넘긴다"
+};
+const ORDER = ["의도·계획","습관·경향","의무·필요","감정·바람","요청·제안","설명·전달"];
+
+const DECK = [
+{k:"의도·계획",t:"의도 · 계획",en:"I'M GOING TO",art:SVG.plan,
+ core:"화살표가<br><b>앞을 향해 이미 출발했다</b>",
+ ex:["I'm going to send the revised quotation today.","오늘 수정 견적서를 보내겠습니다."],
+ note:"이 그룹은 전부 뒤에 동사원형만 옵니다. 시제를 고민할 필요가 없습니다."},
+{k:"습관·경향",t:"습관 · 경향",en:"I USED TO",art:SVG.habit,
+ core:"같은 궤도를<br><b>반복해서 돈다</b>",
+ ex:["Buyers tend to order before the rainy season.","바이어들은 우기 전에 주문하는 편입니다."],
+ note:"단정하지 않고 경향만 말하므로, 근거가 약할 때 안전한 표현입니다."},
+{k:"의무·필요",t:"의무 · 필요",en:"I HAVE TO",art:SVG.must,
+ core:"체크리스트가<br><b>위에서 나를 누른다</b>",
+ ex:["We have to clear customs by Friday.","금요일까지 통관을 마쳐야 합니다."],
+ note:"have to(외부 강제) · be supposed to(약속된 예정) · had better(경고)는 압력의 세기가 다릅니다."},
+{k:"감정·바람",t:"감정 · 바람",en:"I'D LIKE TO",art:SVG.feel,
+ core:"바늘이 움직여<br><b>속마음을 가리킨다</b>",
+ ex:["I'm afraid the shipment will be delayed.","유감이지만 선적이 지연될 것 같습니다."],
+ note:"I want to를 I'd like to로 바꾸는 것만으로 대외 문서의 격이 올라갑니다."},
+{k:"요청·제안",t:"요청 · 제안",en:"WOULD YOU MIND",art:SVG.ask,
+ core:"질문을 건네<br><b>상대를 움직인다</b>",
+ ex:["Would you mind sending the B/L copy today?","오늘 B/L 사본을 보내 주시겠습니까?"],
+ note:"Would you mind는 뒤에 -ing가 오고, 승낙의 대답이 No입니다."},
+{k:"설명·전달",t:"설명 · 전달",en:"THE THING IS",art:SVG.tell,
+ core:"닫힌 상자를 열어<br><b>사정을 꺼내 보인다</b>",
+ ex:["It turns out the delay was caused by a port strike.","알고 보니 지연은 항만 파업 때문이었습니다."],
+ note:"이 그룹은 뒤에 완전한 문장(주어＋동사)이 옵니다. 절을 통째로 이어 붙이십시오."}
+];
+
+function esc(s){return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}
+
+DATA.forEach((d,i)=>d.push(i+1));
+const byGroup = {};
+ORDER.forEach(g=>byGroup[g]=DATA.filter(d=>d[0]===g));
+
+/* ===================== DECK RENDER ===================== */
+const track=document.getElementById('track');
+const dotsEl=document.getElementById('dots');
+const posEl=document.getElementById('pos');
+let cur=0;
+
+track.innerHTML = DECK.map((d,i)=>{
+  const rows = byGroup[d.k];
+  const items = rows.map((r,j)=>
+    '<div class="img"><div class="ih"><span class="in">'+(j+1)+'</span><span class="it">'+esc(r[1])+'</span>'
+    +'<span class="form">'+esc(r[2])+'</span></div>'
+    +'<p class="idsc">'+esc(r[3])+'</p></div>'
+  ).join('');
+  return '<div class="slide"><div class="scene"><div class="card" data-i="'+i+'" role="button" tabindex="0">'
+    +'<div class="face front">'
+      +'<div class="tagrow"><span class="tag">'+esc(d.en)+'</span><span class="cnt">'+rows.length+'개 공식 · '+(i+1)+'/'+DECK.length+'</span></div>'
+      +'<div class="art">'+d.art+'</div>'
+      +'<p class="particle">'+esc(d.t)+'</p>'
+      +'<p class="sub">'+esc(GROUP_LABEL[d.k])+'</p>'
+      +'<p class="core">'+d.core+'</p>'
+      +'<p class="flipnote">TAP TO FLIP</p>'
+    +'</div>'
+    +'<div class="face back">'
+      +'<h2>'+esc(d.t)+' <span style="font-size:12px;font-weight:400;color:var(--ink)">공식 '+rows.length+'개</span></h2>'
+      +items
+      +(d.note?'<p class="note">⚠ '+esc(d.note)+'</p>':'')
+      +'<div class="exbox"><p>'+esc(d.ex[0])+'</p><p class="kr">'+esc(d.ex[1])+'</p>'
+      +'<button class="jump" data-k="'+esc(d.k)+'" style="margin-top:8px;font-size:11px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px 9px;color:var(--ink);font-family:inherit;cursor:pointer">목록에서 예문 보기 →</button></div>'
+    +'</div></div></div></div>';
+}).join('');
+
+dotsEl.innerHTML = DECK.map((d,i)=>'<button class="dot" data-i="'+i+'" aria-label="'+esc(d.t)+'"></button>').join('');
+
+function go(i){
+  cur=Math.max(0,Math.min(DECK.length-1,i));
+  track.style.transform='translateX('+(-cur*100)+'%)';
+  document.querySelectorAll('.dot').forEach((d,j)=>d.setAttribute('aria-current',String(j===cur)));
+  document.getElementById('prev').disabled = cur===0;
+  document.getElementById('next').disabled = cur===DECK.length-1;
+  posEl.textContent = DECK[cur].t + ' · ' + (cur+1) + ' / ' + DECK.length;
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('flipped'));
+}
+document.getElementById('prev').onclick=()=>go(cur-1);
+document.getElementById('next').onclick=()=>go(cur+1);
+dotsEl.addEventListener('click',e=>{const b=e.target.closest('.dot');if(b)go(+b.dataset.i)});
+
+track.addEventListener('click',e=>{
+  if(e.target.closest('.jump')) return;
+  const c=e.target.closest('.card'); if(c) c.classList.toggle('flipped');
+});
+track.addEventListener('keydown',e=>{
+  const c=e.target.closest('.card');
+  if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();c.classList.toggle('flipped')}
+});
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('panel-deck').hidden) return;
+  if(e.key==='ArrowLeft')go(cur-1);
+  if(e.key==='ArrowRight')go(cur+1);
+});
+
+let sx=0,sy=0,drag=false;
+const vp=document.getElementById('viewport');
+vp.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;drag=true},{passive:true});
+vp.addEventListener('touchend',e=>{
+  if(!drag)return; drag=false;
+  const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+  if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)) go(dx<0?cur+1:cur-1);
+},{passive:true});
+
+/* ===================== LIST RENDER ===================== */
+const listEl=document.getElementById('list');
+const railEl=document.getElementById('rail');
+const countEl=document.getElementById('count');
+const qEl=document.getElementById('q');
+let active="all";
+
+function buildRail(){
+  railEl.innerHTML='';
+  const mk=(key,label,n)=>{
+    const b=document.createElement('button');
+    b.className='chip'; b.type='button';
+    b.setAttribute('aria-pressed', String(active===key));
+    b.innerHTML=esc(label)+'<span class="n">'+n+'</span>';
+    b.onclick=()=>{active=key;buildRail();renderList()};
+    railEl.appendChild(b);
+  };
+  mk('all','전체',DATA.length);
+  ORDER.forEach(k=>mk(k,k,byGroup[k].length));
+}
+
+function renderList(){
+  const q=qEl.value.trim().toLowerCase();
+  const rows=DATA.filter(d=>{
+    if(active!=='all' && d[0]!==active) return false;
+    if(!q) return true;
+    return (d[1]+' '+d[2]+' '+d[3]+' '+d[4]+' '+d[5]+' '+d[6]+' '+d[7]+' '+d[8]).toLowerCase().includes(q);
+  });
+  countEl.textContent = rows.length+'개 표시 중 · 전체 '+DATA.length+'개';
+  if(!rows.length){listEl.innerHTML='<p class="empty">검색 결과가 없습니다.</p>';return}
+  let html='',c=null;
+  rows.forEach(d=>{
+    if(d[0]!==c){
+      if(c!==null)html+='</section>';
+      c=d[0];
+      const di=ORDER.indexOf(c);
+      html+='<section class="group"><div class="ghead"><span class="p">'+esc(c)+'</span>'
+        +'<span class="g">'+esc(GROUP_LABEL[c]||'')+'</span>'
+        +'<button class="jump card-jump" data-i="'+di+'">카드 보기</button></div>';
+    }
+    html+='<article class="lcard">'
+      +'<div class="nbox"><span class="idx">'+d[9]+'</span></div>'
+      +'<div class="wbox">'
+        +'<span class="v">'+esc(d[1])+' <span class="form">'+esc(d[2])+'</span></span>'
+        +'<span class="id">'+esc(d[4])+'</span>'
+        +'<span class="ko">'+esc(d[3])+'</span>'
+      +'</div>'
+      +'<div class="ex">'
+        +'<p class="en"><span>'+esc(d[5])+'</span><button class="say" type="button" data-lang="en-US" data-say="'+esc(d[5])+'" aria-label="영어 예문 듣기">🔊</button></p>'
+        +'<p class="idex"><span class="idtx">'+esc(d[8])+'</span><button class="say" type="button" data-lang="id-ID" data-say="'+esc(d[8])+'" aria-label="인니어 예문 듣기">🔊</button></p>'
+        +'<p class="kr">'+esc(d[6])+'</p>'
+        +(d[7]?'<p class="tip">'+esc(d[7])+'</p>':'')
+      +'</div></article>';
+  });
+  html+='</section>';
+  listEl.innerHTML=html;
+}
+qEl.addEventListener('input',renderList);
+
+const studyBtn=document.getElementById('study');
+studyBtn.addEventListener('click',()=>{
+  const on=studyBtn.getAttribute('aria-pressed')==='true';
+  studyBtn.setAttribute('aria-pressed',String(!on));
+  studyBtn.textContent = !on ? '뜻 보이기' : '뜻 가리기';
+  document.body.classList.toggle('study',!on);
+  document.querySelectorAll('.revealed').forEach(e=>e.classList.remove('revealed'));
+});
+/* ===================== 음성 읽기 (Web Speech API) ===================== */
+let sayBtn=null;
+// 표준 성별 속성이 없어 이름 기반으로 여성 보이스 우선 선택 (영어 TTS 여성 지정용)
+const FEMALE_EN=/\b(samantha|victoria|allison|ava|susan|zoe|nicky|karen|moira|tessa|fiona|serena|kate|female|zira|aria|jenny|catherine|libby|sonia|michelle|clara|google us english|google uk english female)\b/i;
+function pickVoice(vs,lang,female){
+  let pool=vs.filter(x=>x.lang===lang);
+  if(!pool.length)pool=vs.filter(x=>x.lang.slice(0,2)===lang.slice(0,2));
+  if(!pool.length)return null;
+  if(female){
+    const f=pool.find(x=>FEMALE_EN.test(x.name));
+    if(f)return f;
+    const notMale=pool.find(x=>!/\b(daniel|david|alex|fred|tom|male|oliver|arthur|george|rishi|aaron|gordon)\b/i.test(x.name));
+    if(notMale)return notMale;
+  }
+  return pool[0];
+}
+function speak(btn){
+  const synth=window.speechSynthesis;
+  if(!synth){alert('이 브라우저는 음성 읽기를 지원하지 않습니다.');return}
+  // 같은 버튼을 다시 누르면 정지(토글)
+  if(sayBtn===btn && (synth.speaking||synth.pending)){synth.cancel();return}
+  synth.cancel();
+  const u=new SpeechSynthesisUtterance(btn.dataset.say);
+  const lang=btn.dataset.lang;
+  u.lang=lang; u.rate=.95;
+  const v=pickVoice(synth.getVoices(),lang,lang.slice(0,2)==='en');  // 영어는 여성 보이스 우선
+  if(v)u.voice=v;
+  u.onstart=()=>{sayBtn=btn;btn.classList.add('playing')};
+  u.onend=u.onerror=()=>{btn.classList.remove('playing');if(sayBtn===btn)sayBtn=null};
+  synth.speak(u);
+}
+// 일부 브라우저는 voices가 늦게 로드됨 — 미리 트리거
+if(window.speechSynthesis){window.speechSynthesis.getVoices();window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices()}
+
+listEl.addEventListener('click',e=>{
+  const s=e.target.closest('.say');
+  if(s){e.stopPropagation();speak(s);return}
+  const j=e.target.closest('.card-jump');
+  if(j){showPanel('deck');go(+j.dataset.i);window.scrollTo({top:0,behavior:'smooth'});return}
+  if(!document.body.classList.contains('study'))return;
+  const t=e.target.closest('.ko,.id,.kr,.idtx');
+  if(t)t.classList.toggle('revealed');
+});
+
+/* ===================== DRILL ===================== */
+const dTag=document.getElementById('d-tag'), dQ=document.getElementById('d-q'),
+      dSit=document.getElementById('d-sit'), dSlot=document.getElementById('d-slot'),
+      dCount=document.getElementById('d-count');
+let queue=[], done=0, currentQ=null;
+
+function reshuffle(){
+  queue=DATA.slice();
+  for(let i=queue.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=queue[i];queue[i]=queue[j];queue[j]=t}
+}
+function nextQ(){
+  if(!queue.length){reshuffle();done=0}
+  currentQ=queue.pop(); done++;
+  dTag.textContent=currentQ[0];
+  dQ.textContent=currentQ[3];
+  dSit.textContent=currentQ[6];
+  dSlot.innerHTML='<p class="hide">입으로 먼저 말해 보세요</p>';
+  dCount.textContent=done+' / '+DATA.length;
+}
+function showA(){
+  if(!currentQ)return;
+  dSlot.innerHTML='<p class="dans">'+esc(currentQ[1])+'<span class="dform">'+esc(currentQ[2])+'</span></p>'
+    +'<p class="dex">'+esc(currentQ[5])+'</p>'
+    +'<p class="dexid">'+esc(currentQ[8])+'</p>'
+    +'<p class="dexkr">'+esc(currentQ[4])+'</p>';
+}
+document.getElementById('d-show').onclick=showA;
+document.getElementById('d-next').onclick=nextQ;
+
+/* ===================== VIDEO ===================== */
+const VIDEOS=[
+{id:"CTI0fvk_IYs",label:"원본 강의 ①",use:"앞대가리 개념",
+ dsc:"앞대가리 공식이 왜 문장의 80%를 해결하는지, 기본 개념을 잡는 편입니다."},
+{id:"nlPl6Wefq-A",label:"원본 강의 ②",use:"공식 30개 본편",
+ dsc:"이 자료 「전체 목록」 탭의 30개 공식이 나오는 본편입니다. 목록과 나란히 보십시오."},
+{id:"f9Wwpy3BVdY",label:"원본 강의 ③",use:"통암기 · 반복",
+ dsc:"덩어리를 통째로 반복하는 편입니다. 「말하기 드릴」 탭과 함께 쓰시면 좋습니다."}
+];
+let videosLoaded=false;
+function renderVideos(){
+  if(videosLoaded) return;
+  videosLoaded=true;
+  document.getElementById('videos').innerHTML = VIDEOS.map((v,i)=>
+    '<div class="vcard">'
+    +'<div class="vhead"><span class="vn">'+(i+1)+'</span><span class="vt">'+esc(v.label)+'</span>'
+    +'<span class="vuse">'+esc(v.use)+'</span></div>'
+    +'<div class="frame"><iframe src="https://www.youtube-nocookie.com/embed/'+esc(v.id)+'" '
+    +'title="'+esc(v.label)+'" loading="lazy" allowfullscreen '
+    +'allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture"></iframe></div>'
+    +'<div class="vfoot"><p class="vdsc">'+esc(v.dsc)+'</p>'
+    +'<a class="vlink" href="https://youtu.be/'+esc(v.id)+'" target="_blank" rel="noopener">YouTube에서 열기 ↗</a></div>'
+    +'</div>'
+  ).join('');
+}
+
+/* ===================== TABS ===================== */
+const TABS={deck:['tab-deck','panel-deck'],list:['tab-list','panel-list'],drill:['tab-drill','panel-drill'],video:['tab-video','panel-video']};
+function showPanel(which){
+  Object.keys(TABS).forEach(k=>{
+    const on = k===which;
+    document.getElementById(TABS[k][0]).setAttribute('aria-selected',String(on));
+    document.getElementById(TABS[k][1]).hidden=!on;
+  });
+  if(which==='drill' && !currentQ) nextQ();
+  if(which==='video') renderVideos();
+}
+document.getElementById('tab-deck').onclick=()=>showPanel('deck');
+document.getElementById('tab-list').onclick=()=>showPanel('list');
+document.getElementById('tab-drill').onclick=()=>showPanel('drill');
+document.getElementById('tab-video').onclick=()=>showPanel('video');
+
+track.addEventListener('click',e=>{
+  const j=e.target.closest('.jump[data-k]');
+  if(j){active=j.dataset.k;buildRail();renderList();showPanel('list');window.scrollTo({top:0,behavior:'smooth'})}
+});
+
+reshuffle(); buildRail(); renderList(); go(0);
+</script>
+</body>
+</html>

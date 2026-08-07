@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>구동사 학습덱 · 12 이미지 + 200 구동사</title>
+<style>
+  :root{
+    color-scheme:light;
+    /* AsuraDB 앱 시맨틱 토큰 (src/style.css 와 1:1) */
+    --background:oklch(0.99 0.002 260); --foreground:oklch(0.15 0.01 260);
+    --card:oklch(0.98 0.003 260);
+    --primary:oklch(0.45 0.18 260); --primary-foreground:oklch(0.98 0.003 260);
+    --muted:oklch(0.94 0.008 260); --muted-foreground:oklch(0.48 0.02 260);
+    --border:oklch(0.88 0.01 260);
+    /* 기존 변수 → 앱 토큰 별칭 */
+    --grey:var(--background);
+    --bluegrey:var(--muted);
+    --blue:color-mix(in oklch, var(--primary) 12%, var(--card));
+    --sage:color-mix(in oklch, var(--primary) 9%, var(--card));
+    --ink:var(--muted-foreground);
+    --ink-strong:var(--foreground);
+    --line:var(--border);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--grey);color:var(--ink-strong);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",Roboto,sans-serif;
+    line-height:1.55;-webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:0 16px 56px}
+
+  header{padding:24px 0 12px}
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink);font-weight:700;margin:0 0 6px}
+  h1{margin:0;font-size:24px;line-height:1.25;letter-spacing:-.01em}
+  h1 em{font-style:normal;color:var(--ink);font-weight:400}
+
+  /* mode tabs */
+  .tabs{display:flex;gap:6px;margin:16px 0 0}
+  .tab{
+    flex:1;background:var(--bluegrey);border:1px solid var(--line);border-radius:10px;
+    padding:11px 8px;font-size:13.5px;font-weight:700;color:var(--ink);
+    font-family:inherit;cursor:pointer;letter-spacing:.01em;
+  }
+  .tab[aria-selected="true"]{background:color-mix(in oklch,var(--primary) 15%,transparent);color:var(--primary);border-color:color-mix(in oklch,var(--primary) 35%,var(--line))}
+  .tab:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .tab .s{display:block;font-size:10.5px;font-weight:400;opacity:.75;margin-top:2px}
+
+  .panel[hidden]{display:none}
+
+  /* ============ DECK ============ */
+  .deckhint{font-size:11.5px;color:var(--ink);text-align:center;margin:16px 0 10px;letter-spacing:.03em}
+
+  .viewport{overflow:hidden;touch-action:pan-y;border-radius:16px}
+  .track{display:flex;transition:transform .38s cubic-bezier(.4,.1,.2,1);will-change:transform}
+  .slide{flex:0 0 100%;padding:0 2px}
+
+  .scene{perspective:1600px}
+  .card{
+    position:relative;width:100%;min-height:470px;
+    transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,.1,.2,1);
+    cursor:pointer;
+  }
+  .card.flipped{transform:rotateY(180deg)}
+  .face{
+    position:absolute;inset:0;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:16px 16px 14px;display:flex;flex-direction:column;overflow:hidden;
+  }
+  .back{transform:rotateY(180deg);overflow-y:auto}
+
+  .tagrow{display:flex;justify-content:space-between;align-items:center}
+  .tag{font-size:10px;font-weight:800;letter-spacing:.12em;background:var(--sage);color:var(--ink);padding:4px 9px;border-radius:5px}
+  .cnt{font-size:10.5px;color:var(--ink);opacity:.8;letter-spacing:.04em}
+
+  .art{flex:1;display:flex;align-items:center;justify-content:center;margin:6px 0 2px;min-height:0}
+  .art svg{width:100%;height:auto;max-height:230px}
+  .particle{font-size:34px;font-weight:800;letter-spacing:-.02em;text-align:center;margin:2px 0 0}
+  .core{text-align:center;font-size:13.5px;color:var(--ink);margin:8px 0 0;padding-top:9px;border-top:1px solid var(--line)}
+  .core b{color:var(--ink-strong);font-weight:700}
+  .flipnote{text-align:center;font-size:10px;color:var(--ink);opacity:.7;margin:9px 0 0;letter-spacing:.06em}
+
+  /* back */
+  .back h2{margin:0 0 10px;font-size:18px;letter-spacing:-.01em}
+  .img{background:var(--blue);border-radius:9px;padding:9px 11px;margin-bottom:7px}
+  .img:nth-of-type(even){background:var(--bluegrey)}
+  .ih{display:flex;align-items:center;gap:7px}
+  .in{font-size:9.5px;font-weight:800;color:var(--primary-foreground);background:var(--primary);width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .it{font-size:13.5px;font-weight:700}
+  .idsc{font-size:10.5px;color:var(--ink);margin:2px 0 5px 23px}
+  .vs{margin:0 0 0 23px;font-size:12px;color:var(--ink-strong);line-height:1.7}
+  .vs span{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:1px 6px;margin:0 3px 3px 0;display:inline-block;font-size:11.5px}
+  .exbox{background:var(--sage);border-radius:9px;padding:9px 11px;margin-top:auto}
+  .exbox p{margin:0;font-size:12.5px}
+  .exbox .kr{font-size:11px;color:var(--ink);margin-top:2px}
+  .note{font-size:10.5px;color:var(--ink);margin:7px 0 0;line-height:1.5}
+
+  /* nav */
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 0}
+  .arrow{
+    background:var(--bluegrey);border:1px solid var(--line);border-radius:9px;
+    width:44px;height:38px;font-size:15px;color:var(--ink);font-family:inherit;cursor:pointer;flex:0 0 auto;
+  }
+  .arrow:disabled{opacity:.35;cursor:default}
+  .arrow:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .dots{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;flex:1}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--line);border:none;padding:0;cursor:pointer}
+  .dot[aria-current="true"]{background:var(--primary);transform:scale(1.35)}
+  .pos{text-align:center;font-size:11.5px;color:var(--ink);margin:9px 0 0;letter-spacing:.04em}
+
+  /* ============ LIST ============ */
+  .controls{position:sticky;top:0;z-index:20;background:var(--grey);padding:12px 0 8px;border-bottom:1px solid var(--line);margin-bottom:12px}
+  .searchrow{display:flex;gap:8px}
+  input[type=search]{
+    flex:1;min-width:0;appearance:none;-webkit-appearance:none;background:var(--blue);
+    border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:16px;
+    color:var(--ink-strong);font-family:inherit;
+  }
+  input[type=search]::placeholder{color:var(--ink);opacity:.75}
+  input[type=search]:focus{outline:2px solid var(--ink);outline-offset:1px}
+  .toggle{flex:0 0 auto;background:var(--bluegrey);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:13px;font-weight:600;color:var(--ink);font-family:inherit;cursor:pointer;white-space:nowrap}
+  .toggle[aria-pressed="true"]{background:var(--sage);color:var(--ink-strong)}
+  .rail{display:flex;gap:6px;overflow-x:auto;padding:9px 0 3px;scrollbar-width:none}
+  .rail::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;background:var(--bluegrey);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--ink);font-family:inherit;cursor:pointer}
+  .chip .n{font-weight:400;opacity:.65;margin-left:5px;font-size:11px}
+  .chip[aria-pressed="true"]{background:color-mix(in oklch,var(--primary) 15%,transparent);color:var(--primary);border-color:color-mix(in oklch,var(--primary) 35%,var(--line))}
+  .count{font-size:12px;color:var(--ink);padding:6px 2px 0}
+  .group{margin:22px 0 0}
+  .ghead{display:flex;align-items:baseline;gap:10px;padding:0 2px 8px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .ghead .p{font-size:19px;font-weight:800;letter-spacing:.02em}
+  .ghead .g{font-size:12px;color:var(--ink)}
+  .ghead .jump{margin-left:auto;font-size:11px;color:var(--ink);background:var(--bluegrey);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-family:inherit;cursor:pointer}
+  .lcard{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:12px;padding:10px 12px;margin-bottom:8px;
+    display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+  /* 1칸: 숫자 박스 */
+  .nbox{flex:0 0 auto;width:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:var(--bluegrey);border-radius:8px;padding:6px}
+  .idx{font-size:14px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+  /* 2칸: 표제어 박스 (영어 · 인니어뜻 · 한국어뜻) */
+  .wbox{flex:1 1 180px;min-width:160px;max-width:280px;display:flex;flex-direction:column;justify-content:center;gap:4px;
+    background:var(--blue);border-radius:8px;padding:9px 12px;overflow-wrap:break-word}
+  .v{font-size:17px;font-weight:700;letter-spacing:-.01em}
+  .ko{font-size:13.5px;font-weight:600}
+  .id{font-size:12.5px;color:var(--ink)}
+  /* 3칸: 예문 박스 */
+  .ex{flex:2 1 300px;min-width:220px;margin:0;padding:10px 12px;background:var(--bluegrey);border-radius:8px;
+    display:flex;flex-direction:column;justify-content:center;overflow-wrap:break-word}
+  .ex .en{margin:0;font-size:14px}
+  .ex .idex{margin:4px 0 0;font-size:12.5px;color:var(--ink-strong)}
+  .ex .kr{margin:3px 0 0;font-size:12.5px;color:var(--ink)}
+  .say{border:none;background:var(--sage);color:var(--ink-strong);border-radius:5px;
+    width:24px;height:20px;font-size:11px;line-height:1;padding:0;margin-left:7px;
+    cursor:pointer;vertical-align:1px;font-family:inherit}
+  .say:hover{filter:brightness(.96)}
+  .say:active{transform:scale(.9)}
+  .say.playing{background:var(--primary);color:var(--primary-foreground)}
+  .say:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  body.study .ko, body.study .id, body.study .ex .kr, body.study .idtx{background:var(--ink);color:transparent;border-radius:4px;user-select:none;cursor:pointer}
+  body.study .revealed{background:transparent!important;color:inherit!important;cursor:auto}
+  .empty{padding:32px 4px;color:var(--ink);font-size:14px}
+
+  /* ============ VIDEOS ============ */
+  .vhint{font-size:11.5px;color:var(--ink);margin:16px 0 14px;line-height:1.7}
+  .vsec{margin:20px 0 0}
+  .vsec h3{margin:0 0 3px;font-size:15px;letter-spacing:-.01em}
+  .vsec .lead{margin:0 0 10px;font-size:11.5px;color:var(--ink);line-height:1.6}
+  .vcard{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--sage);border-radius:10px;padding:13px 14px;margin-bottom:8px}
+  .vtop{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .vname{font-size:15.5px;font-weight:700;letter-spacing:-.01em}
+  .lvl{font-size:9.5px;font-weight:800;letter-spacing:.08em;background:var(--blue);color:var(--ink);padding:2px 7px;border-radius:4px}
+  .vwhy{margin:6px 0 0;font-size:12.5px;color:var(--ink-strong);line-height:1.6}
+  .vuse{margin:6px 0 0;font-size:11.5px;color:var(--ink);line-height:1.6;padding-left:11px;border-left:2px solid var(--line)}
+  .vlinks{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0}
+  .vlink{
+    font-size:11.5px;text-decoration:none;color:var(--ink);
+    background:var(--bluegrey);border:1px solid var(--line);border-radius:7px;
+    padding:5px 10px;display:inline-block;
+  }
+  .vlink:hover{background:var(--blue)}
+  .vlink.key{background:var(--sage);color:var(--ink-strong);font-weight:600}
+  .vmap{width:100%;border-collapse:collapse;margin:10px 0 0;font-size:12px}
+  .vmap th,.vmap td{border:1px solid var(--line);padding:6px 8px;text-align:left}
+  .vmap th{background:var(--bluegrey);font-weight:700;font-size:11px;color:var(--ink)}
+  .vmap td:first-child{font-weight:700;white-space:nowrap}
+  .caution{background:var(--sage);border-radius:9px;padding:11px 13px;margin:18px 0 0;font-size:11.5px;line-height:1.7;color:var(--ink-strong)}
+  .caution b{font-weight:700}
+
+  footer{margin-top:30px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink);line-height:1.7}
+  /* ===== 아이폰/모바일 반응형 (portrait 폭 ~430px 커버) ===== */
+  @media (max-width:560px){
+    .wrap{padding:0 14px 48px}
+    header{padding:18px 0 10px}
+    h1{font-size:21px}
+    .card{min-height:445px}
+    /* 목록 카드: [번호 + 표제어] 한 줄 → [예문] 아랫줄로 접힘 */
+    .lcard{gap:8px}
+    .nbox{width:40px}
+    .wbox{flex:1 1 auto;min-width:0;max-width:none}
+    .ex{flex:1 1 100%;min-width:0}
+    /* 🔊 탭 영역 확대 */
+    .say{width:30px;height:24px;font-size:12px}
+  }
+  @media (max-width:380px){
+    .tab{padding:10px 6px;font-size:12.5px}
+    .v{font-size:16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Phrasal Verbs · Kata Kerja Frasa · 구동사</p>
+  <h1>구동사 학습덱 <em>— 그림 12장 · 구동사 200개</em></h1>
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-deck" role="tab" aria-selected="true" aria-controls="panel-deck">카드 덱<span class="s">그림 12장</span></button>
+    <button class="tab" id="tab-list" role="tab" aria-selected="false" aria-controls="panel-list">전체 목록<span class="s">구동사 200개</span></button>
+    <button class="tab" id="tab-vid" role="tab" aria-selected="false" aria-controls="panel-vid">추천 영상<span class="s">채널 12곳</span></button>
+  </div>
+</header>
+
+<!-- ========== DECK ========== -->
+<section class="panel" id="panel-deck" role="tabpanel">
+  <p class="deckhint">좌우로 스와이프하면 넘어가고, 카드를 탭하면 뒤집힙니다</p>
+  <div class="viewport" id="viewport"><div class="track" id="track"></div></div>
+  <div class="nav">
+    <button class="arrow" id="prev" aria-label="이전 카드">‹</button>
+    <div class="dots" id="dots"></div>
+    <button class="arrow" id="next" aria-label="다음 카드">›</button>
+  </div>
+  <p class="pos" id="pos"></p>
+</section>
+
+<!-- ========== LIST ========== -->
+<section class="panel" id="panel-list" role="tabpanel" hidden>
+  <div class="controls">
+    <div class="searchrow">
+      <input type="search" id="q" placeholder="검색 (예: shipment, 지연, tunda, up)" autocomplete="off">
+      <button class="toggle" id="study" aria-pressed="false">뜻 가리기</button>
+    </div>
+    <div class="rail" id="rail"></div>
+    <div class="count" id="count"></div>
+  </div>
+  <div id="list"></div>
+</section>
+
+
+
+<!-- ========== VIDEOS (고정 목록) ========== -->
+<section class="panel" id="panel-vid" role="tabpanel" hidden>
+
+  <div class="caution" style="margin:16px 0 0">
+    <b>고정 링크만 넣었습니다.</b> 검색어 링크는 볼 때마다 다른 영상이 떠서 반복 학습이 되지 않습니다.
+    아래 항목은 전부 특정 영상 또는 재생목록으로 주소가 고정되어 있습니다.<br>
+    <b>3회독 원칙</b> · 1회차 자막 켜고 이해 → 2회차 자막 끄고 듣기 → 3회차 소리 내어 따라 말하기.
+    같은 영상을 세 번 보는 것이 다른 영상 세 편보다 낫습니다.
+  </div>
+
+  <div class="vsec">
+    <h3>1. 방법론 — 이 덱의 뿌리</h3>
+    <p class="lead">그림으로 구동사를 잡는 접근 자체를 다루는 자료입니다. 카드 학습 전에 한 번, 12장을 다 뗀 뒤에 한 번 보세요.</p>
+
+    <article class="vcard">
+      <div class="vtop"><span class="vname">이 덱의 원본 참조 영상</span><span class="lvl">기준점</span></div>
+      <p class="vwhy">카드 12장의 「불변화사 하나 → 핵심 이미지 → 파생 구동사」 구조가 나온 영상입니다.</p>
+      <p class="vuse">덱과 대조하며 보면 어떤 부분을 확장했는지 보입니다.</p>
+      <div class="vlinks"><a class="vlink key" href="https://youtu.be/L5YS_jQjIhs" target="_blank" rel="noopener">영상 열기</a></div>
+    </article>
+
+    <article class="vcard">
+      <div class="vtop"><span class="vname">How to learn and use phrasal verbs</span><span class="lvl">BBC · B1</span></div>
+      <p class="vwhy">구동사를 개별 암기하지 말고 덩어리로 접근하라는 학습 전략 영상입니다. 짧습니다.</p>
+      <p class="vuse">학습 시작 전 1회. 방향을 잡는 용도라 반복은 불필요합니다.</p>
+      <div class="vlinks"><a class="vlink key" href="https://www.youtube.com/watch?v=Q7HBdzgvmIs" target="_blank" rel="noopener">영상 열기</a></div>
+    </article>
+
+    <article class="vcard">
+      <div class="vtop"><span class="vname">6 tips for learning new phrasal verbs</span><span class="lvl">BBC · B1</span></div>
+      <p class="vwhy">구동사 학습법 6가지를 정리한 Q&amp;A 영상입니다.</p>
+      <p class="vuse">위 영상과 같은 날 이어서 보면 됩니다.</p>
+      <div class="vlinks"><a class="vlink key" href="https://www.youtube.com/watch?v=JO3wb4mXskY" target="_blank" rel="noopener">영상 열기</a></div>
+    </article>
+  </div>
+
+  <div class="vsec">
+    <h3>2. 재생목록 — 반복 학습의 주력</h3>
+    <p class="lead">개별 영상은 삭제되면 끝이지만, 재생목록은 주소가 고정된 채 내용이 유지됩니다. <b>주력으로 쓸 것은 이쪽입니다.</b></p>
+
+    <article class="vcard">
+      <div class="vtop"><span class="vname">Improve your phrasal verbs</span><span class="lvl">BBC · A2–C1</span></div>
+      <p class="vwhy">BBC가 직접 묶은 구동사 모음입니다. 편당 길이가 짧아 하루 한 편 소화에 적합합니다.</p>
+      <p class="vuse">평일 아침 고정 루틴용. 순서대로 내려가되 건너뛰지 마세요.</p>
+      <div class="vlinks"><a class="vlink key" href="https://www.youtube.com/playlist?list=PLcetZ6gSk96_sZFtWuNEy3FhZCb_36g_O" target="_blank" rel="noopener">재생목록 열기</a></div>
+    </article>
+
+    <article class="vcard">
+      <div class="vtop"><span class="vname">Learn Phrasal Verbs in English</span><span class="lvl">engVid · A2–C1</span></div>
+      <p class="vwhy">구동사별로 정의와 예문을 화이트보드에 써 가며 설명합니다. 편수가 많아 사전처럼 쓸 수 있습니다.</p>
+      <p class="vuse">덱에서 안 외워지는 구동사가 생기면 그것만 찾아보는 용도.</p>
+      <div class="vlinks"><a class="vlink key" href="https://www.youtube.com/playlist?list=PLrPhmmx5j5b_mpCfUOhN43DBob4xcOFy6" target="_blank" rel="noopener">재생목록 열기</a></div>
+    </article>
+
+    <article class="vcard">
+      <div class="vtop"><span class="vname">Learn English PHRASAL VERBS!</span><span class="lvl">A2–B2</span></div>
+      <p class="vwhy">구동사 전용 모음입니다. 위 두 목록과 겹치는 부분이 있어 보조로 씁니다.</p>
+      <p class="vuse">주력 목록을 다 뗀 뒤 복습용.</p>
+      <div class="vlinks"><a class="vlink key" href="https://www.youtube.com/playlist?list=PLD_5T89Ssbn37h4UPUMY3URT3JcH07QAY" target="_blank" rel="noopener">재생목록 열기</a></div>
+    </article>
+
+    <article class="vcard">
+      <div class="vtop"><span class="vname">10 phrasal verbs with UP</span><span class="lvl">engVid · A2–B1</span></div>
+      <p class="vwhy">불변화사 UP 하나만 파고드는 수업입니다. 카드 1번과 정면으로 대응합니다. 페이지에 퀴즈가 붙어 있습니다.</p>
+      <p class="vuse">카드 1번(UP)을 뒤집어 본 날 이어서. 시청 후 퀴즈까지 푸는 것이 핵심입니다.</p>
+      <div class="vlinks"><a class="vlink key" href="https://www.engvid.com/learn-10-english-phrasal-verbs-with-up/" target="_blank" rel="noopener">수업 + 퀴즈 열기</a></div>
+    </article>
+  </div>
+
+  <div class="vsec">
+    <h3>3. 채널 홈 — 새 영상 확인용</h3>
+    <p class="lead">여기는 반복 학습 대상이 아닙니다. 위 목록을 다 소화한 뒤 다음 자료를 찾을 때만 들어가세요.</p>
+
+    <article class="vcard">
+      <div class="vtop"><span class="vname">BBC Learning English</span><span class="lvl">A2–C1</span></div>
+      <p class="vwhy">영국식 발음. 「English in a Minute」이 60초 분량이라 부담이 적습니다.</p>
+      <p class="vuse">위 BBC 재생목록을 다 본 뒤 다음 시리즈를 찾을 때.</p>
+      <div class="vlinks"><a class="vlink" href="https://www.youtube.com/@bbclearningenglish" target="_blank" rel="noopener">채널 열기</a></div>
+    </article>
+
+    <article class="vcard">
+      <div class="vtop"><span class="vname">Rachel's English</span><span class="lvl">B2–C2</span></div>
+      <p class="vwhy">발음 전문. 구동사는 연음이 심해 글자와 소리가 어긋납니다(pick it up → 피끼럽). 그 간극을 슬로모션으로 보여 줍니다.</p>
+      <p class="vuse">구동사를 아는데도 안 들리는 단계에서.</p>
+      <div class="vlinks"><a class="vlink" href="https://www.youtube.com/@rachelsenglish" target="_blank" rel="noopener">채널 열기</a></div>
+    </article>
+
+    <article class="vcard">
+      <div class="vtop"><span class="vname">Business English Pod</span><span class="lvl">B2–C1</span></div>
+      <p class="vwhy">회의·협상·이메일 상황별 표현. 이 덱의 예문 맥락(선적·통관·클레임)과 가장 가깝습니다.</p>
+      <p class="vuse">OVER·THROUGH·BACK 그룹 학습 후 협상 편.</p>
+      <div class="vlinks"><a class="vlink" href="https://www.youtube.com/@BusinessEnglishPod" target="_blank" rel="noopener">채널 열기</a></div>
+    </article>
+
+    <article class="vcard">
+      <div class="vtop"><span class="vname">mmmEnglish</span><span class="lvl">B1–C1</span></div>
+      <p class="vwhy">호주식. 구동사를 단독으로 다루기보다 문장 안에 녹여 보여 줍니다.</p>
+      <p class="vuse">목록 탭 예문을 읽은 뒤 원어민 발화와 대조.</p>
+      <div class="vlinks"><a class="vlink" href="https://www.youtube.com/@mmmEnglish" target="_blank" rel="noopener">채널 열기</a></div>
+    </article>
+  </div>
+
+  <div class="vsec">
+    <h3>4. 12주 연동표</h3>
+    <p class="lead">카드 · 목록 · 영상을 주 단위로 묶은 운영안입니다. 같은 주에는 같은 영상을 세 번 봅니다.</p>
+    <table class="vmap">
+      <tr><th>주차</th><th>카드</th><th>영상</th><th>회독</th></tr>
+      <tr><td>1–2주</td><td>UP · OUT</td><td>engVid UP 수업 + BBC 재생목록 1–5편</td><td>3회</td></tr>
+      <tr><td>3–4주</td><td>ON · OFF</td><td>BBC 재생목록 6–10편</td><td>3회</td></tr>
+      <tr><td>5–6주</td><td>IN · DOWN</td><td>BBC 재생목록 11–15편</td><td>3회</td></tr>
+      <tr><td>7–8주</td><td>OVER · BACK</td><td>Business English Pod 협상 편</td><td>3회</td></tr>
+      <tr><td>9–10주</td><td>THROUGH · AWAY</td><td>Rachel's English 연음 편</td><td>3회</td></tr>
+      <tr><td>11–12주</td><td>기타 부사 · 전치사형</td><td>engVid 재생목록 중 분리 규칙 편</td><td>3회</td></tr>
+    </table>
+  </div>
+
+  <div class="caution">
+    <b>링크가 깨졌다면</b> · 영상은 삭제되거나 비공개로 바뀔 수 있습니다. 그때는 HTML 파일을 텍스트 편집기로 열어
+    <code>panel-vid</code> 구역에서 해당 <code>href</code> 주소만 새 주소로 바꿔 주세요.
+    새 영상을 고를 때는 <b>재생목록 우선</b>으로 잡는 편이 오래갑니다.
+  </div>
+
+</section>
+
+
+<footer>
+  카드 덱은 불변화사 12개의 <b>핵심 이미지</b>를 심기 위한 것이고, 전체 목록은 그 이미지 아래에 구동사를 매다는 용도입니다. 순서는 <b>덱 → 목록</b>입니다.<br>
+  선정 기준: Cambridge / Oxford Phrasal Verbs Dictionary 및 COCA·BNC 고빈도 목록. 인도네시아어는 문맥상 가장 가까운 대응 표현입니다.<br>
+  각 카드 뒷면의 「목록에서 보기」를 누르면 해당 그룹의 전체 구동사로 이동합니다.
+</footer>
+
+</div>
+
+<script>
+/* ===================== DECK DATA ===================== */
+const SVG = {
+up:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<path d="M60 150 A90 90 0 0 1 240 150" fill="none" stroke="#546E7A" stroke-width="10" opacity=".18" stroke-linecap="round"/>
+<path d="M60 150 A90 90 0 0 1 150 60" fill="none" stroke="#546E7A" stroke-width="10" opacity=".45" stroke-linecap="round"/>
+<path d="M150 60 A90 90 0 0 1 240 150" fill="none" stroke="#37474F" stroke-width="10" stroke-linecap="round"/>
+<g stroke="#546E7A" stroke-width="2.5" opacity=".5" stroke-linecap="round">
+<line x1="70" y1="128" x2="82" y2="132"/><line x1="104" y1="88" x2="112" y2="98"/>
+<line x1="150" y1="72" x2="150" y2="85"/><line x1="196" y1="88" x2="188" y2="98"/>
+<line x1="230" y1="128" x2="218" y2="132"/></g>
+<line x1="150" y1="150" x2="212" y2="96" stroke="#37474F" stroke-width="6" stroke-linecap="round"/>
+<circle cx="150" cy="150" r="9" fill="#37474F"/><circle cx="150" cy="150" r="3.5" fill="#E3F2FD"/>
+<path d="M258 148 L258 62" stroke="#546E7A" stroke-width="3.5" stroke-linecap="round"/>
+<path d="M258 54 L250 70 L266 70 Z" fill="#546E7A"/></svg>`,
+
+out:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<path d="M46 44 L46 156 L132 156 L132 44 Z" fill="#ECEFF1" stroke="#546E7A" stroke-width="3"/>
+<path d="M46 44 L132 44 L132 62 L46 62 Z" fill="#546E7A" opacity=".25"/>
+<path d="M132 100 L132 100" fill="none"/>
+<path d="M96 100 L214 100" stroke="#37474F" stroke-width="5" stroke-linecap="round"/>
+<path d="M228 100 L206 86 L206 114 Z" fill="#37474F"/>
+<g opacity=".55"><path d="M186 62 L232 40" stroke="#546E7A" stroke-width="3" stroke-linecap="round"/>
+<path d="M190 138 L236 160" stroke="#546E7A" stroke-width="3" stroke-linecap="round"/></g>
+<circle cx="252" cy="100" r="26" fill="#E8F5E9" stroke="#546E7A" stroke-width="2.5"/>
+<circle cx="252" cy="100" r="8" fill="#37474F"/></svg>`,
+
+on:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<rect x="34" y="122" width="232" height="14" rx="7" fill="#546E7A" opacity=".35"/>
+<rect x="76" y="72" width="90" height="50" rx="8" fill="#37474F"/>
+<g stroke="#E8F5E9" stroke-width="3" stroke-linecap="round"><line x1="94" y1="97" x2="148" y2="97"/></g>
+<g stroke="#546E7A" stroke-width="2.5" stroke-linecap="round" opacity=".8">
+<line x1="82" y1="130" x2="82" y2="146"/><line x1="121" y1="130" x2="121" y2="146"/><line x1="160" y1="130" x2="160" y2="146"/></g>
+<rect x="190" y="80" width="78" height="38" rx="19" fill="#E8F5E9" stroke="#546E7A" stroke-width="2.5"/>
+<circle cx="249" cy="99" r="13" fill="#37474F"/>
+<text x="206" y="105" font-family="sans-serif" font-size="14" font-weight="700" fill="#546E7A">ON</text>
+<path d="M50 60 q40 -22 80 0" fill="none" stroke="#546E7A" stroke-width="2.5" stroke-dasharray="5 5" opacity=".6"/></svg>`,
+
+off:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<rect x="52" y="46" width="196" height="104" rx="10" fill="#ECEFF1" stroke="#546E7A" stroke-width="2.5"/>
+<path d="M52 56 q0 -10 10 -10 h120 l-56 46 q-40 34 -74 8 z" fill="#546E7A" opacity=".3"/>
+<path d="M182 46 L126 92 q-40 34 -74 8" fill="none" stroke="#37474F" stroke-width="3" stroke-linecap="round"/>
+<path d="M186 42 q28 -10 46 6" fill="none" stroke="#546E7A" stroke-width="3" stroke-dasharray="6 6" stroke-linecap="round"/>
+<path d="M240 44 L224 38 L230 54 Z" fill="#546E7A"/>
+<g stroke="#546E7A" stroke-width="2" opacity=".5" stroke-linecap="round">
+<line x1="112" y1="118" x2="126" y2="132"/><line x1="140" y1="112" x2="154" y2="126"/></g></svg>`,
+
+"in":`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<path d="M78 92 L150 66 L222 92 L222 150 L150 172 L78 150 Z" fill="#ECEFF1" stroke="#546E7A" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M78 92 L150 118 L222 92" fill="none" stroke="#546E7A" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M150 118 L150 172" stroke="#546E7A" stroke-width="2.5" opacity=".6"/>
+<path d="M70 62 L108 80" stroke="#546E7A" stroke-width="2.5" opacity=".5" stroke-linecap="round"/>
+<path d="M230 62 L192 80" stroke="#546E7A" stroke-width="2.5" opacity=".5" stroke-linecap="round"/>
+<path d="M150 12 L150 78" stroke="#37474F" stroke-width="6" stroke-linecap="round"/>
+<path d="M150 96 L132 68 L168 68 Z" fill="#37474F"/></svg>`,
+
+down:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<line x1="42" y1="158" x2="270" y2="158" stroke="#546E7A" stroke-width="2.5" opacity=".5"/>
+<g fill="#546E7A" opacity=".4">
+<rect x="52" y="52" width="30" height="106" rx="4"/><rect x="94" y="74" width="30" height="84" rx="4"/>
+<rect x="136" y="96" width="30" height="62" rx="4"/></g>
+<g fill="#37474F"><rect x="178" y="118" width="30" height="40" rx="4"/><rect x="220" y="136" width="30" height="22" rx="4"/></g>
+<path d="M60 40 L246 122" fill="none" stroke="#37474F" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="8 7"/>
+<path d="M258 128 L238 110 L234 132 Z" fill="#37474F"/></svg>`,
+
+over:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<rect x="132" y="72" width="36" height="86" rx="4" fill="#546E7A" opacity=".45"/>
+<g stroke="#ECEFF1" stroke-width="2.5" opacity=".9">
+<line x1="132" y1="94" x2="168" y2="94"/><line x1="132" y1="116" x2="168" y2="116"/><line x1="132" y1="138" x2="168" y2="138"/></g>
+<line x1="34" y1="158" x2="266" y2="158" stroke="#546E7A" stroke-width="2.5" opacity=".5"/>
+<path d="M56 148 Q150 -6 244 148" fill="none" stroke="#37474F" stroke-width="4" stroke-linecap="round" stroke-dasharray="9 8"/>
+<path d="M246 158 L232 132 L256 136 Z" fill="#37474F"/>
+<circle cx="56" cy="148" r="6" fill="#546E7A"/></svg>`,
+
+back:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<circle cx="86" cy="126" r="9" fill="#546E7A"/>
+<path d="M86 126 L206 126" stroke="#546E7A" stroke-width="3" stroke-dasharray="7 7" opacity=".5" stroke-linecap="round"/>
+<circle cx="212" cy="126" r="9" fill="#546E7A" opacity=".45"/>
+<path d="M212 118 q0 -62 -63 -62 q-63 0 -63 56" fill="none" stroke="#37474F" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M86 122 L74 96 L98 96 Z" fill="#37474F"/>
+<rect x="128" y="140" width="44" height="30" rx="6" fill="#E8F5E9" stroke="#546E7A" stroke-width="2"/>
+<g fill="#546E7A"><path d="M150 148 L140 155 L150 162 Z"/><path d="M162 148 L152 155 L162 162 Z"/></g></svg>`,
+
+through:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<path d="M96 142 L96 96 a54 40 0 0 1 108 0 L204 142 Z" fill="#546E7A" opacity=".3"/>
+<path d="M96 142 L96 96 a54 40 0 0 1 108 0 L204 142" fill="none" stroke="#546E7A" stroke-width="2.5"/>
+<path d="M120 142 L120 104 a30 24 0 0 1 60 0 L180 142 Z" fill="#37474F" opacity=".55"/>
+<line x1="66" y1="142" x2="238" y2="142" stroke="#546E7A" stroke-width="2.5" opacity=".5"/>
+<path d="M34 122 L252 122" stroke="#37474F" stroke-width="5" stroke-linecap="round"/>
+<path d="M268 122 L244 108 L244 136 Z" fill="#37474F"/>
+<g stroke="#E8F5E9" stroke-width="3" opacity=".9"><line x1="128" y1="122" x2="172" y2="122"/></g></svg>`,
+
+away:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<ellipse cx="112" cy="102" rx="62" ry="40" fill="none" stroke="#546E7A" stroke-width="2.5" stroke-dasharray="7 7" opacity=".65"/>
+<circle cx="112" cy="102" r="12" fill="#37474F"/>
+<circle cx="174" cy="102" r="7" fill="#546E7A"/>
+<path d="M186 88 L246 52" stroke="#37474F" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M258 44 L232 48 L244 66 Z" fill="#37474F"/>
+<g stroke="#546E7A" stroke-width="2.5" opacity=".5" stroke-linecap="round">
+<line x1="184" y1="104" x2="206" y2="92"/><line x1="180" y1="120" x2="200" y2="110"/></g>
+<circle cx="246" cy="140" r="5" fill="#546E7A" opacity=".4"/>
+<circle cx="264" cy="118" r="3.5" fill="#546E7A" opacity=".28"/></svg>`,
+
+etc:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<g stroke="#37474F" stroke-width="4" stroke-linecap="round"><line x1="40" y1="52" x2="126" y2="52"/><line x1="40" y1="72" x2="126" y2="72"/></g>
+<path d="M140 52 L120 42 L120 62 Z" fill="#37474F"/><path d="M140 72 L120 62 L120 82 Z" fill="#37474F" opacity=".6"/>
+<text x="40" y="34" font-family="sans-serif" font-size="12" font-weight="700" fill="#546E7A">ALONG</text>
+<g stroke="#546E7A" stroke-width="4" stroke-linecap="round"><line x1="176" y1="62" x2="212" y2="42"/><line x1="176" y1="62" x2="212" y2="82"/></g>
+<circle cx="170" cy="62" r="6" fill="#546E7A"/>
+<text x="176" y="34" font-family="sans-serif" font-size="12" font-weight="700" fill="#546E7A">APART</text>
+<g stroke="#37474F" stroke-width="4" stroke-linecap="round"><line x1="40" y1="140" x2="120" y2="140"/></g>
+<path d="M136 140 L114 128 L114 152 Z" fill="#37474F"/>
+<text x="40" y="170" font-family="sans-serif" font-size="12" font-weight="700" fill="#546E7A">AHEAD</text>
+<g stroke="#546E7A" stroke-width="4" stroke-linecap="round"><line x1="182" y1="128" x2="212" y2="140"/><line x1="182" y1="152" x2="212" y2="140"/></g>
+<circle cx="222" cy="140" r="8" fill="#37474F"/>
+<text x="176" y="170" font-family="sans-serif" font-size="12" font-weight="700" fill="#546E7A">TOGETHER</text></svg>`,
+
+prep:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<rect x="30" y="76" width="86" height="42" rx="8" fill="#37474F"/>
+<text x="46" y="103" font-family="sans-serif" font-size="15" font-weight="700" fill="#E3F2FD">VERB</text>
+<rect x="184" y="76" width="86" height="42" rx="8" fill="#546E7A" opacity=".45"/>
+<text x="196" y="103" font-family="sans-serif" font-size="14" font-weight="700" fill="#37474F">OBJECT</text>
+<path d="M120 97 L180 97" stroke="#37474F" stroke-width="5" stroke-linecap="round"/>
+<circle cx="150" cy="97" r="15" fill="#E8F5E9" stroke="#546E7A" stroke-width="2.5"/>
+<path d="M144 97 a6 6 0 0 1 12 0" fill="none" stroke="#546E7A" stroke-width="2.5"/>
+<path d="M144 97 h12 v8 h-12 z" fill="#546E7A"/>
+<line x1="150" y1="48" x2="150" y2="70" stroke="#546E7A" stroke-width="2.5" stroke-dasharray="4 4"/>
+<text x="104" y="42" font-family="sans-serif" font-size="12" font-weight="700" fill="#546E7A">분리 불가</text>
+<g stroke="#546E7A" stroke-width="2.5" opacity=".55" stroke-linecap="round">
+<line x1="52" y1="140" x2="248" y2="140"/></g>
+<path d="M258 140 L238 130 L238 150 Z" fill="#546E7A" opacity=".55"/></svg>`
+};
+
+const DECK = [
+{k:"up",t:"UP",n:33,art:SVG.up,core:"게이지 바늘이<br><b>올라간다</b>",
+ imgs:[
+  {t:"게이지가 올라간다",d:"양·강도가 커짐",v:["build up","pick up","speak up","cheer up"]},
+  {t:"잔을 끝까지 채운다",d:"남김없이 완결",v:["use up","fill up","sum up","end up","draw up","set up"]},
+  {t:"수면 위로 떠오른다",d:"없던 것이 나타남",v:["come up","show up","turn up","bring up"]},
+  {t:"뒤에서 바짝 붙는다",d:"간격이 0이 됨",v:["catch up with","keep up with"]}],
+ ex:["We ended up paying extra demurrage.","결국 추가 체선료를 지불하게 되었습니다."]},
+
+{k:"out",t:"OUT",n:31,art:SVG.out,core:"안에 있던 것이<br><b>밖으로 드러난다</b>",
+ imgs:[
+  {t:"문을 열고 밖으로",d:"영역 이탈",v:["back out","drop out","take out","put out"]},
+  {t:"조명이 켜져 드러난다",d:"숨은 것이 표면화",v:["find out","figure out","turn out","point out","stand out","work out"]},
+  {t:"연료가 바닥까지",d:"완전 소진",v:["run out of","sell out","give out","wear out"]},
+  {t:"쥔 것을 펼쳐 나눠준다",d:"밖으로 배분",v:["hand out","pass out"]}],
+ ex:["We ran out of 26.5R25 stock.","26.5R25 재고가 떨어졌습니다."]},
+
+{k:"on",t:"ON",n:16,art:SVG.on,core:"표면에 붙어<br><b>떨어지지 않는다</b>",
+ imgs:[
+  {t:"표면에 딱 붙는다",d:"접촉",v:["put on","turn on","try on"]},
+  {t:"벨트가 계속 돌아간다",d:"지속",v:["carry on","go on","keep on","hold on","work on","move on"]},
+  {t:"등에 짐을 얹는다",d:"부담·의존",v:["take on","count on","pass on","focus on"]}],
+ ex:["They keep on delaying payment.","그들이 계속 결제를 미룹니다."]},
+
+{k:"off",t:"OFF",n:18,art:SVG.off,core:"붙어 있던 것을<br><b>탁 떼어낸다</b>",
+ imgs:[
+  {t:"스티커를 뗀다",d:"분리·차단",v:["take off","cut off","call off","turn off","lay off","write off","wear off"]},
+  {t:"출발선에서 튕겨 나간다",d:"개시·발진",v:["set off","kick off","take off (이륙)","go off"]},
+  {t:"마지막 조각까지 떼어 정산",d:"완결",v:["pay off","drop off","see off"]}],
+ ex:["The site visit was called off.","현장 방문이 취소되었습니다."],
+ note:"ON과 정확히 한 쌍입니다. on = 붙임, off = 뗌."},
+
+{k:"in",t:"IN",n:14,art:SVG["in"],core:"바깥에 있던 것이<br><b>안으로 들어간다</b>",
+ imgs:[
+  {t:"상자 안으로 들어간다",d:"진입",v:["come in","move in","break in","drop in","check in"]},
+  {t:"손바닥에 올려 건넨다",d:"제출",v:["hand in","turn in","fill in"]},
+  {t:"안으로 받아들인다",d:"수용·개입",v:["take in","give in","join in","step in","factor in"]}],
+ ex:["Hand in your expense report by Friday.","금요일까지 경비 보고서를 제출하세요."]},
+
+{k:"down",t:"DOWN",n:18,art:SVG.down,core:"위에 있던 것이<br><b>아래로 내려간다</b>",
+ imgs:[
+  {t:"그래프가 내려간다",d:"감소",v:["go down","come down","cut down on","slow down","narrow down"]},
+  {t:"종이에 눌러 적는다",d:"고정·기록",v:["write down","take down","put down","lay down","settle down"]},
+  {t:"무너져 내린다",d:"붕괴·정지",v:["break down","shut down","close down","let down","back down"]}],
+ ex:["The forklift broke down again.","지게차가 또 고장 났습니다."]},
+
+{k:"over",t:"OVER",n:10,art:SVG.over,core:"표면 위를 지나<br><b>건너간다</b>",
+ imgs:[
+  {t:"손바닥이 표면을 훑는다",d:"전면 검토",v:["go over","look over","think over"]},
+  {t:"담 너머로 넘긴다",d:"이전·전환",v:["hand over","take over","come over","win over","start over"]},
+  {t:"장애물을 뛰어넘는다",d:"극복",v:["get over","pull over"]}],
+ ex:["Let's go over the figures once more.","수치를 한 번 더 검토합시다."]},
+
+{k:"back",t:"BACK",n:11,art:SVG.back,core:"떠났던 것이<br><b>원래 자리로 돌아간다</b>",
+ imgs:[
+  {t:"되감기 버튼",d:"원위치·반환",v:["give back","pay back","take back","come back","call back","get back to"]},
+  {t:"목줄을 뒤로 당긴다",d:"억제·후퇴",v:["hold back","cut back"]},
+  {t:"벽을 짚고 다시 튀어 오른다",d:"회복·의지",v:["bounce back","fall back on","look back"]}],
+ ex:["They held back the final payment.","그들이 잔금 지급을 보류했습니다."]},
+
+{k:"through",t:"THROUGH",n:7,art:SVG.through,core:"막힌 것을<br><b>끝까지 관통한다</b>",
+ imgs:[
+  {t:"터널을 끝까지 관통한다",d:"통과·완주",v:["go through","get through","break through","follow through","pull through"]},
+  {t:"유리를 꿰뚫어 본다",d:"투시",v:["see through","look through"]}],
+ ex:["Let's go through the checklist.","체크리스트를 하나씩 검토합시다."]},
+
+{k:"away/around",t:"AWAY · AROUND",n:13,art:SVG.away,core:"중심에서<br><b>멀어지거나 빙 돈다</b>",
+ imgs:[
+  {t:"손에서 던져 멀어진다",d:"제거·소멸 (away)",v:["throw away","give away","put away","go away","take away","turn away"]},
+  {t:"중심을 빙 돈다",d:"주변·전환 (around)",v:["look around","get around","hang around","come around","turn around"]}],
+ ex:["Don't throw away the packing list.","패킹 리스트를 버리지 마세요."]},
+
+{k:"기타 부사",t:"기타 부사",n:16,art:SVG.etc,core:"방향 부사가<br><b>뜻을 그대로 지시한다</b>",
+ imgs:[
+  {t:"나란히 옆에서 간다",d:"동행 (along)",v:["get along with","go along with","come along"]},
+  {t:"조각으로 흩어진다 · 옆에 치운다",d:"분해·보류 (apart · aside)",v:["fall apart","take apart","put aside","set aside"]},
+  {t:"앞을 향한다",d:"전진·기대 (ahead · forward)",v:["get ahead","go ahead","bring forward","look forward to","put forward"]},
+  {t:"뒤를 따라간다 · 모아 붙인다",d:"추종·결합 (after · together)",v:["look after","take after","get together","put together"]}],
+ ex:["The deal fell apart at the last minute.","거래가 막판에 무산됐습니다."]},
+
+{k:"전치사형",t:"전치사형",n:13,art:SVG.prep,core:"목적어와<br><b>절대 떨어지지 않는다</b>",
+ imgs:[
+  {t:"안으로 들어가 모양이 바뀐다",d:"진입·변형 (into)",v:["get into","break into","turn into","run into","talk into"]},
+  {t:"가로질러 마주친다",d:"조우 (across)",v:["come across"]},
+  {t:"화살표가 목표를 향한다",d:"지향·요구 (for)",v:["apply for","ask for","call for","account for","stand for"]},
+  {t:"상대와 마주 앉는다",d:"대응 (with)",v:["deal with"]}],
+ ex:["Mining accounts for 60% of demand.","광산이 수요의 60%를 차지합니다."],
+ note:"앞 11장과 다릅니다. 부사형은 take it off ○ 가 되지만, 전치사형은 deal with it ○ / deal it with ✕ 입니다."}
+];
+
+/* ===================== LIST DATA ===================== */
+const DATA = [
+["up","add up","앞뒤가 맞다, 합산되다","masuk akal; menjumlahkan","The figures in this invoice don't add up.","이 인보이스의 숫자가 맞지 않습니다.","Angka-angka di faktur ini tidak cocok."],
+["up","back up","뒷받침하다, 백업하다","mendukung; mencadangkan","Can you back up your claim with data?","그 주장을 데이터로 뒷받침할 수 있나요?","Bisakah Anda mendukung klaim Anda dengan data?"],
+["up","break up","해산하다, 헤어지다","membubarkan; putus","The meeting broke up at six.","회의는 6시에 끝났습니다.","Rapat bubar pukul enam."],
+["up","bring up","(화제를) 꺼내다, 양육하다","mengangkat (topik); membesarkan","Please bring up the pricing issue in the meeting.","회의에서 가격 문제를 꺼내 주세요.","Tolong angkat masalah harga dalam rapat."],
+["up","build up","축적하다, 늘리다","membangun; menumpuk","We need to build up stock before the rainy season.","우기 전에 재고를 늘려야 합니다.","Kita perlu menambah stok sebelum musim hujan."],
+["up","catch up (with)","따라잡다, 밀린 일을 처리하다","mengejar; menyusul","I need to catch up on my emails.","밀린 이메일을 처리해야 합니다.","Saya perlu menyusul email-email saya yang tertunda."],
+["up","cheer up","기운을 북돋우다","menghibur","Cheer up — the next quarter will be better.","기운 내세요, 다음 분기는 나아질 겁니다.","Semangat — kuartal depan akan lebih baik."],
+["up","clean up","정리하다, 청소하다","membersihkan","Let's clean up the customer database.","고객 데이터베이스를 정리합시다.","Mari rapikan basis data pelanggan."],
+["up","come up","(문제가) 발생하다","muncul","Something urgent came up this morning.","오늘 아침 급한 일이 생겼습니다.","Ada hal mendesak yang muncul pagi ini."],
+["up","come up with","생각해 내다","menemukan (ide)","She came up with a better shipping plan.","그녀가 더 나은 배송 계획을 생각해 냈습니다.","Dia menemukan rencana pengiriman yang lebih baik."],
+["up","draw up","(문서를) 작성하다","menyusun (dokumen)","Please draw up the contract by Friday.","금요일까지 계약서를 작성해 주세요.","Tolong susun kontraknya sebelum Jumat."],
+["up","end up","결국 ~하게 되다","berakhir dengan","We ended up paying extra demurrage.","결국 추가 체선료를 지불하게 되었습니다.","Kami akhirnya membayar demurrage tambahan."],
+["up","fill up","가득 채우다","mengisi penuh","Fill up the container before sealing it.","봉인 전에 컨테이너를 가득 채우세요.","Isi penuh kontainer sebelum menyegelnya."],
+["up","follow up","후속 조치하다","menindaklanjuti","I'll follow up with the buyer next week.","다음 주에 바이어에게 후속 연락하겠습니다.","Saya akan menindaklanjuti dengan pembeli minggu depan."],
+["up","give up","포기하다","menyerah","Don't give up on that account yet.","그 거래처를 아직 포기하지 마세요.","Jangan menyerah pada pelanggan itu dulu."],
+["up","grow up","자라다, 성장하다","tumbuh dewasa","He grew up in Surabaya.","그는 수라바야에서 자랐습니다.","Dia tumbuh besar di Surabaya."],
+["up","hang up","전화를 끊다","menutup telepon","She hung up before I could explain.","설명하기도 전에 그녀가 전화를 끊었습니다.","Dia menutup telepon sebelum saya sempat menjelaskan."],
+["up","hold up","지연시키다, 붙잡다","menunda; menahan","Customs held up our shipment for three days.","세관이 우리 선적을 3일간 지연시켰습니다.","Bea cukai menahan kiriman kami selama tiga hari."],
+["up","keep up with","뒤처지지 않고 따라가다","mengikuti","It's hard to keep up with market changes.","시장 변화를 따라가기가 어렵습니다.","Sulit mengikuti perubahan pasar."],
+["up","look up","(정보를) 찾아보다","mencari (informasi)","Look up the HS code before we quote.","견적 전에 HS 코드를 찾아보세요.","Cari kode HS sebelum kita memberi penawaran."],
+["up","make up","구성하다, 지어내다, 화해하다","membentuk; mengarang","OTR tires make up 40% of our sales.","OTR 타이어가 매출의 40%를 차지합니다.","Ban OTR mencakup 40% dari penjualan kami."],
+["up","mix up","혼동하다, 뒤섞다","tertukar; mengacaukan","They mixed up the two order numbers.","그들이 두 주문 번호를 혼동했습니다.","Mereka tertukar dua nomor pesanan."],
+["up","open up","열다, 개방하다","membuka","The mining sector is opening up again.","광산 부문이 다시 열리고 있습니다.","Sektor pertambangan mulai terbuka lagi."],
+["up","pick up","집다, 데리러 가다, 회복되다","menjemput; membaik","Sales picked up after the holiday.","연휴 이후 매출이 회복되었습니다.","Penjualan membaik setelah liburan."],
+["up","put up with","참다, 견디다","tahan; bersabar dengan","We can't put up with late deliveries anymore.","더 이상 납기 지연을 참을 수 없습니다.","Kami tidak bisa lagi menoleransi keterlambatan pengiriman."],
+["up","set up","설립하다, 설치하다","mendirikan; memasang","We set up a new branch in Semarang.","스마랑에 새 지점을 설립했습니다.","Kami mendirikan cabang baru di Semarang."],
+["up","show up","나타나다, 참석하다","muncul; hadir","The supplier didn't show up for the meeting.","공급업체가 회의에 나타나지 않았습니다.","Pemasok tidak hadir dalam rapat."],
+["up","speak up","크게 말하다, 소신을 밝히다","berbicara lebih keras; angkat bicara","Please speak up if you disagree.","동의하지 않으시면 말씀해 주세요.","Silakan angkat bicara jika Anda tidak setuju."],
+["up","sum up","요약하다","meringkas","Let me sum up today's discussion.","오늘 논의를 요약하겠습니다.","Izinkan saya merangkum diskusi hari ini."],
+["up","take up","(시간·공간을) 차지하다, 시작하다","memakan (waktu); mulai menekuni","This report took up my whole afternoon.","이 보고서가 오후 전체를 잡아먹었습니다.","Laporan ini memakan seluruh sore saya."],
+["up","turn up","나타나다, (소리를) 높이다","muncul; membesarkan volume","The missing documents turned up yesterday.","분실됐던 서류가 어제 나왔습니다.","Dokumen yang hilang muncul kemarin."],
+["up","use up","다 써 버리다","menghabiskan","We've used up this month's budget.","이번 달 예산을 다 썼습니다.","Kami sudah menghabiskan anggaran bulan ini."],
+["up","warm up","예열하다, 준비 운동하다","memanaskan","Warm up the engine before testing.","테스트 전에 엔진을 예열하세요.","Panaskan mesin sebelum pengujian."],
+["out","back out","(약속에서) 발을 빼다","mundur; membatalkan","The buyer backed out of the deal.","바이어가 거래에서 손을 뗐습니다.","Pembeli mundur dari kesepakatan."],
+["out","bring out","출시하다, 끌어내다","meluncurkan","They brought out a new tire model.","그들이 새 타이어 모델을 출시했습니다.","Mereka meluncurkan model ban baru."],
+["out","carry out","수행하다, 실행하다","melaksanakan","We carried out a quality inspection.","품질 검사를 실시했습니다.","Kami melaksanakan inspeksi kualitas."],
+["out","check out","확인하다, 퇴실하다","memeriksa; check out","Check out the competitor's price list.","경쟁사 가격표를 확인해 보세요.","Periksa daftar harga pesaing."],
+["out","come out","출시되다, 드러나다","keluar; terbit","The new catalogue comes out in May.","새 카탈로그가 5월에 나옵니다.","Katalog baru terbit pada bulan Mei."],
+["out","cut out","없애다, 제거하다","menghilangkan","We cut out the middleman.","중간 유통 단계를 없앴습니다.","Kami memangkas perantara."],
+["out","drop out","중도 하차하다","mengundurkan diri","One bidder dropped out of the tender.","입찰자 한 곳이 입찰에서 빠졌습니다.","Satu peserta mundur dari tender."],
+["out","figure out","알아내다, 이해하다","mencari tahu","We need to figure out the root cause.","근본 원인을 알아내야 합니다.","Kita perlu mencari tahu akar penyebabnya."],
+["out","fill out","(서식을) 작성하다","mengisi (formulir)","Please fill out the claim form.","클레임 양식을 작성해 주세요.","Tolong isi formulir klaim."],
+["out","find out","알아내다","mengetahui","Find out why the shipment was delayed.","선적이 왜 지연됐는지 알아보세요.","Cari tahu mengapa pengiriman tertunda."],
+["out","give out","나눠 주다, 바닥나다","membagikan; habis","They gave out samples at the exhibition.","전시회에서 샘플을 나눠 줬습니다.","Mereka membagikan sampel di pameran."],
+["out","hand out","배포하다","membagikan","Hand out the brochures to visitors.","방문객에게 브로슈어를 배포하세요.","Bagikan brosur kepada pengunjung."],
+["out","hang out","어울려 시간을 보내다","nongkrong","We hung out after the trade fair.","무역 박람회 후에 함께 시간을 보냈습니다.","Kami nongkrong setelah pameran dagang."],
+["out","help out","도와주다","membantu","Can you help out with the inventory count?","재고 조사를 도와줄 수 있나요?","Bisakah Anda membantu penghitungan stok?"],
+["out","iron out","(문제를) 원만히 해결하다","menyelesaikan (masalah)","Let's iron out the payment terms.","결제 조건을 정리합시다.","Mari selesaikan syarat pembayaran."],
+["out","leave out","빠뜨리다, 제외하다","melewatkan; menghilangkan","You left out the freight cost.","운임을 빠뜨렸습니다.","Anda melewatkan biaya pengangkutan."],
+["out","look out","조심하다","hati-hati; awas","Look out for hidden charges.","숨은 비용을 조심하세요.","Waspadai biaya tersembunyi."],
+["out","pass out","기절하다, 나눠 주다","pingsan; membagikan","The driver passed out from the heat.","운전사가 더위로 기절했습니다.","Sopir pingsan karena kepanasan."],
+["out","point out","지적하다","menunjukkan","He pointed out an error in the invoice.","그가 인보이스의 오류를 지적했습니다.","Dia menunjukkan kesalahan pada faktur."],
+["out","put out","(불을) 끄다, 발표하다","memadamkan; mengeluarkan","They put out a press release.","그들이 보도자료를 냈습니다.","Mereka mengeluarkan siaran pers."],
+["out","reach out","연락을 취하다","menghubungi","I'll reach out to the new distributor.","새 유통업체에 연락하겠습니다.","Saya akan menghubungi distributor baru."],
+["out","rule out","배제하다","mengesampingkan","We can't rule out a price increase.","가격 인상 가능성을 배제할 수 없습니다.","Kami tidak bisa mengesampingkan kenaikan harga."],
+["out","run out of","다 떨어지다","kehabisan","We ran out of 26.5R25 stock.","26.5R25 재고가 떨어졌습니다.","Kami kehabisan stok 26.5R25."],
+["out","sell out","매진되다","habis terjual","The promotion items sold out in a week.","프로모션 상품이 일주일 만에 매진됐습니다.","Barang promosi habis terjual dalam seminggu."],
+["out","sort out","정리하다, 해결하다","membereskan","Sort out the shipping documents first.","먼저 선적 서류를 정리하세요.","Bereskan dulu dokumen pengiriman."],
+["out","stand out","두드러지다","menonjol","Our warranty policy stands out.","우리 보증 정책이 두드러집니다.","Kebijakan garansi kami menonjol."],
+["out","take out","꺼내다, (보험을) 들다","mengeluarkan; mengambil (asuransi)","We took out cargo insurance.","적하보험에 가입했습니다.","Kami mengambil asuransi kargo."],
+["out","try out","시험 삼아 해 보다","mencoba","Let's try out the new supplier.","새 공급업체를 한번 써 봅시다.","Mari coba pemasok baru."],
+["out","turn out","~로 판명되다","ternyata","The claim turned out to be valid.","그 클레임은 타당한 것으로 판명됐습니다.","Klaim itu ternyata sah."],
+["out","watch out","주의하다","hati-hati","Watch out for the exchange rate.","환율을 주의하세요.","Hati-hati dengan nilai tukar."],
+["out","work out","잘 풀리다, 산출하다, 운동하다","berhasil; menghitung","Let's work out the total landed cost.","총 도착 원가를 계산해 봅시다.","Mari hitung total biaya sampai tujuan."],
+["on","carry on","계속하다","melanjutkan","Carry on with the negotiation.","협상을 계속하세요.","Lanjutkan negosiasinya."],
+["on","catch on","인기를 얻다, 이해하다","populer; mengerti","The new brand is catching on locally.","새 브랜드가 현지에서 인기를 얻고 있습니다.","Merek baru mulai populer di pasar lokal."],
+["on","count on","의지하다, 믿다","mengandalkan","You can count on our after-sales team.","저희 A/S 팀을 믿으셔도 됩니다.","Anda bisa mengandalkan tim purnajual kami."],
+["on","focus on","집중하다","fokus pada","Let's focus on the mining segment.","광산 부문에 집중합시다.","Mari fokus pada segmen pertambangan."],
+["on","get on","(교통수단에) 타다","naik","Get on the 7 a.m. flight to Balikpapan.","발릭파판행 오전 7시 비행기를 타세요.","Naik penerbangan pukul 7 pagi ke Balikpapan."],
+["on","get on with","사이좋게 지내다","akur dengan","He gets on well with the local staff.","그는 현지 직원들과 잘 지냅니다.","Dia akur dengan staf lokal."],
+["on","go on","계속되다, 일어나다","berlangsung; terjadi","What's going on with the customs clearance?","통관은 어떻게 되어 가고 있나요?","Bagaimana perkembangan proses bea cukainya?"],
+["on","hold on","잠깐 기다리다","tunggu sebentar","Hold on, I'll check the stock list.","잠깐만요, 재고 목록을 확인하겠습니다.","Tunggu sebentar, saya akan cek daftar stok."],
+["on","keep on","계속 ~하다","terus-menerus","They keep on delaying payment.","그들이 계속 결제를 미룹니다.","Mereka terus-menerus menunda pembayaran."],
+["on","move on","다음으로 넘어가다","beralih","Let's move on to the next agenda.","다음 안건으로 넘어갑시다.","Mari beralih ke agenda berikutnya."],
+["on","pass on","전달하다","meneruskan","Please pass on my message to the manager.","제 메시지를 매니저에게 전달해 주세요.","Tolong sampaikan pesan saya kepada manajer."],
+["on","put on","입다, 착용하다","memakai","Put on safety shoes in the warehouse.","창고에서는 안전화를 착용하세요.","Kenakan sepatu keselamatan di gudang."],
+["on","take on","(일을) 맡다, 고용하다","mengambil (tugas); merekrut","We took on two new sales staff.","영업 사원 두 명을 새로 채용했습니다.","Kami merekrut dua staf penjualan baru."],
+["on","try on","입어 보다","mencoba (pakaian)","Try on the uniform before ordering.","주문 전에 유니폼을 입어 보세요.","Coba seragamnya sebelum memesan."],
+["on","turn on","켜다","menyalakan","Turn on the compressor first.","컴프레서를 먼저 켜세요.","Nyalakan kompresor terlebih dahulu."],
+["on","work on","작업하다, 공들이다","mengerjakan","I'm working on the annual forecast.","연간 예측 자료를 작업 중입니다.","Saya sedang mengerjakan proyeksi tahunan."],
+["off","break off","중단하다","memutuskan","They broke off the negotiation.","그들이 협상을 중단했습니다.","Mereka memutuskan negosiasi."],
+["off","call off","취소하다","membatalkan","The site visit was called off.","현장 방문이 취소되었습니다.","Kunjungan lokasi dibatalkan."],
+["off","cut off","차단하다, 끊다","memutus","The supplier cut off our credit line.","공급업체가 우리 신용 한도를 끊었습니다.","Pemasok memutus batas kredit kami."],
+["off","drop off","내려 주다, 감소하다","mengantar; menurun","Orders dropped off in June.","6월에 주문이 감소했습니다.","Pesanan menurun pada bulan Juni."],
+["off","get off","내리다","turun","Get off at the next terminal.","다음 터미널에서 내리세요.","Turun di terminal berikutnya."],
+["off","go off","(경보가) 울리다, 상하다","berbunyi; basi","The alarm went off at midnight.","자정에 경보가 울렸습니다.","Alarm berbunyi tengah malam."],
+["off","kick off","시작하다","memulai","We kick off the campaign on Monday.","월요일에 캠페인을 시작합니다.","Kami memulai kampanye pada hari Senin."],
+["off","lay off","해고하다","mem-PHK","The plant laid off 50 workers.","공장이 50명을 해고했습니다.","Pabrik mem-PHK 50 pekerja."],
+["off","pay off","성과를 내다, 완납하다","membuahkan hasil; melunasi","The investment finally paid off.","그 투자가 마침내 성과를 냈습니다.","Investasi itu akhirnya membuahkan hasil."],
+["off","put off","미루다","menunda","Don't put off the payment again.","결제를 또 미루지 마세요.","Jangan menunda pembayaran lagi."],
+["off","rip off","바가지를 씌우다","menipu (harga)","That vendor ripped us off.","그 업체가 우리에게 바가지를 씌웠습니다.","Vendor itu menipu kami dengan harga tinggi."],
+["off","see off","배웅하다","mengantar kepergian","I saw the client off at the airport.","공항에서 고객을 배웅했습니다.","Saya mengantar klien di bandara."],
+["off","set off","출발하다","berangkat","We set off for the mine site at dawn.","새벽에 광산 현장으로 출발했습니다.","Kami berangkat ke lokasi tambang saat fajar."],
+["off","show off","과시하다","pamer","He showed off the new showroom.","그가 새 쇼룸을 자랑했습니다.","Dia memamerkan ruang pamer baru."],
+["off","take off","이륙하다, 급성장하다","lepas landas; melonjak","Sales took off after the price cut.","가격 인하 후 매출이 급증했습니다.","Penjualan melonjak setelah pemotongan harga."],
+["off","turn off","끄다","mematikan","Turn off the lights before leaving.","나가기 전에 불을 끄세요.","Matikan lampu sebelum pergi."],
+["off","wear off","(효과가) 서서히 사라지다","memudar","The discount effect wore off quickly.","할인 효과가 금세 사라졌습니다.","Efek diskon cepat memudar."],
+["off","write off","손실 처리하다, 상각하다","menghapusbukukan","We had to write off the bad debt.","부실채권을 손실 처리해야 했습니다.","Kami harus menghapusbukukan piutang tak tertagih."],
+["in","break in","침입하다, 길들이다","membobol","Thieves broke in over the weekend.","주말에 도둑이 침입했습니다.","Pencuri membobol saat akhir pekan."],
+["in","check in","체크인하다, 탑승 수속하다","check in; mendaftar","Check in at the hotel before the meeting.","회의 전에 호텔에 체크인하세요.","Daftar masuk di hotel sebelum rapat."],
+["in","come in","들어오다, 입고되다","masuk","The new stock comes in next week.","새 재고가 다음 주에 들어옵니다.","Stok baru masuk minggu depan."],
+["in","drop in","잠깐 들르다","mampir","I'll drop in at the branch tomorrow.","내일 지점에 잠깐 들르겠습니다.","Saya akan mampir ke cabang besok."],
+["in","factor in","감안하다, 계산에 넣다","memperhitungkan","Factor in the import duty.","수입 관세를 감안하세요.","Perhitungkan bea masuk impor."],
+["in","fill in","기입하다, 대신하다","mengisi; menggantikan","Fill in the delivery date here.","여기에 납기일을 기입하세요.","Isi tanggal pengiriman di sini."],
+["in","give in","굴복하다, 양보하다","mengalah","We won't give in to that price demand.","그 가격 요구에 굴복하지 않겠습니다.","Kami tidak akan mengalah pada tuntutan harga itu."],
+["in","hand in","제출하다","menyerahkan","Hand in your expense report by Friday.","금요일까지 경비 보고서를 제출하세요.","Serahkan laporan pengeluaran Anda sebelum Jumat."],
+["in","join in","참여하다","ikut serta","Everyone joined in the discussion.","모두가 논의에 참여했습니다.","Semua orang ikut serta dalam diskusi."],
+["in","log in","로그인하다","masuk (akun)","Log in to the ERP system first.","먼저 ERP 시스템에 로그인하세요.","Masuk ke sistem ERP terlebih dahulu."],
+["in","move in","입주하다","pindah masuk","We move in to the new office in August.","8월에 새 사무실로 입주합니다.","Kami pindah ke kantor baru pada bulan Agustus."],
+["in","step in","개입하다","turun tangan","The director stepped in to settle the dispute.","이사가 분쟁 해결에 개입했습니다.","Direktur turun tangan untuk menyelesaikan perselisihan."],
+["in","take in","이해하다, 받아들이다","memahami; menerima","It's a lot of data to take in.","받아들이기에 데이터가 많습니다.","Banyak data yang harus dipahami."],
+["in","turn in","제출하다","menyerahkan","Turn in the signed contract today.","오늘 서명된 계약서를 제출하세요.","Serahkan kontrak yang sudah ditandatangani hari ini."],
+["down","back down","(주장에서) 물러서다","mundur dari pendirian","They backed down on the penalty clause.","그들이 위약 조항에서 물러섰습니다.","Mereka mundur dari klausul penalti."],
+["down","break down","고장 나다, 결렬되다","rusak; mogok","The forklift broke down again.","지게차가 또 고장 났습니다.","Forklift itu rusak lagi."],
+["down","calm down","진정하다","tenang","Calm down and check the facts.","진정하고 사실을 확인하세요.","Tenang dan periksa faktanya."],
+["down","close down","폐업하다","menutup usaha","The distributor closed down last year.","그 유통업체는 작년에 폐업했습니다.","Distributor itu tutup usaha tahun lalu."],
+["down","come down","내려가다, (가격이) 떨어지다","turun","Rubber prices came down slightly.","고무 가격이 소폭 하락했습니다.","Harga karet turun sedikit."],
+["down","cut down on","줄이다","mengurangi","We should cut down on air freight.","항공 운송을 줄여야 합니다.","Kita harus mengurangi pengiriman udara."],
+["down","get down to","본격적으로 착수하다","mulai serius mengerjakan","Let's get down to business.","본론으로 들어갑시다.","Mari mulai serius bekerja."],
+["down","go down","하락하다, 감소하다","menurun","Margins went down 3% this quarter.","이번 분기 마진이 3% 하락했습니다.","Margin turun 3% kuartal ini."],
+["down","lay down","(규칙을) 정하다","menetapkan","The contract lays down the payment terms.","계약서가 결제 조건을 규정합니다.","Kontrak menetapkan syarat pembayaran."],
+["down","let down","실망시키다","mengecewakan","The supplier let us down again.","공급업체가 또 우리를 실망시켰습니다.","Pemasok mengecewakan kami lagi."],
+["down","narrow down","좁히다, 압축하다","mempersempit","Narrow down the list to three vendors.","업체 목록을 세 곳으로 좁히세요.","Persempit daftar menjadi tiga vendor."],
+["down","put down","내려놓다, 계약금을 걸다","meletakkan; membayar uang muka","They put down a 30% deposit.","그들이 30% 계약금을 지불했습니다.","Mereka membayar uang muka 30%."],
+["down","settle down","정착하다, 안정되다","menetap; tenang","The market settled down after the election.","선거 후 시장이 안정되었습니다.","Pasar tenang kembali setelah pemilu."],
+["down","shut down","가동을 중단하다, 폐쇄하다","menghentikan; menutup","The mine shut down for maintenance.","광산이 정비를 위해 가동을 중단했습니다.","Tambang menghentikan operasi untuk perawatan."],
+["down","slow down","속도를 늦추다, 둔화되다","memperlambat","Demand is slowing down.","수요가 둔화되고 있습니다.","Permintaan sedang melambat."],
+["down","take down","받아 적다, 철거하다","mencatat; membongkar","Take down the customer's complaint in detail.","고객 불만을 상세히 기록하세요.","Catat keluhan pelanggan secara rinci."],
+["down","turn down","거절하다, (소리를) 줄이다","menolak","They turned down our offer.","그들이 우리 제안을 거절했습니다.","Mereka menolak penawaran kami."],
+["down","write down","적어 두다","mencatat","Write down the container number.","컨테이너 번호를 적어 두세요.","Catat nomor kontainernya."],
+["over","come over","(~에) 들르다","datang; mampir","Can you come over to the warehouse?","창고로 와 주실 수 있나요?","Bisakah Anda datang ke gudang?"],
+["over","get over","극복하다","mengatasi","It took months to get over the loss.","손실을 극복하는 데 몇 달이 걸렸습니다.","Butuh berbulan-bulan untuk mengatasi kerugian itu."],
+["over","go over","검토하다","meninjau","Let's go over the figures once more.","수치를 한 번 더 검토합시다.","Mari kita tinjau angkanya sekali lagi."],
+["over","hand over","인계하다","menyerahkan; serah terima","Hand over the files to your successor.","후임자에게 파일을 인계하세요.","Serahkan berkas kepada pengganti Anda."],
+["over","look over","훑어보다","melihat sekilas","Please look over the draft agreement.","계약서 초안을 훑어봐 주세요.","Tolong periksa rancangan perjanjiannya."],
+["over","pull over","차를 길가에 세우다","menepi","The truck pulled over for inspection.","트럭이 검사를 위해 길가에 정차했습니다.","Truk itu menepi untuk pemeriksaan."],
+["over","start over","처음부터 다시 하다","mengulang dari awal","We had to start over with the layout.","레이아웃을 처음부터 다시 해야 했습니다.","Kami harus mengulang tata letak dari awal."],
+["over","take over","인수하다, 넘겨받다","mengambil alih","A Chinese group took over the factory.","중국 그룹이 그 공장을 인수했습니다.","Sebuah grup Tiongkok mengambil alih pabrik itu."],
+["over","think over","숙고하다","mempertimbangkan","Please think over our proposal.","저희 제안을 숙고해 주세요.","Tolong pertimbangkan proposal kami."],
+["over","win over","설득해 내 편으로 만들다","memenangkan hati","We won over the purchasing manager.","구매 담당자를 설득했습니다.","Kami berhasil memenangkan hati manajer pembelian."],
+["back","bounce back","회복하다","bangkit kembali","The market bounced back in Q3.","3분기에 시장이 회복되었습니다.","Pasar bangkit kembali pada kuartal ketiga."],
+["back","call back","다시 전화하다","menelepon kembali","I'll call you back after the meeting.","회의 후에 다시 전화드리겠습니다.","Saya akan menelepon Anda kembali setelah rapat."],
+["back","come back","돌아오다","kembali","He comes back from Jakarta tonight.","그는 오늘 밤 자카르타에서 돌아옵니다.","Dia kembali dari Jakarta malam ini."],
+["back","cut back","삭감하다","memangkas","We cut back on marketing spend.","마케팅 지출을 삭감했습니다.","Kami memangkas belanja pemasaran."],
+["back","fall back on","~에 의지하다","mengandalkan (cadangan)","We can fall back on the local supplier.","현지 공급업체에 의지할 수 있습니다.","Kami bisa mengandalkan pemasok lokal sebagai cadangan."],
+["back","get back to","(나중에) 답을 주다","menghubungi kembali","I'll get back to you by Wednesday.","수요일까지 답변드리겠습니다.","Saya akan menghubungi Anda kembali sebelum Rabu."],
+["back","give back","돌려주다","mengembalikan","Give back the sample after testing.","테스트 후 샘플을 돌려주세요.","Kembalikan sampel setelah pengujian."],
+["back","hold back","억제하다, 보류하다","menahan","They held back the final payment.","그들이 잔금 지급을 보류했습니다.","Mereka menahan pembayaran akhir."],
+["back","look back","되돌아보다","menengok ke belakang","Looking back, the timing was wrong.","돌이켜 보면 타이밍이 잘못됐습니다.","Jika ditengok kembali, waktunya salah."],
+["back","pay back","갚다, 상환하다","membayar kembali","The loan will be paid back in two years.","대출은 2년 내에 상환됩니다.","Pinjaman akan dilunasi dalam dua tahun."],
+["back","take back","반품받다, (말을) 취소하다","menarik kembali","We'll take back the defective tires.","불량 타이어를 회수하겠습니다.","Kami akan menarik kembali ban yang cacat."],
+["through","break through","돌파하다","menembus","Sales broke through the target line.","매출이 목표선을 돌파했습니다.","Penjualan menembus garis target."],
+["through","follow through","끝까지 완수하다","menuntaskan","He never follows through on promises.","그는 약속을 끝까지 이행하지 않습니다.","Dia tidak pernah menuntaskan janjinya."],
+["through","get through","통과하다, 연락이 닿다","berhasil melewati; tersambung","I couldn't get through to their office.","그쪽 사무실에 연락이 닿지 않았습니다.","Saya tidak bisa tersambung ke kantor mereka."],
+["through","go through","겪다, 하나씩 검토하다","mengalami; menelusuri","Let's go through the checklist.","체크리스트를 하나씩 검토합시다.","Mari kita telusuri daftar periksanya."],
+["through","look through","훑어보다","memeriksa sekilas","Look through last year's contracts.","작년 계약서들을 훑어보세요.","Periksa sekilas kontrak tahun lalu."],
+["through","pull through","(위기를) 이겨내다","selamat; pulih","The company pulled through the crisis.","회사가 위기를 이겨냈습니다.","Perusahaan berhasil melewati krisis."],
+["through","see through","간파하다","tidak tertipu; melihat menembus","I saw through his excuse.","그의 변명을 간파했습니다.","Saya tidak tertipu oleh alasannya."],
+["away/around","get away with","처벌을 면하다","lolos dari hukuman","They got away with a small fine.","그들은 소액 벌금으로 넘어갔습니다.","Mereka lolos hanya dengan denda kecil."],
+["away/around","give away","거저 주다, 누설하다","memberikan gratis; membocorkan","Don't give away our cost structure.","우리 원가 구조를 흘리지 마세요.","Jangan bocorkan struktur biaya kami."],
+["away/around","go away","사라지다, 떠나다","pergi; hilang","The problem won't go away by itself.","그 문제는 저절로 사라지지 않습니다.","Masalah itu tidak akan hilang dengan sendirinya."],
+["away/around","put away","치우다, 보관하다","menyimpan","Put away the tools after work.","작업 후 공구를 정리해 두세요.","Simpan peralatan setelah bekerja."],
+["away/around","run away","도망치다, 회피하다","melarikan diri","Don't run away from the issue.","문제를 회피하지 마세요.","Jangan lari dari masalahnya."],
+["away/around","take away","가져가다, 빼앗다","membawa pergi; mengambil","They took away our exclusive rights.","그들이 우리 독점권을 회수했습니다.","Mereka mencabut hak eksklusif kami."],
+["away/around","throw away","버리다","membuang","Don't throw away the packing list.","패킹 리스트를 버리지 마세요.","Jangan membuang daftar kemasan (packing list)."],
+["away/around","turn away","돌려보내다, 거절하다","menolak masuk","We had to turn away several orders.","여러 주문을 거절해야 했습니다.","Kami terpaksa menolak beberapa pesanan."],
+["away/around","come around","들르다, 생각을 바꾸다","mampir; berubah pikiran","He finally came around to our view.","그가 마침내 우리 의견에 동의했습니다.","Dia akhirnya setuju dengan pandangan kami."],
+["away/around","get around","돌아다니다, 우회하다","berkeliling; menyiasati","There's no way to get around the regulation.","그 규정을 우회할 방법이 없습니다.","Tidak ada cara untuk menyiasati peraturan itu."],
+["away/around","hang around","서성이다","berkeliaran","Don't hang around the loading dock.","하역장 주변에서 서성이지 마세요.","Jangan berkeliaran di area bongkar muat."],
+["away/around","look around","둘러보다","melihat-lihat","Look around the market before deciding.","결정 전에 시장을 둘러보세요.","Lihat-lihat pasar dulu sebelum memutuskan."],
+["away/around","turn around","반전시키다, 회생시키다","membalikkan keadaan","The new manager turned the branch around.","새 지점장이 지점을 회생시켰습니다.","Manajer baru membalikkan keadaan cabang itu."],
+["기타 부사","get along with","사이좋게 지내다","akur dengan","She gets along with everyone.","그녀는 모두와 잘 지냅니다.","Dia akur dengan semua orang."],
+["기타 부사","go along with","동조하다, 따르다","menyetujui","I'll go along with your decision.","당신 결정에 따르겠습니다.","Saya akan menyetujui keputusan Anda."],
+["기타 부사","come along","함께 가다, 진전되다","ikut; berkembang","How is the project coming along?","프로젝트는 어떻게 진행되고 있나요?","Bagaimana perkembangan proyeknya?"],
+["기타 부사","fall apart","무너지다, 무산되다","berantakan","The deal fell apart at the last minute.","거래가 막판에 무산됐습니다.","Kesepakatan itu berantakan di menit-menit terakhir."],
+["기타 부사","take apart","분해하다","membongkar","They took apart the machine for repair.","수리를 위해 기계를 분해했습니다.","Mereka membongkar mesin untuk diperbaiki."],
+["기타 부사","put aside","제쳐 두다","mengesampingkan","Let's put aside that issue for now.","그 문제는 일단 제쳐 둡시다.","Mari kesampingkan masalah itu untuk sekarang."],
+["기타 부사","set aside","따로 떼어 두다","menyisihkan","Set aside a budget for claims.","클레임 예산을 따로 잡아 두세요.","Sisihkan anggaran untuk klaim."],
+["기타 부사","get ahead","앞서 나가다","maju; unggul","To get ahead, we need better service.","앞서가려면 더 나은 서비스가 필요합니다.","Untuk unggul, kita butuh layanan yang lebih baik."],
+["기타 부사","go ahead","진행하다, 먼저 하다","melanjutkan; silakan","Go ahead with the order.","주문을 진행하세요.","Silakan lanjutkan pesanannya."],
+["기타 부사","bring forward","앞당기다","memajukan (jadwal)","Can we bring forward the shipment?","선적을 앞당길 수 있나요?","Bisakah kita memajukan jadwal pengiriman?"],
+["기타 부사","look forward to","기대하다","menantikan","I look forward to your reply.","회신을 기다리겠습니다.","Saya menantikan balasan Anda."],
+["기타 부사","put forward","제안하다","mengajukan","He put forward a new pricing model.","그가 새로운 가격 모델을 제안했습니다.","Dia mengajukan model penetapan harga baru."],
+["기타 부사","look after","돌보다, 관리하다","menjaga; mengurus","She looks after key accounts.","그녀가 주요 거래처를 관리합니다.","Dia mengurus pelanggan-pelanggan utama."],
+["기타 부사","take after","닮다","mirip dengan","He takes after his father in business.","그는 사업 방식이 아버지를 닮았습니다.","Cara berbisnisnya mirip ayahnya."],
+["기타 부사","get together","모이다","berkumpul","Let's get together after the audit.","감사 후에 모입시다.","Mari berkumpul setelah audit."],
+["기타 부사","put together","조립하다, (자료를) 구성하다","menyusun; merakit","Put together a summary report.","요약 보고서를 작성하세요.","Susun laporan ringkasan."],
+["전치사형","break into","침입하다, (시장에) 진출하다","menembus (pasar)","We want to break into the Kalimantan market.","칼리만탄 시장에 진출하고 싶습니다.","Kami ingin menembus pasar Kalimantan."],
+["전치사형","come across","우연히 마주치다, 발견하다","kebetulan menemukan","I came across an interesting supplier.","흥미로운 공급업체를 우연히 발견했습니다.","Saya kebetulan menemukan pemasok yang menarik."],
+["전치사형","deal with","처리하다, 상대하다","menangani","Who deals with warranty claims?","보증 클레임은 누가 처리하나요?","Siapa yang menangani klaim garansi?"],
+["전치사형","get into","~에 들어가다, ~에 뛰어들다","masuk ke; menekuni","He got into the tire business in 2010.","그는 2010년에 타이어 사업에 뛰어들었습니다.","Dia menekuni bisnis ban pada tahun 2010."],
+["전치사형","look into","조사하다","menyelidiki","We'll look into the delay.","지연 건을 조사하겠습니다.","Kami akan menyelidiki keterlambatan itu."],
+["전치사형","run into","우연히 만나다, (문제에) 부딪히다","bertemu tak sengaja; mengalami","We ran into a customs problem.","통관 문제에 부딪혔습니다.","Kami mengalami masalah bea cukai."],
+["전치사형","talk into","설득해 ~하게 하다","membujuk","She talked me into signing early.","그녀가 저를 설득해 조기에 서명하게 했습니다.","Dia membujuk saya untuk menandatangani lebih awal."],
+["전치사형","turn into","~로 변하다","berubah menjadi","The complaint turned into a lawsuit.","그 불만이 소송으로 번졌습니다.","Keluhan itu berubah menjadi gugatan."],
+["전치사형","account for","차지하다, 설명하다","mencakup; menjelaskan","Mining accounts for 60% of demand.","광산이 수요의 60%를 차지합니다.","Pertambangan mencakup 60% dari permintaan."],
+["전치사형","apply for","신청하다, 지원하다","mengajukan permohonan","Apply for the import licence early.","수입 허가를 미리 신청하세요.","Ajukan izin impor lebih awal."],
+["전치사형","ask for","요청하다","meminta","They asked for a 5% discount.","그들이 5% 할인을 요청했습니다.","Mereka meminta diskon 5%."],
+["전치사형","call for","요구하다, 필요로 하다","menuntut; memerlukan","This calls for an urgent meeting.","이 건은 긴급 회의가 필요합니다.","Ini memerlukan rapat mendesak."],
+["전치사형","stand for","의미하다, 상징하다","melambangkan; singkatan dari","OTR stands for Off-The-Road.","OTR은 Off-The-Road의 약자입니다.","OTR adalah singkatan dari Off-The-Road."]
+];
+
+const GROUP_LABEL = {
+  "up":"기본 뜻: 완성 · 증가 · 발생",
+  "out":"기본 뜻: 밖으로 · 완전히 · 드러남",
+  "on":"기본 뜻: 계속 · 접촉 · 의존",
+  "off":"기본 뜻: 분리 · 중단 · 출발",
+  "in":"기본 뜻: 안으로 · 제출 · 참여",
+  "down":"기본 뜻: 감소 · 하락 · 기록",
+  "over":"기본 뜻: 이동 · 검토 · 넘김",
+  "back":"기본 뜻: 되돌림 · 회복 · 억제",
+  "through":"기본 뜻: 통과 · 완수 · 경험",
+  "away/around":"기본 뜻: 제거 · 주변 · 전환",
+  "기타 부사":"along · apart · aside · ahead · forward · after · together",
+  "전치사형":"into · across · with · for"
+};
+const ORDER = ["up","out","on","off","in","down","over","back","through","away/around","기타 부사","전치사형"];
+
+function esc(s){return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}
+
+/* ===================== DECK RENDER ===================== */
+const track=document.getElementById('track');
+const dotsEl=document.getElementById('dots');
+const posEl=document.getElementById('pos');
+let cur=0;
+
+track.innerHTML = DECK.map((d,i)=>{
+  const imgs = d.imgs.map((im,j)=>
+    '<div class="img"><div class="ih"><span class="in">'+(j+1)+'</span><span class="it">'+esc(im.t)+'</span></div>'
+    +'<p class="idsc">'+esc(im.d)+'</p>'
+    +'<p class="vs">'+im.v.map(v=>'<span>'+esc(v)+'</span>').join('')+'</p></div>'
+  ).join('');
+  return '<div class="slide"><div class="scene"><div class="card" data-i="'+i+'" role="button" tabindex="0">'
+    +'<div class="face front">'
+      +'<div class="tagrow"><span class="tag">'+esc(d.t)+'</span><span class="cnt">'+d.n+'개 구동사 · '+(i+1)+'/12</span></div>'
+      +'<div class="art">'+d.art+'</div>'
+      +'<p class="particle">'+esc(d.t)+'</p>'
+      +'<p class="core">'+d.core+'</p>'
+      +'<p class="flipnote">TAP TO FLIP</p>'
+    +'</div>'
+    +'<div class="face back">'
+      +'<h2>'+esc(d.t)+' <span style="font-size:12px;font-weight:400;color:var(--ink)">그림 '+d.imgs.length+'개</span></h2>'
+      +imgs
+      +(d.note?'<p class="note">⚠ '+esc(d.note)+'</p>':'')
+      +'<div class="exbox"><p>'+esc(d.ex[0])+'</p><p class="kr">'+esc(d.ex[1])+'</p>'
+      +'<button class="jump" data-k="'+esc(d.k)+'" style="margin-top:8px;font-size:11px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px 9px;color:var(--ink);font-family:inherit;cursor:pointer">목록에서 '+d.n+'개 보기 →</button></div>'
+    +'</div></div></div></div>';
+}).join('');
+
+dotsEl.innerHTML = DECK.map((d,i)=>'<button class="dot" data-i="'+i+'" aria-label="'+esc(d.t)+'"></button>').join('');
+
+function go(i){
+  cur=Math.max(0,Math.min(DECK.length-1,i));
+  track.style.transform='translateX('+(-cur*100)+'%)';
+  document.querySelectorAll('.dot').forEach((d,j)=>d.setAttribute('aria-current',String(j===cur)));
+  document.getElementById('prev').disabled = cur===0;
+  document.getElementById('next').disabled = cur===DECK.length-1;
+  posEl.textContent = DECK[cur].t + ' · ' + (cur+1) + ' / ' + DECK.length;
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('flipped'));
+}
+document.getElementById('prev').onclick=()=>go(cur-1);
+document.getElementById('next').onclick=()=>go(cur+1);
+dotsEl.addEventListener('click',e=>{const b=e.target.closest('.dot');if(b)go(+b.dataset.i)});
+
+track.addEventListener('click',e=>{
+  if(e.target.closest('.jump')) return;
+  const c=e.target.closest('.card'); if(c) c.classList.toggle('flipped');
+});
+track.addEventListener('keydown',e=>{
+  const c=e.target.closest('.card');
+  if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();c.classList.toggle('flipped')}
+});
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('panel-deck').hidden) return;
+  if(e.key==='ArrowLeft')go(cur-1);
+  if(e.key==='ArrowRight')go(cur+1);
+});
+
+// swipe
+let sx=0,sy=0,drag=false;
+const vp=document.getElementById('viewport');
+vp.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;drag=true},{passive:true});
+vp.addEventListener('touchend',e=>{
+  if(!drag)return; drag=false;
+  const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+  if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)) go(dx<0?cur+1:cur-1);
+},{passive:true});
+
+/* ===================== LIST RENDER ===================== */
+const listEl=document.getElementById('list');
+const railEl=document.getElementById('rail');
+const countEl=document.getElementById('count');
+const qEl=document.getElementById('q');
+let active="all";
+
+DATA.forEach((d,i)=>d.push(i+1));
+
+function buildRail(){
+  const c={}; DATA.forEach(d=>{c[d[0]]=(c[d[0]]||0)+1});
+  railEl.innerHTML='';
+  const mk=(key,label,n)=>{
+    const b=document.createElement('button');
+    b.className='chip'; b.type='button';
+    b.setAttribute('aria-pressed', String(active===key));
+    b.innerHTML=label+'<span class="n">'+n+'</span>';
+    b.onclick=()=>{active=key;buildRail();renderList()};
+    railEl.appendChild(b);
+  };
+  mk('all','전체',DATA.length);
+  ORDER.forEach(k=>mk(k,k.toUpperCase(),c[k]));
+}
+
+function renderList(){
+  const q=qEl.value.trim().toLowerCase();
+  const rows=DATA.filter(d=>{
+    if(active!=='all' && d[0]!==active) return false;
+    if(!q) return true;
+    return (d[1]+' '+d[2]+' '+d[3]+' '+d[4]+' '+d[5]).toLowerCase().includes(q);
+  });
+  countEl.textContent = rows.length+'개 표시 중 · 전체 '+DATA.length+'개';
+  if(!rows.length){listEl.innerHTML='<p class="empty">검색 결과가 없습니다.</p>';return}
+  let html='',c=null;
+  rows.forEach(d=>{
+    if(d[0]!==c){
+      if(c!==null)html+='</section>';
+      c=d[0];
+      const di=ORDER.indexOf(c);
+      html+='<section class="group"><div class="ghead"><span class="p">'+esc(c.toUpperCase())+'</span>'
+        +'<span class="g">'+esc(GROUP_LABEL[c]||'')+'</span>'
+        +'<button class="jump card-jump" data-i="'+di+'">카드 보기</button></div>';
+    }
+    html+='<article class="lcard">'
+      +'<div class="nbox"><span class="idx">'+d[7]+'</span></div>'
+      +'<div class="wbox">'
+        +'<span class="v">'+esc(d[1])+'</span>'
+        +'<span class="id">'+esc(d[3])+'</span>'
+        +'<span class="ko">'+esc(d[2])+'</span>'
+      +'</div>'
+      +'<div class="ex">'
+        +'<p class="en"><span>'+esc(d[4])+'</span><button class="say" type="button" data-lang="en-US" data-say="'+esc(d[4])+'" aria-label="영어 예문 듣기">🔊</button></p>'
+        +'<p class="idex"><span class="idtx">'+esc(d[6])+'</span><button class="say" type="button" data-lang="id-ID" data-say="'+esc(d[6])+'" aria-label="인니어 예문 듣기">🔊</button></p>'
+        +'<p class="kr">'+esc(d[5])+'</p>'
+      +'</div></article>';
+  });
+  html+='</section>';
+  listEl.innerHTML=html;
+}
+qEl.addEventListener('input',renderList);
+
+const studyBtn=document.getElementById('study');
+studyBtn.addEventListener('click',()=>{
+  const on=studyBtn.getAttribute('aria-pressed')==='true';
+  studyBtn.setAttribute('aria-pressed',String(!on));
+  studyBtn.textContent = !on ? '뜻 보이기' : '뜻 가리기';
+  document.body.classList.toggle('study',!on);
+  document.querySelectorAll('.revealed').forEach(e=>e.classList.remove('revealed'));
+});
+/* ===================== 음성 읽기 (Web Speech API) ===================== */
+let sayBtn=null;
+// 표준 성별 속성이 없어 이름 기반으로 여성 보이스 우선 선택 (영어 TTS 여성 지정용)
+const FEMALE_EN=/\b(samantha|victoria|allison|ava|susan|zoe|nicky|karen|moira|tessa|fiona|serena|kate|female|zira|aria|jenny|catherine|libby|sonia|michelle|clara|google us english|google uk english female)\b/i;
+function pickVoice(vs,lang,female){
+  let pool=vs.filter(x=>x.lang===lang);
+  if(!pool.length)pool=vs.filter(x=>x.lang.slice(0,2)===lang.slice(0,2));
+  if(!pool.length)return null;
+  if(female){
+    const f=pool.find(x=>FEMALE_EN.test(x.name));
+    if(f)return f;
+    const notMale=pool.find(x=>!/\b(daniel|david|alex|fred|tom|male|oliver|arthur|george|rishi|aaron|gordon)\b/i.test(x.name));
+    if(notMale)return notMale;
+  }
+  return pool[0];
+}
+function speak(btn){
+  const synth=window.speechSynthesis;
+  if(!synth){alert('이 브라우저는 음성 읽기를 지원하지 않습니다.');return}
+  // 같은 버튼을 다시 누르면 정지(토글)
+  if(sayBtn===btn && (synth.speaking||synth.pending)){synth.cancel();return}
+  synth.cancel();
+  const u=new SpeechSynthesisUtterance(btn.dataset.say);
+  const lang=btn.dataset.lang;
+  u.lang=lang; u.rate=.95;
+  const v=pickVoice(synth.getVoices(),lang,lang.slice(0,2)==='en');  // 영어는 여성 보이스 우선
+  if(v)u.voice=v;
+  u.onstart=()=>{sayBtn=btn;btn.classList.add('playing')};
+  u.onend=u.onerror=()=>{btn.classList.remove('playing');if(sayBtn===btn)sayBtn=null};
+  synth.speak(u);
+}
+// 일부 브라우저는 voices가 늦게 로드됨 — 미리 트리거
+if(window.speechSynthesis){window.speechSynthesis.getVoices();window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices()}
+
+listEl.addEventListener('click',e=>{
+  const s=e.target.closest('.say');
+  if(s){e.stopPropagation();speak(s);return}
+  const j=e.target.closest('.card-jump');
+  if(j){showPanel('deck');go(+j.dataset.i);window.scrollTo({top:0,behavior:'smooth'});return}
+  if(!document.body.classList.contains('study'))return;
+  const t=e.target.closest('.ko,.id,.kr,.idtx');
+  if(t)t.classList.toggle('revealed');
+});
+
+/* ===================== TABS ===================== */
+const TABS={deck:['tab-deck','panel-deck'],list:['tab-list','panel-list'],vid:['tab-vid','panel-vid']};
+function showPanel(which){
+  Object.keys(TABS).forEach(k=>{
+    const on = (k===which);
+    document.getElementById(TABS[k][0]).setAttribute('aria-selected',String(on));
+    document.getElementById(TABS[k][1]).hidden = !on;
+  });
+}
+document.getElementById('tab-deck').onclick=()=>showPanel('deck');
+document.getElementById('tab-list').onclick=()=>showPanel('list');
+document.getElementById('tab-vid').onclick=()=>showPanel('vid');
+
+track.addEventListener('click',e=>{
+  const j=e.target.closest('.jump[data-k]');
+  if(j){active=j.dataset.k;buildRail();renderList();showPanel('list');window.scrollTo({top:0,behavior:'smooth'})}
+});
+
+buildRail(); renderList(); go(0);
+</script>
+</body>
+</html>

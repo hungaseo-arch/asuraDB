@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>경동사 학습덱 · 12 이미지 + 연어 200</title>
+<style>
+  :root{
+    color-scheme:light;
+    /* AsuraDB 앱 시맨틱 토큰 (src/style.css 와 1:1) */
+    --background:oklch(0.99 0.002 260); --foreground:oklch(0.15 0.01 260);
+    --card:oklch(0.98 0.003 260);
+    --primary:oklch(0.45 0.18 260); --primary-foreground:oklch(0.98 0.003 260);
+    --muted:oklch(0.94 0.008 260); --muted-foreground:oklch(0.48 0.02 260);
+    --border:oklch(0.88 0.01 260);
+    /* 기존 변수 → 앱 토큰 별칭 */
+    --grey:var(--background);
+    --bluegrey:var(--muted);
+    --blue:color-mix(in oklch, var(--primary) 12%, var(--card));
+    --sage:color-mix(in oklch, var(--primary) 9%, var(--card));
+    --ink:var(--muted-foreground);
+    --ink-strong:var(--foreground);
+    --line:var(--border);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--grey);color:var(--ink-strong);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",Roboto,sans-serif;
+    line-height:1.55;-webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:0 16px 56px}
+
+  header{padding:24px 0 12px}
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink);font-weight:700;margin:0 0 6px}
+  h1{margin:0;font-size:24px;line-height:1.25;letter-spacing:-.01em}
+  h1 em{font-style:normal;color:var(--ink);font-weight:400}
+  .lede{margin:10px 0 0;font-size:13px;color:var(--ink);line-height:1.7}
+  .lede b{color:var(--ink-strong)}
+
+  .tabs{display:flex;gap:6px;margin:16px 0 0}
+  .tab{
+    flex:1;background:var(--bluegrey);border:1px solid var(--line);border-radius:10px;
+    padding:11px 6px;font-size:13px;font-weight:700;color:var(--ink);
+    font-family:inherit;cursor:pointer;letter-spacing:.01em;
+  }
+  .tab[aria-selected="true"]{background:color-mix(in oklch,var(--primary) 15%,transparent);color:var(--primary);border-color:color-mix(in oklch,var(--primary) 35%,var(--line))}
+  .tab:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .tab .s{display:block;font-size:10.5px;font-weight:400;opacity:.75;margin-top:2px}
+
+  .panel[hidden]{display:none}
+
+  /* ============ DECK ============ */
+  .deckhint{font-size:11.5px;color:var(--ink);text-align:center;margin:16px 0 10px;letter-spacing:.03em}
+  .viewport{overflow:hidden;touch-action:pan-y;border-radius:16px}
+  .track{display:flex;transition:transform .38s cubic-bezier(.4,.1,.2,1);will-change:transform}
+  .slide{flex:0 0 100%;padding:0 2px}
+
+  .scene{perspective:1600px}
+  .card{
+    position:relative;width:100%;min-height:490px;
+    transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,.1,.2,1);
+    cursor:pointer;
+  }
+  .card.flipped{transform:rotateY(180deg)}
+  .face{
+    position:absolute;inset:0;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:16px 16px 14px;display:flex;flex-direction:column;overflow:hidden;
+  }
+  .back{transform:rotateY(180deg);overflow-y:auto}
+
+  .tagrow{display:flex;justify-content:space-between;align-items:center}
+  .tag{font-size:10px;font-weight:800;letter-spacing:.12em;background:var(--sage);color:var(--ink);padding:4px 9px;border-radius:5px}
+  .cnt{font-size:10.5px;color:var(--ink);opacity:.8;letter-spacing:.04em}
+
+  .art{flex:1;display:flex;align-items:center;justify-content:center;margin:6px 0 2px;min-height:0}
+  .art svg{width:100%;height:auto;max-height:225px}
+  .particle{font-size:30px;font-weight:800;letter-spacing:-.02em;text-align:center;margin:2px 0 0}
+  .core{text-align:center;font-size:13.5px;color:var(--ink);margin:8px 0 0;padding-top:9px;border-top:1px solid var(--line)}
+  .core b{color:var(--ink-strong);font-weight:700}
+  .flipnote{text-align:center;font-size:10px;color:var(--ink);opacity:.7;margin:9px 0 0;letter-spacing:.06em}
+
+  .back h2{margin:0 0 10px;font-size:18px;letter-spacing:-.01em}
+  .img{background:var(--blue);border-radius:9px;padding:9px 11px;margin-bottom:7px}
+  .img:nth-of-type(even){background:var(--bluegrey)}
+  .ih{display:flex;align-items:center;gap:7px}
+  .in{font-size:9.5px;font-weight:800;color:var(--primary-foreground);background:var(--primary);width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .it{font-size:13.5px;font-weight:700}
+  .idsc{font-size:10.5px;color:var(--ink);margin:2px 0 5px 23px}
+  .vs{margin:0 0 0 23px;font-size:12px;color:var(--ink-strong);line-height:1.7}
+  .vs span{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:1px 6px;margin:0 3px 3px 0;display:inline-block;font-size:11.5px}
+  .exbox{background:var(--sage);border-radius:9px;padding:9px 11px;margin-top:auto}
+  .exbox p{margin:0;font-size:12.5px}
+  .exbox .kr{font-size:11px;color:var(--ink);margin-top:2px}
+  .note{font-size:10.5px;color:var(--ink);margin:7px 0 0;line-height:1.5}
+
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 0}
+  .arrow{
+    background:var(--bluegrey);border:1px solid var(--line);border-radius:9px;
+    width:44px;height:38px;font-size:15px;color:var(--ink);font-family:inherit;cursor:pointer;flex:0 0 auto;
+  }
+  .arrow:disabled{opacity:.35;cursor:default}
+  .arrow:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .dots{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;flex:1}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--line);border:none;padding:0;cursor:pointer}
+  .dot[aria-current="true"]{background:var(--primary);transform:scale(1.35)}
+  .pos{text-align:center;font-size:11.5px;color:var(--ink);margin:9px 0 0;letter-spacing:.04em}
+
+  /* ============ LIST ============ */
+  .controls{position:sticky;top:0;z-index:20;background:var(--grey);padding:12px 0 8px;border-bottom:1px solid var(--line);margin-bottom:12px}
+  .searchrow{display:flex;gap:8px}
+  input[type=search]{
+    flex:1;min-width:0;appearance:none;-webkit-appearance:none;background:var(--blue);
+    border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:16px;
+    color:var(--ink-strong);font-family:inherit;
+  }
+  input[type=search]::placeholder{color:var(--ink);opacity:.75}
+  input[type=search]:focus{outline:2px solid var(--ink);outline-offset:1px}
+  .toggle{flex:0 0 auto;background:var(--bluegrey);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:13px;font-weight:600;color:var(--ink);font-family:inherit;cursor:pointer;white-space:nowrap}
+  .toggle[aria-pressed="true"]{background:var(--sage);color:var(--ink-strong)}
+  .raillabel{font-size:10px;font-weight:800;letter-spacing:.1em;color:var(--ink);opacity:.75;margin:10px 0 0}
+  .rail{display:flex;gap:6px;overflow-x:auto;padding:5px 0 3px;scrollbar-width:none}
+  .rail::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;background:var(--bluegrey);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--ink);font-family:inherit;cursor:pointer}
+  .chip .n{font-weight:400;opacity:.65;margin-left:5px;font-size:11px}
+  .chip[aria-pressed="true"]{background:color-mix(in oklch,var(--primary) 15%,transparent);color:var(--primary);border-color:color-mix(in oklch,var(--primary) 35%,var(--line))}
+  .count{font-size:12px;color:var(--ink);padding:8px 2px 0}
+  .group{margin:22px 0 0}
+  .ghead{display:flex;align-items:baseline;gap:10px;padding:0 2px 8px;border-bottom:1px solid var(--line);margin-bottom:10px;flex-wrap:wrap}
+  .ghead .p{font-size:19px;font-weight:800;letter-spacing:.02em}
+  .ghead .g{font-size:12px;color:var(--ink)}
+  .jump{margin-left:auto;font-size:11px;color:var(--ink);background:var(--bluegrey);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-family:inherit;cursor:pointer}
+  .lcard{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:12px;padding:10px 12px;margin-bottom:8px;
+    display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+  /* 1칸: 숫자 박스 */
+  .nbox{flex:0 0 auto;width:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:var(--bluegrey);border-radius:8px;padding:6px}
+  .idx{font-size:14px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+  /* 2칸: 표제어 박스 (영어 · 인니어뜻 · 한국어뜻) */
+  .wbox{flex:1 1 180px;min-width:160px;max-width:280px;display:flex;flex-direction:column;justify-content:center;gap:4px;
+    background:var(--blue);border-radius:8px;padding:9px 12px;overflow-wrap:break-word}
+  .v{font-size:17px;font-weight:700;letter-spacing:-.01em}
+  .ko{font-size:13.5px;font-weight:600}
+  .id{font-size:12.5px;color:var(--ink)}
+  /* 3칸: 예문 박스 */
+  .ex{flex:2 1 300px;min-width:220px;margin:0;padding:10px 12px;background:var(--bluegrey);border-radius:8px;
+    display:flex;flex-direction:column;justify-content:center;overflow-wrap:break-word}
+  .ex .en{margin:0;font-size:14px}
+  .ex .idex{margin:4px 0 0;font-size:12.5px;color:var(--ink-strong)}
+  .ex .kr{margin:3px 0 0;font-size:12.5px;color:var(--ink)}
+  /* 문서 배지(번호 박스 안) · 단일동사 대체어 */
+  .doc{font-size:9px;font-weight:800;letter-spacing:.04em;background:var(--card);color:var(--ink);padding:1.5px 5px;border-radius:4px}
+  .sv{font-size:11.5px;color:var(--ink)}
+  .sv::before{content:"단일동사";font-size:9px;font-weight:800;letter-spacing:.04em;background:var(--card);color:var(--ink);padding:1.5px 5px;border-radius:4px;margin-right:6px;vertical-align:1px}
+  .say{border:none;background:var(--sage);color:var(--ink-strong);border-radius:5px;
+    width:24px;height:20px;font-size:11px;line-height:1;padding:0;margin-left:7px;
+    cursor:pointer;vertical-align:1px;font-family:inherit}
+  .say:hover{filter:brightness(.96)}
+  .say:active{transform:scale(.9)}
+  .say.playing{background:var(--primary);color:var(--primary-foreground)}
+  .say:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  body.study .ko, body.study .id, body.study .ex .kr, body.study .idtx{background:var(--ink);color:transparent;border-radius:4px;user-select:none;cursor:pointer}
+  body.study .revealed{background:transparent!important;color:inherit!important;cursor:auto}
+  .empty{padding:32px 4px;color:var(--ink);font-size:14px}
+
+  /* ============ ERRORS ============ */
+  .errintro{font-size:13px;color:var(--ink);margin:16px 0 14px;line-height:1.7}
+  .ecard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+  .erow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .bad,.good{font-size:14.5px;font-weight:700;padding:3px 9px;border-radius:6px}
+  .bad{background:var(--bluegrey);color:var(--ink);text-decoration:line-through;text-decoration-thickness:1.5px;opacity:.8}
+  .good{background:var(--sage);color:var(--ink-strong)}
+  .to{font-size:13px;color:var(--ink);opacity:.6}
+  .why{margin:7px 0 0;font-size:12.5px;color:var(--ink);line-height:1.6}
+
+  /* ============ VIDEO ============ */
+  .vintro{font-size:13px;color:var(--ink);margin:16px 0 4px;line-height:1.7}
+  .stage{margin:24px 0 0}
+  .shead{display:flex;align-items:baseline;gap:10px;padding:0 2px 8px;border-bottom:1px solid var(--line);margin-bottom:12px;flex-wrap:wrap}
+  .shead .sn{font-size:10px;font-weight:800;letter-spacing:.1em;background:var(--ink);color:#fff;padding:3px 8px;border-radius:5px}
+  .shead .st{font-size:16px;font-weight:800;letter-spacing:-.01em}
+  .shead .sd{font-size:12px;color:var(--ink)}
+  .vcard{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+  .thumb{position:relative;width:100%;aspect-ratio:16/9;background:var(--bluegrey);cursor:pointer;display:block;border:none;padding:0;overflow:hidden}
+  .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .thumb .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .thumb .ph svg{width:64%;max-width:260px;height:auto}
+  .thumb .play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:60px;height:42px;border-radius:10px;background:rgba(55,71,79,.88);display:flex;align-items:center;justify-content:center}
+  .thumb .play::after{content:"";border-style:solid;border-width:9px 0 9px 15px;border-color:transparent transparent transparent #E8F5E9;margin-left:3px}
+  .thumb:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .vcard iframe{width:100%;aspect-ratio:16/9;display:block;border:0}
+  .vbody{padding:12px 14px 13px}
+  .vtop{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .vt{font-size:15px;font-weight:700;line-height:1.4;letter-spacing:-.01em}
+  .vmeta{margin:4px 0 0;font-size:11.5px;color:var(--ink)}
+  .vmeta .sep{opacity:.45;margin:0 6px}
+  .pick{font-size:9.5px;font-weight:800;letter-spacing:.06em;background:var(--sage);color:var(--ink);padding:2px 7px;border-radius:4px}
+  .vnote{margin:8px 0 0;font-size:12.5px;color:var(--ink-strong);line-height:1.65}
+  .links{display:flex;gap:6px;flex-wrap:wrap;margin:11px 0 0;padding-top:10px;border-top:1px solid var(--line)}
+  .link{font-size:11.5px;font-weight:600;color:var(--ink);background:var(--bluegrey);border:1px solid var(--line);border-radius:7px;padding:5px 10px;font-family:inherit;cursor:pointer;text-decoration:none;display:inline-block}
+  .link:hover{background:var(--blue)}
+  .link.ext{background:var(--blue)}
+  .done{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--ink);background:var(--bluegrey);border:1px solid var(--line);border-radius:7px;padding:5px 10px;font-family:inherit;cursor:pointer;white-space:nowrap}
+  .done[aria-pressed="true"]{background:var(--sage);color:var(--ink-strong)}
+  .vprog{position:sticky;top:0;z-index:20;background:var(--grey);padding:12px 0 10px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink)}
+  .bar{height:6px;border-radius:3px;background:var(--bluegrey);margin-top:7px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--ink);width:0;transition:width .3s}
+  .gap{background:var(--blue);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:12.5px;color:var(--ink-strong);line-height:1.7}
+  .gap b{font-weight:700}
+
+  footer{margin-top:30px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink);line-height:1.7}
+  /* ===== 아이폰/모바일 반응형 (portrait 폭 ~430px 커버) ===== */
+  @media (max-width:560px){
+    .wrap{padding:0 14px 48px}
+    header{padding:18px 0 10px}
+    h1{font-size:21px}
+    .card{min-height:465px}
+    /* 목록 카드: [번호 + 표제어] 한 줄 → [예문] 아랫줄로 접힘 */
+    .lcard{gap:8px}
+    .nbox{width:40px}
+    .wbox{flex:1 1 auto;min-width:0;max-width:none}
+    .ex{flex:1 1 100%;min-width:0}
+    /* 🔊 탭 영역 확대 */
+    .say{width:30px;height:24px;font-size:12px}
+    .tab{font-size:12px;padding:10px 5px}
+  }
+  @media (max-width:380px){
+    .tab{padding:10px 6px;font-size:12.5px}
+    .tab{padding:10px 4px;font-size:11px}
+    .tab .s{font-size:9.5px}
+    .v{font-size:16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Light Verb Constructions · Verba Ringan · 경동사</p>
+  <h1>경동사 학습덱 <em>— 그림 12장 · 연어 200개</em></h1>
+  <p class="lede">
+    구동사가 <b>동사 + 불변화사</b>라면, 경동사는 <b>비어 있는 동사 + 동작 명사</b>입니다.
+    의미의 무게는 동사가 아니라 명사에 실립니다. 그래서 <b>어느 동사를 붙이는가</b>가 곧 실력입니다.
+    <em>decide</em> → <b>make a decision</b>, <em>order</em> → <b>place an order</b>, <em>claim</em> → <b>file a claim</b>.
+  </p>
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-deck" role="tab" aria-selected="true" aria-controls="panel-deck">카드 덱<span class="s">그림 12장</span></button>
+    <button class="tab" id="tab-list" role="tab" aria-selected="false" aria-controls="panel-list">전체 목록<span class="s">연어 200개</span></button>
+    <button class="tab" id="tab-err" role="tab" aria-selected="false" aria-controls="panel-err">오류 교정<span class="s">빈출 30선</span></button>
+    <button class="tab" id="tab-vid" role="tab" aria-selected="false" aria-controls="panel-vid">영상 학습<span class="s">4단계 10편</span></button>
+  </div>
+</header>
+
+<!-- ========== DECK ========== -->
+<section class="panel" id="panel-deck" role="tabpanel">
+  <p class="deckhint">좌우로 스와이프하면 넘어가고, 카드를 탭하면 뒤집힙니다</p>
+  <div class="viewport" id="viewport"><div class="track" id="track"></div></div>
+  <div class="nav">
+    <button class="arrow" id="prev" aria-label="이전 카드">&lsaquo;</button>
+    <div class="dots" id="dots"></div>
+    <button class="arrow" id="next" aria-label="다음 카드">&rsaquo;</button>
+  </div>
+  <p class="pos" id="pos"></p>
+</section>
+
+<!-- ========== LIST ========== -->
+<section class="panel" id="panel-list" role="tabpanel" hidden>
+  <div class="controls">
+    <div class="searchrow">
+      <input type="search" id="q" placeholder="검색 (예: claim, 발주, invoice, klaim)" autocomplete="off">
+      <button class="toggle" id="study" aria-pressed="false">뜻 가리기</button>
+    </div>
+    <p class="raillabel">경동사</p>
+    <div class="rail" id="rail"></div>
+    <p class="raillabel">문서 유형</p>
+    <div class="rail" id="drail"></div>
+    <div class="count" id="count"></div>
+  </div>
+  <div id="list"></div>
+</section>
+
+<!-- ========== ERRORS ========== -->
+<section class="panel" id="panel-err" role="tabpanel" hidden>
+  <p class="errintro">
+    한국어·인도네시아어 화자가 무역 서신에서 반복하는 오류입니다.
+    대부분 <b>명사는 맞는데 동사를 잘못 고른</b> 경우이며, 상대방은 뜻은 알아듣되 비원어민 문장으로 인식합니다.
+    계약서·클레임 레터처럼 문언이 남는 문서에서는 특히 교정 가치가 큽니다.
+  </p>
+  <div id="errlist"></div>
+</section>
+
+<!-- ========== VIDEO ========== -->
+<section class="panel" id="panel-vid" role="tabpanel" hidden>
+  <div class="vprog">
+    <span id="vcount"></span>
+    <div class="bar"><i id="vbar"></i></div>
+  </div>
+  <p class="vintro">
+    영상은 <b>카드 → 영상 → 목록</b> 순서로 쓰십시오. 먼저 카드에서 이미지를 잡고, 영상으로 원어민 발화 속 쓰임을 듣고,
+    마지막에 목록에서 문서 유형별로 복습하는 순환입니다. 각 영상 아래의 버튼이 해당 카드와 표현 묶음으로 바로 연결됩니다.
+  </p>
+  <div id="vidlist"></div>
+</section>
+
+<footer>
+  카드 덱은 경동사 12개의 <b>핵심 이미지</b>를 심기 위한 것이고, 전체 목록은 그 이미지 아래에 연어를 매다는 용도입니다. 순서는 <b>덱 → 목록 → 오류 교정 → 영상 학습</b>입니다.<br>
+  영상은 클릭하면 그 자리에서 재생됩니다. 재생 전에는 외부 요청이 발생하지 않으며, 시청 완료 표시는 새로고침하면 초기화됩니다.<br>
+  원칙: 대외 공식 문서(견적서·발주서·인보이스·클레임·계약서)는 경동사 구문, 사내 보고와 단문 메일은 단일 동사를 씁니다.<br>
+  선정 기준: Quirk et al. <i>A Comprehensive Grammar of the English Language</i> (1985)의 light verb 항목, Oxford Collocations Dictionary, ICC Incoterms·UCP 600 문언에 실제로 등장하는 표현. 인도네시아어는 문맥상 가장 가까운 대응 표현입니다.
+</footer>
+
+</div>
+
+<script>
+/* ===================== ART ===================== */
+const SVG = {
+make:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<g fill="#546E7A" opacity=".45"><rect x="38" y="58" width="26" height="26" rx="4"/><rect x="72" y="92" width="26" height="26" rx="4"/><rect x="42" y="114" width="26" height="26" rx="4"/></g>
+<path d="M118 100 L176 100" stroke="#37474F" stroke-width="5" stroke-linecap="round"/>
+<path d="M190 100 L168 87 L168 113 Z" fill="#37474F"/>
+<rect x="204" y="62" width="72" height="76" rx="8" fill="#37474F"/>
+<path d="M220 100 l12 12 l24 -26" fill="none" stroke="#E8F5E9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<g stroke="#546E7A" stroke-width="2.5" opacity=".5" stroke-linecap="round"><line x1="240" y1="48" x2="240" y2="34"/><line x1="268" y1="54" x2="276" y2="44"/><line x1="212" y1="54" x2="204" y2="44"/></g></svg>`,
+
+take:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<circle cx="70" cy="96" r="30" fill="#37474F"/><circle cx="70" cy="96" r="12" fill="#E3F2FD"/>
+<rect x="212" y="72" width="52" height="48" rx="6" fill="#546E7A" opacity=".45"/>
+<path d="M198 96 L124 96" stroke="#37474F" stroke-width="5" stroke-linecap="round"/>
+<path d="M110 96 L132 83 L132 109 Z" fill="#37474F"/>
+<g stroke="#546E7A" stroke-width="2.5" opacity=".5" stroke-linecap="round"><line x1="204" y1="66" x2="188" y2="54"/><line x1="204" y1="126" x2="188" y2="138"/></g>
+<text x="40" y="158" font-family="sans-serif" font-size="11" font-weight="700" fill="#546E7A">내 쪽으로</text></svg>`,
+
+have:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<rect x="62" y="40" width="176" height="104" rx="18" fill="#ECEFF1" stroke="#546E7A" stroke-width="3"/>
+<g stroke="#546E7A" stroke-width="2.5" opacity=".45"><line x1="110" y1="82" x2="150" y2="106"/><line x1="150" y1="106" x2="192" y2="78"/></g>
+<g fill="#37474F"><circle cx="110" cy="82" r="13"/><circle cx="150" cy="106" r="13"/><circle cx="192" cy="78" r="13"/></g>
+<path d="M22 92 L48 92" stroke="#546E7A" stroke-width="3" stroke-linecap="round" opacity=".45"/>
+<path d="M252 92 L278 92" stroke="#546E7A" stroke-width="3" stroke-linecap="round" opacity=".45"/>
+<text x="62" y="168" font-family="sans-serif" font-size="11" font-weight="700" fill="#546E7A">이미 내 영역 안에 있다</text></svg>`,
+
+"do":`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<g transform="translate(82,95)"><circle r="36" fill="#546E7A" opacity=".35"/><circle r="15" fill="#E3F2FD"/>
+<g fill="#546E7A" opacity=".35"><rect x="-7" y="-50" width="14" height="16" rx="3"/><rect x="-7" y="34" width="14" height="16" rx="3"/><rect x="-50" y="-7" width="16" height="14" rx="3"/><rect x="34" y="-7" width="16" height="14" rx="3"/></g></g>
+<rect x="160" y="50" width="110" height="90" rx="8" fill="#fff" stroke="#546E7A" stroke-width="2.5"/>
+<g stroke="#37474F" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M174 74 l7 7 l13 -14"/><path d="M174 100 l7 7 l13 -14"/></g>
+<circle cx="181" cy="124" r="7" fill="none" stroke="#546E7A" stroke-width="3" opacity=".55"/>
+<g stroke="#546E7A" stroke-width="3" stroke-linecap="round" opacity=".55"><line x1="206" y1="76" x2="256" y2="76"/><line x1="206" y1="102" x2="256" y2="102"/><line x1="206" y1="124" x2="240" y2="124"/></g></svg>`,
+
+give:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<circle cx="62" cy="96" r="28" fill="#37474F"/>
+<path d="M96 96 L206 96" stroke="#37474F" stroke-width="5" stroke-linecap="round"/>
+<path d="M220 96 L198 83 L198 109 Z" fill="#37474F"/>
+<rect x="128" y="62" width="34" height="30" rx="5" fill="#546E7A" opacity=".5"/>
+<circle cx="248" cy="96" r="28" fill="none" stroke="#546E7A" stroke-width="3" stroke-dasharray="7 6"/>
+<g stroke="#546E7A" stroke-width="2.5" opacity=".45" stroke-linecap="round"><line x1="166" y1="126" x2="186" y2="136"/><line x1="196" y1="60" x2="178" y2="70"/></g></svg>`,
+
+get:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<circle cx="238" cy="92" r="28" fill="none" stroke="#546E7A" stroke-width="3" stroke-dasharray="6 6"/>
+<rect x="224" y="78" width="28" height="28" rx="5" fill="#546E7A" opacity=".5"/>
+<circle cx="66" cy="92" r="30" fill="#37474F"/>
+<rect x="52" y="78" width="28" height="28" rx="5" fill="#E8F5E9"/>
+<path d="M200 92 L124 92" stroke="#37474F" stroke-width="5" stroke-linecap="round" stroke-dasharray="11 8"/>
+<path d="M110 92 L132 79 L132 105 Z" fill="#37474F"/>
+<text x="212" y="152" font-family="sans-serif" font-size="11" font-weight="700" fill="#546E7A">없음</text>
+<text x="48" y="152" font-family="sans-serif" font-size="11" font-weight="700" fill="#546E7A">있음</text></svg>`,
+
+place:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<rect x="84" y="112" width="132" height="48" rx="8" fill="#ECEFF1" stroke="#546E7A" stroke-width="2.5"/>
+<rect x="110" y="104" width="80" height="12" rx="6" fill="#546E7A" opacity=".35"/>
+<rect x="126" y="30" width="48" height="44" rx="6" fill="#37474F"/>
+<path d="M150 80 L150 96" stroke="#37474F" stroke-width="4" stroke-linecap="round"/>
+<path d="M150 110 L137 88 L163 88 Z" fill="#37474F"/>
+<g stroke="#546E7A" stroke-width="2.5" opacity=".4" stroke-linecap="round"><line x1="94" y1="58" x2="108" y2="70"/><line x1="206" y1="58" x2="192" y2="70"/></g></svg>`,
+
+pay:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<line x1="150" y1="52" x2="150" y2="152" stroke="#546E7A" stroke-width="4" stroke-linecap="round"/>
+<line x1="70" y1="60" x2="230" y2="60" stroke="#37474F" stroke-width="4" stroke-linecap="round"/>
+<circle cx="150" cy="60" r="8" fill="#37474F"/>
+<path d="M70 62 L50 100 h40 Z" fill="#546E7A" opacity=".4"/>
+<path d="M230 62 L210 100 h40 Z" fill="#546E7A" opacity=".4"/>
+<rect x="110" y="152" width="80" height="10" rx="5" fill="#546E7A" opacity=".5"/>
+<circle cx="70" cy="122" r="15" fill="#37474F"/>
+<text x="70" y="128" font-family="sans-serif" font-size="15" font-weight="800" fill="#E3F2FD" text-anchor="middle">$</text>
+<rect x="216" y="110" width="28" height="24" rx="4" fill="#37474F"/></svg>`,
+
+conduct:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<line x1="54" y1="92" x2="246" y2="92" stroke="#546E7A" stroke-width="5" opacity=".3" stroke-linecap="round"/>
+<line x1="54" y1="92" x2="182" y2="92" stroke="#37474F" stroke-width="5" stroke-linecap="round"/>
+<circle cx="54" cy="92" r="14" fill="#37474F"/><circle cx="118" cy="92" r="14" fill="#37474F"/><circle cx="182" cy="92" r="14" fill="#37474F"/>
+<circle cx="246" cy="92" r="14" fill="#ECEFF1" stroke="#546E7A" stroke-width="3"/>
+<g font-family="sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#E3F2FD"><text x="54" y="97">1</text><text x="118" y="97">2</text><text x="182" y="97">3</text></g>
+<text x="246" y="97" font-family="sans-serif" font-size="12" font-weight="700" fill="#546E7A" text-anchor="middle">4</text>
+<text x="54" y="142" font-family="sans-serif" font-size="11" font-weight="700" fill="#546E7A">절차를 붙잡고 끝까지 진행</text></svg>`,
+
+file:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<rect x="52" y="40" width="80" height="98" rx="6" fill="#fff" stroke="#546E7A" stroke-width="2.5"/>
+<g stroke="#546E7A" stroke-width="3" stroke-linecap="round" opacity=".55"><line x1="68" y1="64" x2="118" y2="64"/><line x1="68" y1="84" x2="118" y2="84"/><line x1="68" y1="104" x2="100" y2="104"/></g>
+<path d="M148 88 L200 88" stroke="#37474F" stroke-width="5" stroke-linecap="round"/>
+<path d="M214 88 L192 75 L192 101 Z" fill="#37474F"/>
+<rect x="224" y="52" width="48" height="94" rx="6" fill="#37474F"/>
+<rect x="232" y="76" width="32" height="7" rx="3.5" fill="#E3F2FD"/>
+<text x="52" y="166" font-family="sans-serif" font-size="11" font-weight="700" fill="#546E7A">정해진 창구에 접수</text></svg>`,
+
+reach:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<path d="M46 50 L196 96" stroke="#546E7A" stroke-width="4" stroke-linecap="round"/>
+<path d="M46 142 L196 96" stroke="#546E7A" stroke-width="4" stroke-linecap="round"/>
+<circle cx="46" cy="50" r="11" fill="#546E7A" opacity=".6"/>
+<circle cx="46" cy="142" r="11" fill="#546E7A" opacity=".6"/>
+<circle cx="212" cy="96" r="36" fill="none" stroke="#546E7A" stroke-width="2.5" stroke-dasharray="5 5" opacity=".45"/>
+<circle cx="212" cy="96" r="21" fill="#37474F"/>
+<path d="M203 96 l6 7 l14 -15" fill="none" stroke="#E8F5E9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+raise:`<svg viewBox="0 0 300 190"><rect width="300" height="190" rx="10" fill="#E3F2FD"/>
+<rect x="96" y="86" width="70" height="84" rx="6" fill="#546E7A" opacity=".25"/>
+<rect x="112" y="60" width="70" height="84" rx="6" fill="#546E7A" opacity=".45"/>
+<rect x="128" y="32" width="70" height="84" rx="6" fill="#fff" stroke="#546E7A" stroke-width="2.5"/>
+<g stroke="#546E7A" stroke-width="2.5" stroke-linecap="round" opacity=".6"><line x1="140" y1="54" x2="186" y2="54"/><line x1="140" y1="70" x2="186" y2="70"/><line x1="140" y1="86" x2="168" y2="86"/></g>
+<path d="M64 128 L64 56" stroke="#546E7A" stroke-width="3.5" stroke-linecap="round"/>
+<path d="M64 44 L55 62 L73 62 Z" fill="#546E7A"/>
+<circle cx="234" cy="118" r="24" fill="none" stroke="#37474F" stroke-width="3.5"/>
+<text x="234" y="122" font-family="sans-serif" font-size="10" font-weight="800" fill="#37474F" text-anchor="middle">ISSUED</text></svg>`
+};
+
+/* ===================== DECK ===================== */
+const DECK = [
+{k:"make",t:"MAKE",art:SVG.make,core:"재료에서<br><b>없던 것을 만들어 낸다</b>",
+ imgs:[
+  {t:"없던 것을 산출한다",d:"창출·발생",v:["make a payment","make an offer","make a profit","make a loss"]},
+  {t:"생각을 형태로 낸다",d:"발화·판단",v:["make a decision","make a proposal","make a complaint","make a point"]},
+  {t:"기존 상태를 바꿔 놓는다",d:"변경·조정",v:["make an amendment","make an adjustment","make an exception"]},
+  {t:"절차를 실행에 옮긴다",d:"실행",v:["make a shipment","make a delivery","make a booking","make arrangements"]}],
+ ex:["We will make a payment against the B/L copy.","B/L 사본과 상환으로 대금을 지급하겠습니다."],
+ note:"do a payment는 오류입니다. 지급은 언제나 make a payment."},
+
+{k:"take",t:"TAKE",art:SVG.take,core:"손을 뻗어<br><b>내 쪽으로 가져온다</b>",
+ imgs:[
+  {t:"받아서 내 것으로 만든다",d:"수취·점유",v:["take delivery of","take possession of","take an order","take a sample"]},
+  {t:"골라서 실행한다",d:"선택·행동",v:["take action","take measures","take steps","take the initiative"]},
+  {t:"짊어진다",d:"부담·감수",v:["take responsibility","take a risk","take a loss","take charge of"]},
+  {t:"안에 넣고 헤아린다",d:"고려·기록",v:["take into account","take notes","take the minutes","take stock"]}],
+ ex:["We took delivery of the cargo on 12 May.","5월 12일에 화물을 인수했습니다."],
+ note:"take out insurance(보험 가입)는 통째로 외우십시오. take an insurance는 오류입니다."},
+
+{k:"have",t:"HAVE",art:SVG.have,core:"내 영역 안에<br><b>이미 들어와 있다</b>",
+ imgs:[
+  {t:"권리·자격을 안고 있다",d:"보유",v:["have the right to","have access to","have a claim against","have an obligation to"]},
+  {t:"둘이 마주 앉는다",d:"쌍방 활동",v:["have a meeting","have a discussion","have a conversation","have an argument"]},
+  {t:"상태를 겪고 있다",d:"경험·영향",v:["have a problem with","have an impact on","have experience in"]}],
+ ex:["Buyers have the right to reject defective goods.","매수인은 불량품을 거절할 권리가 있습니다."],
+ note:"have a meeting은 구어, hold a meeting은 공식 문서용입니다."},
+
+{k:"do",t:"DO",art:SVG["do"],core:"이미 있는 일을<br><b>정해진 대로 처리한다</b>",
+ imgs:[
+  {t:"맡은 업무를 돌린다",d:"업무 처리",v:["do the paperwork","do the accounts","do the maintenance","do a follow-up"]},
+  {t:"활동 자체를 가리킨다",d:"활동",v:["do business with","do research","do a survey","do an audit"]},
+  {t:"결과를 상대에게 끼친다",d:"영향",v:["do damage to","do harm to","do a favor"]}],
+ ex:["We have done business with them since 2018.","2018년부터 그들과 거래해 왔습니다."],
+ note:"make는 없던 것을 만들고, do는 이미 있는 일을 처리합니다. 이 한 줄이 make/do 구분의 전부입니다."},
+
+{k:"give",t:"GIVE",art:SVG.give,core:"내가 가진 것을<br><b>상대에게 건넨다</b>",
+ imgs:[
+  {t:"문서·정보를 건넨다",d:"제공",v:["give a quotation","give notice","give an update","give instructions"]},
+  {t:"권한을 내어 준다",d:"허용·승인",v:["give approval","give consent","give access to","give credit"]},
+  {t:"조건을 얹어 준다",d:"양보·보증",v:["give a discount","give a refund","give a guarantee","give an assurance"]}],
+ ex:["Please give notice at least 7 days before shipment.","선적 최소 7일 전에 통지해 주십시오."],
+ note:"give an order는 '명령을 내리다'입니다. 발주는 place an order."},
+
+{k:"get",t:"GET",art:SVG.get,core:"없던 상태에서<br><b>있는 상태로 넘어간다</b>",
+ imgs:[
+  {t:"give의 반대쪽에 선다",d:"수취",v:["get approval","get a quotation","get confirmation","get a refund"]},
+  {t:"절차를 통과해 확보한다",d:"취득",v:["get clearance","get permission","get an extension"]},
+  {t:"결과가 손에 들어온다",d:"성과",v:["get results","get compensation","get feedback","get support"]}],
+ ex:["We need to get customs clearance by Friday.","금요일까지 통관을 마쳐야 합니다."],
+ note:"give ↔ get은 같은 사건을 주는 쪽과 받는 쪽에서 본 것입니다. 짝으로 외우십시오."},
+
+{k:"place",t:"PLACE · PUT",art:SVG.place,core:"정해진 자리에<br><b>정확히 놓는다</b>",
+ imgs:[
+  {t:"창구에 넣는다",d:"발주·신청",v:["place an order","put in a bid","put in a request","place a booking"]},
+  {t:"무게를 실어 놓는다",d:"강조·압박",v:["place emphasis on","put pressure on","place a limit on"]},
+  {t:"상태를 고정한다",d:"확정·시행",v:["put in writing","put into effect","put a hold on","put an end to"]}],
+ ex:["We placed an order for 240 units of 26.5R25.","26.5R25 240본을 발주했습니다."],
+ note:"발주는 place an order 하나뿐입니다. make an order · do an order는 모두 오류입니다."},
+
+{k:"pay",t:"PAY · SETTLE",art:SVG.pay,core:"주고받을 것을<br><b>맞춰 균형을 낸다</b>",
+ imgs:[
+  {t:"금액을 넘긴다",d:"지급",v:["pay a deposit","pay the balance","pay in advance","pay a commission"]},
+  {t:"부담을 떠안는다",d:"비용 부담",v:["pay a penalty","pay demurrage"]},
+  {t:"남은 차액을 없앤다",d:"정산·타결",v:["settle an account","settle a claim","settle a dispute","pay off a debt"]}],
+ ex:["The balance is payable against the B/L copy.","잔금은 B/L 사본과 상환으로 지급합니다."],
+ note:"settle은 '금액을 없애 0으로 만든다'는 이미지입니다. 클레임·분쟁에도 그대로 씁니다."},
+
+{k:"conduct",t:"HOLD · CONDUCT",art:SVG.conduct,core:"절차를 붙잡고<br><b>끝까지 진행한다</b>",
+ imgs:[
+  {t:"자리를 연다",d:"개최",v:["hold a meeting","hold negotiations","hold an inspection","hold stock"]},
+  {t:"절차를 집행한다",d:"공식 수행",v:["conduct an inspection","conduct an audit","conduct a survey","carry out repairs"]},
+  {t:"의무를 이행한다",d:"이행",v:["carry out an order","perform a duty","undertake an obligation"]}],
+ ex:["A third party will conduct the pre-shipment inspection.","제3자가 선적 전 검사를 수행합니다."],
+ note:"계약서·검사보고서에서는 make an inspection보다 conduct / carry out an inspection이 표준 문언입니다."},
+
+{k:"file",t:"FILE · SUBMIT",art:SVG.file,core:"정해진 창구에<br><b>공식으로 접수시킨다</b>",
+ imgs:[
+  {t:"이의를 접수시킨다",d:"제기",v:["file a claim","file a complaint","lodge a protest","file a lawsuit"]},
+  {t:"서류를 제출한다",d:"제출",v:["submit documents","submit a quotation","submit a tender","file a report"]},
+  {t:"상대에게 제시·송달한다",d:"제시",v:["present documents","present an invoice","serve a notice"]}],
+ ex:["The claim must be filed within 14 days of arrival.","클레임은 도착 후 14일 이내에 제기해야 합니다."],
+ note:"구어에서는 make a claim도 쓰지만, 계약 문언과 클레임 레터는 file / lodge를 씁니다."},
+
+{k:"reach",t:"REACH · MEET",art:SVG.reach,core:"떨어져 있던 것이<br><b>한 점에서 만난다</b>",
+ imgs:[
+  {t:"양쪽이 한 점에서 만난다",d:"합의",v:["reach an agreement","come to terms","reach a compromise","reach an understanding"]},
+  {t:"그어 둔 선에 닿는다",d:"달성·충족",v:["reach a target","meet a deadline","meet requirements"]},
+  {t:"논의가 끝점에 닿는다",d:"결론",v:["reach a conclusion","reach a decision","arrive at a figure"]}],
+ ex:["We reached an agreement on the payment terms.","결제 조건에 합의했습니다."],
+ note:"make an agreement보다 reach an agreement가 협상 결과를 정확히 나타냅니다."},
+
+{k:"raise",t:"RAISE · ISSUE",art:SVG.raise,core:"안에 있던 것을<br><b>공식 문서로 띄운다</b>",
+ imgs:[
+  {t:"문제를 수면 위로 올린다",d:"제기",v:["raise an issue","raise an objection","raise a concern"]},
+  {t:"문서를 발행해 내보낸다",d:"발행",v:["issue an invoice","issue a credit note","issue a certificate","open a letter of credit"]},
+  {t:"문서를 짜 올린다",d:"작성·도출",v:["draw up a contract","draw a conclusion","draw attention to"]},
+  {t:"수치를 위로 올린다",d:"인상·연장",v:["raise prices","raise capital","extend a deadline","grant a credit term"]}],
+ ex:["We will issue a credit note for the shortage.","부족분에 대해 크레딧 노트를 발행하겠습니다."],
+ note:"영국식 실무에서는 raise an invoice, 미국식에서는 issue an invoice가 흔합니다. 둘 다 정상입니다."}
+];
+
+/* ===================== LIST DATA =====================
+   [경동사, 연어, 한국어, Bahasa, 단일동사, 예문EN, 예문KR, 문서유형]         */
+const DATA = [
+["make","make a payment","대금을 지급하다","melakukan pembayaran","pay","We will make a payment against the B/L copy.","B/L 사본과 상환으로 대금을 지급하겠습니다.","PAY","Kami akan melakukan pembayaran dengan tukar salinan B/L."],
+["make","make an offer","오퍼를 내다","mengajukan penawaran","offer","They made an offer at USD 84.25/EA.","그들이 USD 84.25/EA로 오퍼했습니다.","PO","Mereka mengajukan penawaran di harga USD 84.25/EA."],
+["make","make a decision","결정을 내리다","mengambil keputusan","decide","The board will make a decision on Friday.","이사회가 금요일에 결정합니다.","MTG","Direksi akan mengambil keputusan hari Jumat."],
+["make","make a proposal","제안서를 내다","mengajukan proposal","propose","We made a proposal for exclusive distribution.","독점 유통을 제안했습니다.","PO","Kami mengajukan proposal untuk distribusi eksklusif."],
+["make","make an inquiry","문의하다","mengajukan pertanyaan","inquire","A new buyer made an inquiry about OTR sizes.","신규 바이어가 OTR 규격을 문의했습니다.","PO","Pembeli baru mengajukan permintaan informasi ukuran OTR."],
+["make","make a complaint","불만을 제기하다","menyampaikan keluhan","complain","The dealer made a complaint about the tread wear.","딜러가 트레드 마모에 대해 불만을 제기했습니다.","CLAIM","Dealer mengajukan keluhan soal keausan tapak."],
+["make","make a claim","클레임을 청구하다","mengajukan klaim","claim","They made a claim for 18 defective tyres.","불량 타이어 18본에 대해 클레임을 청구했습니다.","CLAIM","Mereka mengajukan klaim untuk 18 ban cacat."],
+["make","make an allowance","감액을 인정하다","memberikan potongan","discount","We made a 3.0% allowance for the sidewall damage.","측면 손상에 대해 3.0% 감액을 인정했습니다.","CLAIM","Kami memberikan potongan 3.0% untuk kerusakan dinding samping."],
+["make","make an amendment","조건을 변경하다","melakukan amandemen","amend","Please make an amendment to the L/C expiry date.","L/C 유효기일을 변경해 주십시오.","PAY","Mohon lakukan amandemen tanggal kedaluwarsa L/C."],
+["make","make an adjustment","조정하다","melakukan penyesuaian","adjust","We made an adjustment to the freight allocation.","운임 배분을 조정했습니다.","PAY","Kami melakukan penyesuaian alokasi ongkos angkut."],
+["make","make an exception","예외를 두다","memberi pengecualian","","We cannot make an exception to the MOQ.","최소 주문 수량에 예외를 둘 수 없습니다.","PO","Kami tidak bisa membuat pengecualian untuk MOQ."],
+["make","make a commitment","확약하다","membuat komitmen","commit","The supplier made a commitment to July shipment.","공급사가 7월 선적을 확약했습니다.","PO","Pemasok berkomitmen untuk pengapalan Juli."],
+["make","make arrangements","준비를 갖추다","mengatur","arrange","We made arrangements for inland haulage.","내륙 운송 준비를 마쳤습니다.","SHIP","Kami mengatur pengangkutan darat."],
+["make","make a shipment","선적을 실행하다","melakukan pengiriman","ship","Make the shipment no later than 30 Aug.","8월 30일까지 선적하십시오.","SHIP","Lakukan pengapalan paling lambat 30 Agustus."],
+["make","make a delivery","납품하다","melakukan pengiriman","deliver","We made a partial delivery of 120 EA.","120 EA를 분할 납품했습니다.","SHIP","Kami melakukan pengiriman sebagian sebanyak 120 EA."],
+["make","make a booking","선복을 예약하다","memesan ruang muat","book","Please make a booking with the carrier today.","오늘 선사에 선복을 예약해 주십시오.","SHIP","Mohon lakukan booking dengan pihak pengangkut hari ini."],
+["make","make a reservation","예약하다","melakukan reservasi","reserve","I made a reservation for the site visit.","현장 방문 일정을 예약했습니다.","GEN","Saya sudah memesan jadwal kunjungan lokasi."],
+["make","make an inspection","검사를 실시하다","melakukan pemeriksaan","inspect","Our QC made an inspection at the port.","품질관리팀이 항만에서 검사했습니다.","SHIP","QC kami melakukan inspeksi di pelabuhan."],
+["make","make a profit","이익을 내다","meraih laba","profit","We made a profit of USD 12,500 on the lot.","해당 로트에서 USD 12,500의 이익을 냈습니다.","GEN","Kami meraih laba USD 12,500 dari lot ini."],
+["make","make a loss","손실을 보다","mengalami kerugian","","We made a loss on the first container.","첫 컨테이너에서 손실이 났습니다.","GEN","Kami merugi pada kontainer pertama."],
+["make","make progress","진전을 보이다","membuat kemajuan","progress","We are making progress on the price gap.","가격 격차 문제에 진전이 있습니다.","MTG","Kami membuat kemajuan soal selisih harga."],
+["make","make a mistake","실수하다","melakukan kesalahan","","The forwarder made a mistake in the HS code.","포워더가 HS 코드를 잘못 기재했습니다.","SHIP","Forwarder melakukan kesalahan pada kode HS."],
+["make","make a point","요점을 짚다","menyampaikan poin","","He made a valid point about lead time.","그가 리드타임에 대해 타당한 지적을 했습니다.","MTG","Dia mengemukakan poin yang valid soal lead time."],
+["make","make a comparison","비교하다","melakukan perbandingan","compare","Let's make a comparison of the three quotations.","견적 세 건을 비교해 봅시다.","MTG","Mari kita bandingkan ketiga penawaran itu."],
+["make","make a difference","차이를 만들다","membuat perbedaan","","Local stock makes a real difference to lead time.","현지 재고가 리드타임에 실질적 차이를 만듭니다.","GEN","Stok lokal benar-benar membuat perbedaan pada lead time."],
+["make","make a forecast","예측치를 내다","membuat perkiraan","forecast","We made a forecast of 1,200 EA for Q4.","4분기 1,200 EA를 예측했습니다.","GEN","Kami membuat perkiraan 1,200 EA untuk Q4."],
+["take","take delivery of","인수하다","menerima pengiriman","receive","We took delivery of the cargo on 12 May.","5월 12일에 화물을 인수했습니다.","SHIP","Kami menerima kargo pada 12 Mei."],
+["take","take possession of","점유를 취득하다","menguasai","","Title passes when the buyer takes possession.","매수인이 점유를 취득할 때 소유권이 이전됩니다.","SHIP","Hak milik berpindah saat pembeli menguasai barang."],
+["take","take an order","주문을 받다","menerima pesanan","","Our Surabaya branch took the order.","수라바야 지점이 주문을 받았습니다.","PO","Cabang Surabaya kami menerima pesanan itu."],
+["take","take a sample","샘플을 채취하다","mengambil sampel","sample","The surveyor took a sample from each pallet.","검정인이 팔레트마다 샘플을 채취했습니다.","SHIP","Surveyor mengambil sampel dari setiap palet."],
+["take","take out insurance","보험에 가입하다","mengambil asuransi","insure","We took out cargo insurance at 110% of CIF.","CIF의 110%로 적하보험에 가입했습니다.","SHIP","Kami mengambil asuransi kargo sebesar 110% dari CIF."],
+["take","take action","조치를 취하다","mengambil tindakan","act","The supplier must take action within 7 days.","공급사는 7일 이내에 조치해야 합니다.","CLAIM","Pemasok harus mengambil tindakan dalam 7 hari."],
+["take","take measures","대책을 세우다","mengambil langkah","","We took measures to prevent recurrence.","재발 방지 대책을 세웠습니다.","CLAIM","Kami mengambil langkah untuk mencegah terulang."],
+["take","take steps","단계적 조치를 하다","mengambil langkah","","We are taking steps to shorten clearance time.","통관 시간을 줄이기 위한 조치를 진행 중입니다.","SHIP","Kami sedang mengambil langkah untuk mempersingkat waktu bea cukai."],
+["take","take corrective action","시정 조치를 하다","mengambil tindakan korektif","","Please take corrective action on the packing.","포장에 대해 시정 조치를 해 주십시오.","CLAIM","Mohon lakukan tindakan perbaikan pada pengemasan."],
+["take","take responsibility","책임을 지다","bertanggung jawab","","The carrier takes responsibility for the damage.","운송인이 손상에 대한 책임을 집니다.","CLAIM","Pihak pengangkut bertanggung jawab atas kerusakan itu."],
+["take","take the initiative","주도하다","mengambil inisiatif","","We took the initiative in the price talks.","가격 협상을 우리가 주도했습니다.","MTG","Kami mengambil inisiatif dalam pembicaraan harga."],
+["take","take part in","참가하다","ikut serta","participate","We took part in the Jakarta mining expo.","자카르타 광산 전시회에 참가했습니다.","GEN","Kami ikut serta dalam pameran pertambangan Jakarta."],
+["take","take charge of","담당하다","menangani","manage","She takes charge of the Semarang accounts.","그녀가 스마랑 거래처를 담당합니다.","GEN","Dia menangani akun Semarang."],
+["take","take a risk","위험을 감수하다","mengambil risiko","risk","We took a risk on the unconfirmed L/C.","미확인 L/C에 위험을 감수했습니다.","PAY","Kami mengambil risiko pada L/C yang tidak dikonfirmasi."],
+["take","take a loss","손실을 감수하다","menanggung kerugian","","We took a loss to keep the account.","거래처를 지키려 손실을 감수했습니다.","GEN","Kami menanggung rugi demi mempertahankan pelanggan itu."],
+["take","take into account","감안하다","memperhitungkan","consider","Take the import duty into account.","수입 관세를 감안하십시오.","PAY","Perhitungkan juga bea masuknya."],
+["take","take notes","기록하다","mencatat","note","Please take notes during the site survey.","현장 실사 중 기록해 주십시오.","MTG","Mohon buat catatan selama survei lokasi."],
+["take","take the minutes","회의록을 작성하다","membuat notulen","","Andi will take the minutes today.","오늘은 안디가 회의록을 작성합니다.","MTG","Andi yang akan membuat notulen hari ini."],
+["take","take stock","재고를 실사하다","menghitung stok","","We take stock at the end of each month.","매월 말 재고를 실사합니다.","GEN","Kami melakukan stock opname setiap akhir bulan."],
+["take","take effect","효력이 발생하다","berlaku","","The new price list takes effect on 1 Sep.","새 가격표는 9월 1일부터 효력이 발생합니다.","PO","Daftar harga baru berlaku mulai 1 September."],
+["take","take precedence","우선하다","diutamakan","","The contract takes precedence over the PO.","계약서가 발주서에 우선합니다.","PO","Kontrak lebih diutamakan daripada PO."],
+["take","take priority","우선순위를 갖다","menjadi prioritas","","Mining orders take priority this quarter.","이번 분기는 광산 주문이 우선입니다.","GEN","Pesanan pertambangan diprioritaskan kuartal ini."],
+["take","take advantage of","활용하다","memanfaatkan","use","We took advantage of the lower freight rate.","낮아진 운임을 활용했습니다.","SHIP","Kami memanfaatkan tarif angkut yang lebih rendah."],
+["take","take a look at","살펴보다","melihat","examine","Please take a look at the revised layout.","수정된 적입도를 살펴봐 주십시오.","GEN","Mohon lihat tata letak yang sudah direvisi."],
+["have","have the right to","~할 권리가 있다","berhak untuk","","Buyers have the right to reject defective goods.","매수인은 불량품을 거절할 권리가 있습니다.","PO","Pembeli berhak menolak barang cacat."],
+["have","have an obligation to","의무를 지다","berkewajiban","","The seller has an obligation to notify shipment.","매도인은 선적을 통지할 의무를 집니다.","PO","Penjual berkewajiban memberitahukan pengapalan."],
+["have","have access to","접근 권한이 있다","memiliki akses","","Only two staff have access to the ERP pricing.","두 명만 ERP 가격 정보에 접근할 수 있습니다.","GEN","Hanya dua staf yang punya akses ke harga di ERP."],
+["have","have a claim against","~에 청구권이 있다","memiliki klaim terhadap","","We have a claim against the carrier.","운송인에 대한 청구권이 있습니다.","CLAIM","Kami punya klaim terhadap pihak pengangkut."],
+["have","have a meeting","회의를 하다","mengadakan rapat","meet","We had a meeting with the Indian mill.","인도 공장과 회의를 했습니다.","MTG","Kami mengadakan rapat dengan pabrik India."],
+["have","have a discussion","논의하다","berdiskusi","discuss","We had a discussion on the warranty scope.","보증 범위를 논의했습니다.","MTG","Kami berdiskusi soal cakupan garansi."],
+["have","have a conversation","대화를 나누다","berbincang","talk","I had a short conversation with their GM.","그쪽 GM과 짧게 대화했습니다.","GEN","Saya sempat berbincang singkat dengan GM mereka."],
+["have","have an argument","언쟁하다","berdebat","argue","They had an argument over the demurrage split.","체선료 분담을 두고 언쟁이 있었습니다.","CLAIM","Mereka berselisih soal pembagian demurrage."],
+["have","have a say in","발언권이 있다","punya suara dalam","","Distributors have a say in the pricing policy.","유통사도 가격 정책에 발언권이 있습니다.","MTG","Distributor punya suara dalam kebijakan harga."],
+["have","have an impact on","영향을 미치다","berdampak pada","affect","The rupiah rate has an impact on our margin.","루피아 환율이 마진에 영향을 미칩니다.","GEN","Kurs rupiah berdampak pada margin kami."],
+["have","have an effect on","효과가 있다","berpengaruh","affect","The rebate had little effect on volume.","리베이트는 물량에 거의 효과가 없었습니다.","GEN","Rabat itu sedikit sekali pengaruhnya pada volume."],
+["have","have a problem with","문제가 있다","bermasalah dengan","","We have a problem with the bead seating.","비드 안착에 문제가 있습니다.","CLAIM","Kami ada masalah pada dudukan bead."],
+["have","have experience in","경험이 있다","berpengalaman","","They have 15 years' experience in OTR retreading.","그들은 OTR 재생 15년 경력이 있습니다.","GEN","Mereka punya pengalaman 15 tahun di vulkanisir OTR."],
+["have","have an interest in","관심이 있다","berminat pada","","The customer has an interest in 18.00R33.","고객이 18.00R33에 관심이 있습니다.","PO","Pelanggan tertarik pada ukuran 18.00R33."],
+["have","have influence over","영향력을 갖다","berpengaruh atas","","The mine operator has influence over the tender.","광산 운영사가 입찰에 영향력을 갖습니다.","GEN","Operator tambang punya pengaruh atas tender itu."],
+["have","have a look at","검토하다","melihat","review","Have a look at the draft agreement first.","계약서 초안을 먼저 검토해 보십시오.","PO","Lihat dulu draf perjanjiannya."],
+["do","do business with","거래하다","berbisnis dengan","trade","We have done business with them since 2018.","2018년부터 그들과 거래해 왔습니다.","GEN","Kami berbisnis dengan mereka sejak 2018."],
+["do","do a deal","거래를 성사시키다","membuat kesepakatan","","We did a deal on 3 containers.","3컨테이너 거래를 성사시켰습니다.","PO","Kami menutup transaksi 3 kontainer."],
+["do","do research","조사하다","melakukan riset","research","We did research on the Kalimantan demand.","칼리만탄 수요를 조사했습니다.","GEN","Kami melakukan riset permintaan di Kalimantan."],
+["do","do a survey","실사를 하다","melakukan survei","survey","The insurer did a survey on the damaged lot.","보험사가 손상 로트를 실사했습니다.","CLAIM","Pihak asuransi melakukan survei atas lot yang rusak."],
+["do","do an audit","감사를 실시하다","melakukan audit","audit","Head office did an audit of branch stock.","본사가 지점 재고를 감사했습니다.","GEN","Kantor pusat melakukan audit stok cabang."],
+["do","do the paperwork","서류 작업을 하다","mengurus dokumen","","The forwarder does the paperwork for clearance.","포워더가 통관 서류 작업을 합니다.","SHIP","Forwarder yang mengurus dokumen bea cukai."],
+["do","do the accounts","회계 처리를 하다","membuat pembukuan","","Finance does the accounts by the 5th.","재무팀이 5일까지 회계 처리를 합니다.","PAY","Bagian keuangan menutup pembukuan paling lambat tanggal 5."],
+["do","do the maintenance","정비를 하다","melakukan perawatan","maintain","We do the maintenance on site every quarter.","분기마다 현장에서 정비를 합니다.","GEN","Kami melakukan perawatan di lokasi setiap kuartal."],
+["do","do a trial run","시범 운영하다","melakukan uji coba","test","We did a trial run at the Berau mine.","베라우 광산에서 시범 운영했습니다.","GEN","Kami melakukan uji coba di tambang Berau."],
+["do","do a follow-up","후속 조치를 하다","menindaklanjuti","follow up","Please do a follow-up with the buyer.","바이어에게 후속 조치를 해 주십시오.","GEN","Mohon lakukan tindak lanjut ke pembeli."],
+["do","do damage to","손상을 입히다","merusak","damage","Rough handling did damage to the sidewalls.","거친 하역이 측면에 손상을 입혔습니다.","CLAIM","Penanganan kasar menimbulkan kerusakan pada dinding samping."],
+["do","do harm to","해를 끼치다","merugikan","harm","Late delivery does harm to our reputation.","납기 지연은 평판에 해를 끼칩니다.","CLAIM","Keterlambatan pengiriman merusak reputasi kami."],
+["do","do a favor","부탁을 들어주다","membantu","help","Could you do me a favor and check the seal?","실 번호를 확인해 주는 부탁 하나 들어주시겠습니까?","GEN","Bisa tolong bantu cek segelnya?"],
+["do","do one's best","최선을 다하다","berusaha maksimal","","We will do our best to advance the ETD.","출항일을 앞당기도록 최선을 다하겠습니다.","SHIP","Kami akan berusaha sebaik mungkin memajukan ETD."],
+["give","give a quotation","견적을 제시하다","memberikan penawaran","quote","We gave a quotation on CFR Surabaya basis.","CFR 수라바야 기준으로 견적을 제시했습니다.","PO","Kami memberikan penawaran atas dasar CFR Surabaya."],
+["give","give notice","통지하다","memberikan pemberitahuan","notify","Please give notice at least 7 days before shipment.","선적 최소 7일 전에 통지해 주십시오.","SHIP","Mohon beri pemberitahuan minimal 7 hari sebelum pengapalan."],
+["give","give instructions","지시하다","memberikan instruksi","instruct","We gave shipping instructions to the forwarder.","포워더에게 선적 지시를 했습니다.","SHIP","Kami memberikan instruksi pengapalan kepada forwarder."],
+["give","give an update","진행 상황을 알리다","memberikan pembaruan","update","Give me an update on the customs status.","통관 상황을 알려 주십시오.","MTG","Beri saya kabar terbaru status bea cukainya."],
+["give","give a presentation","발표하다","memberikan presentasi","present","He gave a presentation on the 2026 line-up.","그가 2026년 라인업을 발표했습니다.","MTG","Dia memberikan presentasi tentang line-up 2026."],
+["give","give feedback","피드백을 주다","memberikan umpan balik","","The dealers gave feedback on the tread pattern.","딜러들이 트레드 패턴에 피드백을 주었습니다.","MTG","Para dealer memberikan masukan soal pola tapak."],
+["give","give advice","조언하다","memberikan saran","advise","Our broker gave advice on the HS classification.","관세사가 HS 분류에 대해 조언했습니다.","SHIP","Broker kami memberikan saran soal klasifikasi HS."],
+["give","give an explanation","설명하다","memberikan penjelasan","explain","They gave an explanation for the two-week delay.","2주 지연에 대해 설명했습니다.","CLAIM","Mereka memberikan penjelasan atas keterlambatan dua minggu."],
+["give","give approval","승인하다","memberikan persetujuan","approve","Head office gave approval for the extra order.","본사가 추가 주문을 승인했습니다.","PO","Kantor pusat memberikan persetujuan untuk pesanan tambahan."],
+["give","give consent","동의하다","memberikan persetujuan","consent","The buyer gave consent to partial shipment.","매수인이 분할 선적에 동의했습니다.","PO","Pembeli memberikan persetujuan untuk pengapalan sebagian."],
+["give","give access to","접근을 허용하다","memberikan akses","","We gave them access to the stock report.","그들에게 재고 보고서 접근을 허용했습니다.","GEN","Kami memberi mereka akses ke laporan stok."],
+["give","give credit","여신을 주다","memberikan kredit","","We give credit only to audited dealers.","감사를 거친 딜러에게만 여신을 줍니다.","PAY","Kami memberi kredit hanya kepada dealer yang sudah diaudit."],
+["give","give a discount","할인해 주다","memberikan diskon","discount","We gave a 5.0% discount on the second lot.","두 번째 로트에 5.0% 할인을 주었습니다.","PO","Kami memberi diskon 5.0% untuk lot kedua."],
+["give","give a refund","환불하다","memberikan pengembalian dana","refund","We gave a refund for the short-shipped units.","선적 부족분에 대해 환불했습니다.","CLAIM","Kami memberi pengembalian dana untuk unit yang kurang kirim."],
+["give","give a guarantee","보증하다","memberikan jaminan","guarantee","The mill gives a 12-month guarantee.","공장이 12개월 보증을 제공합니다.","CLAIM","Pabrik memberikan garansi 12 bulan."],
+["give","give an assurance","확언하다","memberikan kepastian","assure","They gave an assurance on the July slot.","7월 생산 슬롯을 확언했습니다.","PO","Mereka memberikan jaminan untuk slot Juli."],
+["give","give an undertaking","확약하다","memberikan jaminan tertulis","undertake","The agent gave a written undertaking.","대리인이 서면 확약을 제공했습니다.","PO","Agen memberikan pernyataan tertulis."],
+["give","give priority to","우선 처리하다","memprioritaskan","prioritize","We give priority to mining customers.","광산 고객을 우선 처리합니다.","GEN","Kami memberi prioritas kepada pelanggan pertambangan."],
+["get","get approval","승인을 받다","mendapat persetujuan","","We got approval for the credit extension.","여신 연장 승인을 받았습니다.","PAY","Kami mendapat persetujuan perpanjangan kredit."],
+["get","get confirmation","확인을 받다","mendapat konfirmasi","","We got confirmation of the booking today.","오늘 선복 예약 확인을 받았습니다.","SHIP","Kami mendapat konfirmasi booking hari ini."],
+["get","get a quotation","견적을 받다","mendapat penawaran","","Get a quotation from three forwarders.","포워더 세 곳에서 견적을 받으십시오.","PO","Minta penawaran dari tiga forwarder."],
+["get","get a discount","할인을 받다","mendapat diskon","","We got a discount for early payment.","조기 결제로 할인을 받았습니다.","PAY","Kami mendapat diskon karena pembayaran lebih awal."],
+["get","get clearance","통관 허가를 받다","mendapat izin","","We need to get customs clearance by Friday.","금요일까지 통관을 마쳐야 합니다.","SHIP","Kami harus mendapat izin bea cukai paling lambat Jumat."],
+["get","get permission","허가를 받다","mendapat izin","","We got permission to store at the bonded yard.","보세 장치장 보관 허가를 받았습니다.","SHIP","Kami mendapat izin menyimpan di gudang berikat."],
+["get","get an extension","기한 연장을 받다","mendapat perpanjangan","","We got a 30-day extension on the L/C.","L/C 30일 연장을 받았습니다.","PAY","Kami mendapat perpanjangan 30 hari untuk L/C."],
+["get","get a rebate","리베이트를 받다","mendapat potongan","","We got a volume rebate of USD 3,200.","물량 리베이트 USD 3,200을 받았습니다.","PAY","Kami mendapat rabat volume USD 3,200."],
+["get","get compensation","보상을 받다","mendapat kompensasi","","We got compensation for the damaged units.","손상 제품에 대해 보상을 받았습니다.","CLAIM","Kami mendapat ganti rugi untuk unit yang rusak."],
+["get","get a refund","환불받다","mendapat pengembalian","","We got a refund of the overpaid duty.","과납 관세를 환급받았습니다.","PAY","Kami mendapat pengembalian bea yang kelebihan bayar."],
+["get","get results","성과를 얻다","mendapat hasil","","The new incentive is getting results.","새 인센티브가 성과를 내고 있습니다.","GEN","Insentif baru itu mulai membuahkan hasil."],
+["get","get feedback","피드백을 받다","mendapat umpan balik","","We got feedback from six mine sites.","광산 현장 여섯 곳에서 피드백을 받았습니다.","MTG","Kami mendapat masukan dari enam lokasi tambang."],
+["get","get support","지원을 받다","mendapat dukungan","","We got technical support from the mill.","공장에서 기술 지원을 받았습니다.","GEN","Kami mendapat dukungan teknis dari pabrik."],
+["get","get delivery","납품을 받다","menerima pengiriman","","We got delivery two days ahead of schedule.","예정보다 이틀 앞서 납품을 받았습니다.","SHIP","Kami menerima pengiriman dua hari lebih cepat dari jadwal."],
+["get","get a reply","회신을 받다","mendapat balasan","","We have not got a reply since Tuesday.","화요일 이후 회신을 받지 못했습니다.","GEN","Kami belum mendapat balasan sejak Selasa."],
+["get","get access to","접근 권한을 얻다","mendapat akses","","We got access to their dealer portal.","그들의 딜러 포털 접근 권한을 얻었습니다.","GEN","Kami mendapat akses ke portal dealer mereka."],
+["place","place an order","발주하다","melakukan pemesanan","order","We placed an order for 240 units of 26.5R25.","26.5R25 240본을 발주했습니다.","PO","Kami memesan 240 unit ukuran 26.5R25."],
+["place","place a booking","선복 예약을 넣다","memesan ruang muat","book","Place the booking before the cut-off.","마감 전에 선복 예약을 넣으십시오.","SHIP","Lakukan booking sebelum cut-off."],
+["place","place an insurance","보험을 부보하다","menutup asuransi","insure","We placed the insurance with a local underwriter.","현지 보험사에 부보했습니다.","SHIP","Kami menempatkan asuransinya pada penjamin lokal."],
+["place","place a limit on","한도를 두다","membatasi","limit","We placed a limit on their credit line.","그들의 여신 한도에 제한을 두었습니다.","PAY","Kami menetapkan batas pada plafon kredit mereka."],
+["place","place emphasis on","중점을 두다","menekankan","emphasize","We place emphasis on after-sales support.","애프터서비스에 중점을 둡니다.","GEN","Kami menekankan dukungan purnajual."],
+["place","place an advertisement","광고를 게재하다","memasang iklan","advertise","We placed an advertisement in the mining journal.","광산 전문지에 광고를 게재했습니다.","GEN","Kami memasang iklan di jurnal pertambangan."],
+["place","put in a bid","입찰하다","mengajukan penawaran","bid","We put in a bid for the fleet contract.","차량 계약에 입찰했습니다.","PO","Kami mengajukan penawaran untuk kontrak armada."],
+["place","put in a request","요청을 넣다","mengajukan permintaan","request","We put in a request for an earlier ETD.","조기 출항을 요청했습니다.","SHIP","Kami mengajukan permintaan ETD lebih awal."],
+["place","put pressure on","압박하다","menekan","pressure","The buyer is putting pressure on the price.","바이어가 가격을 압박하고 있습니다.","MTG","Pembeli menekan harga."],
+["place","put in writing","서면화하다","menuangkan secara tertulis","","Please put the agreed terms in writing.","합의된 조건을 서면으로 남겨 주십시오.","PO","Mohon tuangkan syarat yang disepakati secara tertulis."],
+["place","put into effect","시행하다","memberlakukan","implement","The new terms were put into effect on 1 Jul.","새 조건이 7월 1일부터 시행되었습니다.","PO","Syarat baru diberlakukan mulai 1 Juli."],
+["place","put a hold on","보류하다","menahan","hold","We put a hold on the third shipment.","세 번째 선적을 보류했습니다.","SHIP","Kami menahan pengapalan ketiga."],
+["place","put an end to","종료시키다","mengakhiri","end","We put an end to the consignment scheme.","위탁 판매 방식을 종료했습니다.","PO","Kami mengakhiri skema konsinyasi."],
+["place","put at risk","위험에 빠뜨리다","membahayakan","risk","Late documents put the L/C at risk.","서류 지연이 L/C를 위험에 빠뜨립니다.","PAY","Dokumen yang terlambat membuat L/C berisiko."],
+["pay","pay a deposit","계약금을 지급하다","membayar uang muka","","They paid a 30.0% deposit on signing.","서명 시 30.0% 계약금을 지급했습니다.","PAY","Mereka membayar uang muka 30.0% saat penandatanganan."],
+["pay","pay the balance","잔금을 지급하다","melunasi sisa","","The balance is payable against the B/L copy.","잔금은 B/L 사본과 상환으로 지급합니다.","PAY","Sisanya dibayar dengan tukar salinan B/L."],
+["pay","pay in advance","선불하다","membayar di muka","prepay","New accounts must pay in advance.","신규 거래처는 선불해야 합니다.","PAY","Pelanggan baru harus membayar di muka."],
+["pay","pay on account","계정으로 일부 지급하다","membayar sebagian","","They paid USD 20,000 on account.","그들이 USD 20,000을 계정으로 지급했습니다.","PAY","Mereka membayar USD 20,000 sebagai pembayaran sebagian."],
+["pay","pay a penalty","위약금을 물다","membayar denda","","The seller paid a penalty for late shipment.","매도인이 선적 지연 위약금을 물었습니다.","CLAIM","Penjual membayar denda karena pengapalan terlambat."],
+["pay","pay demurrage","체선료를 지급하다","membayar demurrage","","We paid demurrage for six days.","6일치 체선료를 지급했습니다.","SHIP","Kami membayar demurrage selama enam hari."],
+["pay","pay a commission","수수료를 지급하다","membayar komisi","","We pay a 2.0% commission to the agent.","대리인에게 2.0% 수수료를 지급합니다.","PAY","Kami membayar komisi 2.0% kepada agen."],
+["pay","pay off a debt","채무를 상환하다","melunasi utang","repay","The dealer paid off the outstanding debt.","딜러가 미결제 채무를 상환했습니다.","PAY","Dealer melunasi sisa utangnya."],
+["pay","settle an account","대금을 정산하다","melunasi tagihan","","Please settle the account by 30 Sep.","9월 30일까지 대금을 정산해 주십시오.","PAY","Mohon lunasi tagihan paling lambat 30 September."],
+["pay","settle a claim","클레임을 타결하다","menyelesaikan klaim","","We settled the claim at USD 4,800.","클레임을 USD 4,800에 타결했습니다.","CLAIM","Kami menyelesaikan klaim itu di angka USD 4,800."],
+["pay","settle a dispute","분쟁을 해결하다","menyelesaikan sengketa","","Both parties settled the dispute amicably.","양측이 분쟁을 원만히 해결했습니다.","CLAIM","Kedua pihak menyelesaikan sengketa secara damai."],
+["pay","pay attention to","주의를 기울이다","memperhatikan","notice","Pay attention to the load index marking.","하중지수 표기에 주의하십시오.","GEN","Perhatikan tanda indeks bebannya."],
+["pay","pay a visit to","방문하다","mengunjungi","visit","We paid a visit to the Balikpapan site.","발릭파판 현장을 방문했습니다.","GEN","Kami berkunjung ke lokasi Balikpapan."],
+["conduct","hold a meeting","회의를 개최하다","mengadakan rapat","meet","We will hold a meeting on 12 Sep.","9월 12일에 회의를 개최합니다.","MTG","Kami akan mengadakan rapat pada 12 September."],
+["conduct","hold negotiations","협상을 진행하다","mengadakan negosiasi","negotiate","We held negotiations over three days.","3일에 걸쳐 협상을 진행했습니다.","MTG","Kami mengadakan negosiasi selama tiga hari."],
+["conduct","hold an inspection","검사를 실시하다","mengadakan pemeriksaan","inspect","Customs held an inspection on arrival.","세관이 도착 시 검사를 실시했습니다.","SHIP","Bea cukai mengadakan pemeriksaan saat kedatangan."],
+["conduct","hold stock","재고를 보유하다","menyimpan stok","stock","We hold stock of 12 fast-moving sizes.","회전이 빠른 12개 규격 재고를 보유합니다.","GEN","Kami menyimpan stok 12 ukuran yang laris."],
+["conduct","hold a licence","허가를 보유하다","memegang izin","","We hold an API import licence.","API 수입 허가를 보유하고 있습니다.","PO","Kami memegang izin impor API."],
+["conduct","conduct an inspection","검수를 수행하다","melakukan inspeksi","inspect","A third party will conduct the pre-shipment inspection.","제3자가 선적 전 검사를 수행합니다.","SHIP","Pihak ketiga akan melakukan inspeksi prapengapalan."],
+["conduct","conduct an audit","감사를 수행하다","melakukan audit","audit","We conduct an audit of dealer stock annually.","연 1회 딜러 재고 감사를 수행합니다.","GEN","Kami melakukan audit stok dealer setiap tahun."],
+["conduct","conduct a survey","실사를 수행하다","melakukan survei","survey","The insurer conducted a survey at the yard.","보험사가 야드에서 실사를 수행했습니다.","CLAIM","Pihak asuransi melakukan survei di lapangan penumpukan."],
+["conduct","conduct a test","시험을 실시하다","melakukan pengujian","test","We conducted a durability test on 4 units.","4본에 대해 내구 시험을 실시했습니다.","CLAIM","Kami melakukan uji ketahanan pada 4 unit."],
+["conduct","conduct business","사업을 영위하다","menjalankan bisnis","","We conduct business in five provinces.","5개 주에서 사업을 영위합니다.","GEN","Kami menjalankan usaha di lima provinsi."],
+["conduct","carry out an inspection","검사를 이행하다","melaksanakan pemeriksaan","inspect","SGS carried out the inspection at loading.","SGS가 적재 시 검사를 이행했습니다.","SHIP","SGS melaksanakan inspeksi saat pemuatan."],
+["conduct","carry out repairs","수리를 시행하다","melakukan perbaikan","repair","We carried out repairs on 8 casings.","케이싱 8본에 대해 수리를 시행했습니다.","CLAIM","Kami melaksanakan perbaikan pada 8 casing."],
+["conduct","carry out an order","주문을 이행하다","melaksanakan pesanan","fulfil","The mill carried out the order in full.","공장이 주문을 전량 이행했습니다.","PO","Pabrik memenuhi pesanan itu sepenuhnya."],
+["conduct","carry out a review","검토를 수행하다","melakukan tinjauan","review","We carried out a review of the price list.","가격표 검토를 수행했습니다.","MTG","Kami melaksanakan peninjauan daftar harga."],
+["conduct","perform a duty","의무를 이행하다","menjalankan kewajiban","","Each party shall perform its duties in good faith.","각 당사자는 신의성실하게 의무를 이행합니다.","PO","Masing-masing pihak wajib menjalankan kewajibannya dengan itikad baik."],
+["conduct","undertake an obligation","의무를 부담하다","mengemban kewajiban","","The seller undertakes the obligation to insure.","매도인이 부보 의무를 부담합니다.","PO","Penjual mengemban kewajiban untuk mengasuransikan."],
+["file","file a claim","클레임을 제기하다","mengajukan klaim","claim","The claim must be filed within 14 days of arrival.","클레임은 도착 후 14일 이내에 제기해야 합니다.","CLAIM","Klaim harus diajukan dalam 14 hari sejak kedatangan."],
+["file","file a complaint","정식 항의를 제기하다","mengajukan keluhan resmi","complain","We filed a formal complaint with the carrier.","운송인에게 정식 항의를 제기했습니다.","CLAIM","Kami mengajukan keluhan resmi kepada pihak pengangkut."],
+["file","file a lawsuit","소송을 제기하다","mengajukan gugatan","sue","They filed a lawsuit over the unpaid invoices.","미결제 인보이스로 소송을 제기했습니다.","CLAIM","Mereka mengajukan gugatan atas faktur yang belum dibayar."],
+["file","file a report","보고서를 제출하다","menyerahkan laporan","report","The surveyor filed his report on 20 Jun.","검정인이 6월 20일에 보고서를 제출했습니다.","CLAIM","Surveyor menyerahkan laporannya pada 20 Juni."],
+["file","lodge a claim","클레임을 접수시키다","mendaftarkan klaim","","We lodged a claim with the insurer.","보험사에 클레임을 접수시켰습니다.","CLAIM","Kami mengajukan klaim ke pihak asuransi."],
+["file","lodge a protest","이의를 제기하다","mengajukan protes","protest","We lodged a protest against the assessed value.","과세 가격에 이의를 제기했습니다.","SHIP","Kami mengajukan keberatan atas nilai pabean yang ditetapkan."],
+["file","lodge a deposit","보증금을 예치하다","menyetorkan jaminan","","We lodged a deposit with customs.","세관에 보증금을 예치했습니다.","PAY","Kami menitipkan jaminan di bea cukai."],
+["file","submit a quotation","견적서를 제출하다","menyerahkan penawaran","quote","We submitted a quotation on 3 Aug.","8월 3일에 견적서를 제출했습니다.","PO","Kami menyerahkan penawaran pada 3 Agustus."],
+["file","submit documents","서류를 제출하다","menyerahkan dokumen","","Submit the documents within the L/C period.","L/C 기간 내에 서류를 제출하십시오.","PAY","Serahkan dokumennya dalam masa berlaku L/C."],
+["file","submit a tender","입찰서를 제출하다","mengajukan tender","bid","We submitted a tender for the fleet supply.","차량 공급 입찰서를 제출했습니다.","PO","Kami memasukkan tender untuk pasokan armada."],
+["file","submit an application","신청서를 제출하다","mengajukan permohonan","apply","Submit the import licence application early.","수입 허가 신청서를 미리 제출하십시오.","SHIP","Ajukan permohonan izin impor lebih awal."],
+["file","present documents","서류를 제시하다","menyerahkan dokumen","","The beneficiary presented documents on 8 Jul.","수익자가 7월 8일에 서류를 제시했습니다.","PAY","Penerima menyerahkan dokumen pada 8 Juli."],
+["file","present an invoice","인보이스를 제시하다","mengajukan faktur","bill","We presented the commercial invoice to the bank.","은행에 상업송장을 제시했습니다.","PAY","Kami menyerahkan faktur komersial ke bank."],
+["file","serve a notice","통지서를 송달하다","menyampaikan pemberitahuan","notify","We served a notice of default on 1 Aug.","8월 1일에 채무불이행 통지서를 송달했습니다.","CLAIM","Kami menyampaikan surat peringatan wanprestasi pada 1 Agustus."],
+["reach","reach an agreement","합의에 이르다","mencapai kesepakatan","agree","We reached an agreement on the payment terms.","결제 조건에 합의했습니다.","MTG","Kami mencapai kesepakatan soal termin pembayaran."],
+["reach","reach a settlement","화해에 도달하다","mencapai penyelesaian","settle","The parties reached a settlement out of court.","양측이 법정 밖에서 화해에 도달했습니다.","CLAIM","Para pihak mencapai penyelesaian di luar pengadilan."],
+["reach","reach a compromise","절충하다","mencapai kompromi","compromise","We reached a compromise at USD 82.00/EA.","USD 82.00/EA로 절충했습니다.","MTG","Kami mencapai kompromi di USD 82.00/EA."],
+["reach","reach an understanding","양해에 이르다","mencapai pengertian","","We reached an understanding on exclusivity.","독점권에 대해 양해에 이르렀습니다.","MTG","Kami mencapai kesepahaman soal eksklusivitas."],
+["reach","reach a decision","결론에 이르다","mencapai keputusan","decide","The committee reached a decision on Thursday.","위원회가 목요일에 결론에 이르렀습니다.","MTG","Komite mencapai keputusan pada hari Kamis."],
+["reach","reach a conclusion","결론을 내리다","menarik kesimpulan","conclude","The survey reached a clear conclusion.","실사가 명확한 결론을 냈습니다.","CLAIM","Survei itu sampai pada kesimpulan yang jelas."],
+["reach","reach a target","목표를 달성하다","mencapai target","achieve","We reached the Q2 target of 1,800 EA.","2분기 목표 1,800 EA를 달성했습니다.","GEN","Kami mencapai target Q2 sebesar 1,800 EA."],
+["reach","come to terms","조건에 합의하다","menyepakati syarat","","We came to terms on the warranty period.","보증 기간 조건에 합의했습니다.","PO","Kami sepakat soal masa garansi."],
+["reach","come to an agreement","합의에 도달하다","mencapai kesepakatan","agree","Both sides came to an agreement quickly.","양측이 신속히 합의에 도달했습니다.","MTG","Kedua pihak cepat mencapai kesepakatan."],
+["reach","come to a halt","중단되다","terhenti","stop","Loading came to a halt due to the storm.","폭풍으로 적재가 중단되었습니다.","SHIP","Pemuatan terhenti karena badai."],
+["reach","meet a deadline","기한을 지키다","memenuhi tenggat","","The mill met the shipment deadline.","공장이 선적 기한을 지켰습니다.","SHIP","Pabrik memenuhi tenggat pengapalan."],
+["reach","meet requirements","요건을 충족하다","memenuhi persyaratan","","The tyres meet SNI requirements.","해당 타이어는 SNI 요건을 충족합니다.","PO","Ban itu memenuhi persyaratan SNI."],
+["reach","arrive at a figure","금액을 산출하다","menetapkan angka","calculate","We arrived at a figure of USD 96,400.","USD 96,400의 금액을 산출했습니다.","PAY","Kami sampai pada angka USD 96,400."],
+["raise","raise an issue","문제를 제기하다","mengangkat masalah","","He raised an issue about the packing method.","그가 포장 방식에 대해 문제를 제기했습니다.","MTG","Dia mengangkat masalah soal metode pengemasan."],
+["raise","raise an objection","이의를 제기하다","mengajukan keberatan","object","We raised an objection to the revised terms.","변경된 조건에 이의를 제기했습니다.","PO","Kami mengajukan keberatan atas syarat yang direvisi."],
+["raise","raise a concern","우려를 표하다","menyampaikan kekhawatiran","","The dealers raised a concern about stock levels.","딜러들이 재고 수준에 우려를 표했습니다.","MTG","Para dealer menyampaikan kekhawatiran soal tingkat stok."],
+["raise","raise an invoice","인보이스를 발행하다","menerbitkan faktur","bill","We raised an invoice for IDR 1,250,000,000 (1.25 miliar).","IDR 1,250,000,000 (1.25 miliar)의 인보이스를 발행했습니다.","PAY","Kami menerbitkan faktur sebesar IDR 1,250,000,000 (1.25 miliar)."],
+["raise","raise prices","가격을 인상하다","menaikkan harga","","The mill raised prices by 4.0%.","공장이 가격을 4.0% 인상했습니다.","PO","Pabrik menaikkan harga sebesar 4.0%."],
+["raise","raise capital","자본을 조달하다","menghimpun modal","","We raised capital for the Semarang warehouse.","스마랑 창고를 위해 자본을 조달했습니다.","GEN","Kami menghimpun modal untuk gudang Semarang."],
+["raise","issue an invoice","인보이스를 발행하다","menerbitkan faktur","bill","We will issue the invoice after loading.","적재 후 인보이스를 발행하겠습니다.","PAY","Kami akan menerbitkan faktur setelah pemuatan."],
+["raise","issue a credit note","크레딧 노트를 발행하다","menerbitkan nota kredit","","We will issue a credit note for the shortage.","부족분에 대해 크레딧 노트를 발행하겠습니다.","CLAIM","Kami akan menerbitkan nota kredit untuk kekurangannya."],
+["raise","issue a purchase order","발주서를 발행하다","menerbitkan PO","order","The customer issued a purchase order yesterday.","고객이 어제 발주서를 발행했습니다.","PO","Pelanggan menerbitkan purchase order kemarin."],
+["raise","issue a certificate","증명서를 발급하다","menerbitkan sertifikat","certify","The chamber issued the certificate of origin.","상공회의소가 원산지증명서를 발급했습니다.","SHIP","Kadin menerbitkan surat keterangan asal."],
+["raise","issue a warning","경고하다","memberikan peringatan","warn","We issued a warning about the overdue balance.","연체 잔액에 대해 경고를 발송했습니다.","CLAIM","Kami menerbitkan peringatan soal tunggakan."],
+["raise","open a letter of credit","신용장을 개설하다","membuka L/C","","The buyer opened an irrevocable L/C at sight.","매수인이 일람불 취소불능 L/C를 개설했습니다.","PAY","Pembeli membuka L/C irrevocable at sight."],
+["raise","draw up a contract","계약서를 작성하다","menyusun kontrak","draft","Legal will draw up the distribution contract.","법무팀이 유통 계약서를 작성합니다.","PO","Bagian hukum akan menyusun kontrak distribusi."],
+["raise","draw a conclusion","결론을 도출하다","menarik kesimpulan","conclude","It is too early to draw a conclusion.","결론을 도출하기에는 이릅니다.","CLAIM","Terlalu dini untuk menarik kesimpulan."],
+["raise","draw attention to","주의를 환기시키다","menarik perhatian","highlight","We draw your attention to Clause 8.2.","제8.2조에 주의를 환기시켜 드립니다.","PO","Kami mengarahkan perhatian Anda pada Pasal 8.2."],
+["raise","extend a deadline","기한을 연장하다","memperpanjang tenggat","","The bank extended the presentation deadline.","은행이 서류 제시 기한을 연장했습니다.","PAY","Bank memperpanjang tenggat penyerahan dokumen."],
+["raise","grant a credit term","여신을 부여하다","memberikan tempo kredit","","We granted a 60-day credit term.","60일 여신을 부여했습니다.","PAY","Kami memberikan termin kredit 60 hari."],
+["raise","impose a surcharge","할증료를 부과하다","mengenakan biaya tambahan","","The carrier imposed a peak season surcharge.","선사가 성수기 할증료를 부과했습니다.","SHIP","Pihak pengangkut mengenakan biaya tambahan musim puncak."]
+];
+
+const GROUP_LABEL = {
+  "make":"핵심 이미지: 없던 것을 만들어 낸다",
+  "take":"핵심 이미지: 내 쪽으로 가져온다",
+  "have":"핵심 이미지: 이미 내 영역 안에 있다",
+  "do":"핵심 이미지: 있는 일을 처리한다",
+  "give":"핵심 이미지: 상대에게 건넨다",
+  "get":"핵심 이미지: 없던 상태 → 있는 상태",
+  "place":"핵심 이미지: 정해진 자리에 놓는다 (place · put)",
+  "pay":"핵심 이미지: 주고받을 것을 0으로 맞춘다 (pay · settle)",
+  "conduct":"핵심 이미지: 절차를 끝까지 진행한다 (hold · conduct · carry out)",
+  "file":"핵심 이미지: 공식 창구에 접수시킨다 (file · lodge · submit)",
+  "reach":"핵심 이미지: 한 점에서 만난다 (reach · come to · meet)",
+  "raise":"핵심 이미지: 공식 문서로 띄운다 (raise · issue · draw)"
+};
+const ORDER = ["make","take","have","do","give","get","place","pay","conduct","file","reach","raise"];
+const CHIP_LABEL = {"place":"PLACE·PUT","pay":"PAY·SETTLE","conduct":"HOLD·CONDUCT","file":"FILE·SUBMIT","reach":"REACH·MEET","raise":"RAISE·ISSUE"};
+
+const DOCS = {
+  "PO":"발주·계약",
+  "PAY":"결제·L/C",
+  "SHIP":"선적·통관",
+  "CLAIM":"클레임·분쟁",
+  "MTG":"회의·협상",
+  "GEN":"일반 업무"
+};
+
+/* ===================== ERRORS ===================== */
+const ERRORS = [
+["do a payment","make a payment","지급은 '없던 돈의 이동을 만들어 낸다'는 사건이므로 make입니다. 인보이스·독촉장에서 가장 자주 나오는 오류입니다."],
+["make an order","place an order","발주는 '정해진 자리에 놓는' 동작입니다. make an order는 '주문서를 제작한다'로 읽힙니다."],
+["give an order (발주)","place an order","give an order는 '명령을 내리다'입니다. 상대가 지시로 오해할 수 있어 발주 서신에서 특히 위험합니다."],
+["take a claim","file a claim / lodge a claim","클레임은 창구에 접수시키는 것입니다. 구어에서는 make a claim도 쓰이지만 계약 문언은 file / lodge입니다."],
+["do a claim","file a claim","동일한 오류입니다. do는 이미 정해진 업무를 처리할 때만 씁니다."],
+["make a research","do research / conduct research","research는 활동 명사이므로 do 또는 conduct입니다. 관사도 붙이지 않습니다."],
+["do a decision","make a decision","결정은 없던 판단을 만들어 내는 것이므로 make입니다."],
+["have a decision","make a decision","have는 이미 가진 상태를 뜻합니다. 결정을 '내리는' 행위는 make."],
+["make a discount","give a discount / get a discount","할인은 주는 쪽 give, 받는 쪽 get입니다. make는 쓰지 않습니다."],
+["take a discount","get a discount","받는 쪽은 언제나 get입니다."],
+["take an insurance","take out insurance","보험 가입은 take out으로 굳어진 표현입니다. 관사도 붙이지 않습니다."],
+["make a contract","enter into a contract / conclude a contract","make a contract도 통하지만, 계약서 본문과 공문에서는 enter into가 표준입니다."],
+["pay a payment","make a payment","동어반복입니다. pay는 목적어로 금액이나 대상을 받습니다 (pay the balance, pay the supplier)."],
+["do a complaint","make a complaint / file a complaint","구두 항의는 make, 정식 서면 항의는 file입니다."],
+["give a meeting","hold a meeting / have a meeting","회의는 자리를 '여는' 것입니다. 공식 문서는 hold, 구어는 have."],
+["take a meeting","hold a meeting","미국 구어에서 간혹 쓰이지만 무역 서신에서는 오류로 읽힙니다."],
+["do an offer","make an offer","오퍼는 없던 조건을 제시하는 것이므로 make입니다."],
+["do a profit","make a profit","이익·손실은 모두 make입니다 (make a profit / make a loss)."],
+["make a notice","give notice / serve a notice","통지는 상대에게 건네는 것입니다. 법적 송달은 serve a notice."],
+["do a shipment","make a shipment / effect shipment","선적 실행은 make입니다. L/C 문언에서는 effect shipment도 자주 나옵니다."],
+["make a delay","cause a delay / result in a delay","지연은 만들어 내는 것이 아니라 초래하는 것입니다."],
+["issue a claim","file a claim / lodge a claim","issue는 발행하는 쪽(인보이스·증명서)에 씁니다. 클레임은 제기하는 것입니다."],
+["make an inspection (계약 문언)","conduct an inspection / carry out an inspection","일상 대화는 make도 가능하지만, 계약서·검사보고서는 conduct / carry out이 표준입니다."],
+["make an agreement (협상 결과)","reach an agreement / come to an agreement","협상 끝에 도달한 합의는 reach입니다. make an agreement는 문서를 작성한다는 뉘앙스입니다."],
+["do the decision-making","make decisions","불필요한 명사화입니다. 짧게 쓰는 편이 명확합니다."],
+["make a report (발표)","give a report / present a report","보고서를 '작성'하면 write / prepare, '발표'하면 give / present입니다."],
+["take a payment term","agree on payment terms / grant a credit term","조건은 take의 대상이 아닙니다. 부여는 grant, 합의는 agree on."],
+["do an audit (공식 감사)","conduct an audit / carry out an audit","사내 약식 점검은 do도 가능하지만 공식 감사는 conduct입니다."],
+["make a settlement","reach a settlement / settle the claim","화해는 도달하는 것입니다."],
+["give a claim","file a claim","give는 건네는 방향입니다. 클레임은 접수시키는 방향이므로 file."]
+];
+
+/* ===================== VIDEO ===================== */
+const STAGES = [
+ {n:"1단계",t:"MAKE / DO 축 세우기",d:"경동사 학습에서 가장 먼저 갈라야 할 한 축입니다. 1~2주"},
+ {n:"2단계",t:"4대 경동사 대조",d:"MAKE · HAVE · TAKE · GIVE를 한 화면에서 비교합니다. 3~4주"},
+ {n:"3단계",t:"비즈니스 문맥 적용",d:"회의·이메일·보고 문맥으로 좁힙니다. 5~6주"},
+ {n:"4단계",t:"무역 문서 영역",d:"영어 학습 채널이 다루지 않는 구간입니다. 7주~"}
+];
+
+const VIDEOS = [
+{s:0,id:"CEVo5lSDsqw",t:"60 English Collocations with DO and MAKE",ch:"Espresso English",yr:"2018",cards:[0,3],
+ note:"do와 make를 60개 예시로 한 번에 훑습니다. 첫 정리용으로 가장 무난합니다."},
+{s:0,id:"xB8ySb_k-ME",t:"MAKE vs DO in English | Advanced Collocations You Must Know",yr:"2025",cards:[0,3],
+ note:"고급 연어 중심입니다. 위 영상을 먼저 본 뒤에 보면 걸러지는 표현이 늘어납니다."},
+{s:0,id:"nJ4TAXzDdyg",t:"100+ Collocations in English — Complete List: Make & Do",yr:"2023",cards:[0,3],
+ note:"전체 목록형이라 반복 시청에 적합합니다. 한 번에 다 외우려 하지 마십시오."},
+{s:0,id:"k8Kt3CTuT3U",t:"Collocations with Do & Make",yr:"2021",cards:[0,3],
+ note:"혼동 지점을 설명 위주로 다룹니다. 규칙보다 예시가 기억에 남습니다."},
+
+{s:1,id:"kEr50Srvnnw",t:"Collocations w/ Make, Have, Take, Give | Supercharge Your Vocab",yr:"2026",cards:[0,1,2,4],pick:true,
+ note:"2026년 4월 업로드로 이 목록에서 가장 최신입니다. 네 동사를 한 영상에서 대조하므로 카드 1·2·3·5를 묶어 볼 때 가장 효율적입니다."},
+
+{s:2,id:"aU5Jab9L5Go",t:"50 Business English Collocations You Need for Work + QUIZ",yr:"2026",cards:[5,6,7],pick:true,
+ note:"2026년 2월 업로드. 퀴즈가 붙어 있어 자가 점검이 됩니다. 3단계는 이 영상부터 시작하십시오."},
+{s:2,id:"b0NGZ_6kq4s",t:"Business English Collocations (to Make and to Do)",ch:"Energetic English",yr:"2020",cards:[0,3],
+ note:"1단계에서 잡은 make/do를 업무 문맥으로 좁혀 다시 봅니다."},
+{s:2,id:"5JNm9BeRTfk",t:"Business English expressions with make and do — a Mini English Lesson",yr:"2023",cards:[0,3],
+ note:"표현 6개짜리 단편입니다. 출근 전 1회 반복용으로 부담이 없습니다."},
+{s:2,list:"PL2fUZ7TZy_xdRuEgQOESyx2QXIzn5D6D2",t:"BUSINESS ENGLISH COLLOCATIONS (재생목록)",cards:[4,5,6],
+ note:"단일 영상이 아니라 시리즈입니다. 주차별 진도를 끊어 가기에 적합합니다."},
+
+{s:3,id:"tUIziJCLTzE",t:"Letter of Credit | Meaning & Process explained in International Trade",yr:"2021",cards:[7,9,11],doc:"PAY",
+ note:"영어 학습 영상이 아니라 실무 설명 영상입니다. open an L/C · present documents · negotiate documents가 자연스러운 문맥에서 반복되므로, 학습 채널이 비워 둔 구간을 메웁니다."}
+];
+
+function esc(s){return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}
+
+/* counts */
+const COUNT={};
+DATA.forEach(d=>{COUNT[d[0]]=(COUNT[d[0]]||0)+1});
+const DOCCOUNT={};
+DATA.forEach(d=>{DOCCOUNT[d[7]]=(DOCCOUNT[d[7]]||0)+1});
+
+/* ===================== DECK RENDER ===================== */
+const track=document.getElementById('track');
+const dotsEl=document.getElementById('dots');
+const posEl=document.getElementById('pos');
+let cur=0;
+
+track.innerHTML = DECK.map((d,i)=>{
+  const n = COUNT[d.k]||0;
+  const imgs = d.imgs.map((im,j)=>
+    '<div class="img"><div class="ih"><span class="in">'+(j+1)+'</span><span class="it">'+esc(im.t)+'</span></div>'
+    +'<p class="idsc">'+esc(im.d)+'</p>'
+    +'<p class="vs">'+im.v.map(v=>'<span>'+esc(v)+'</span>').join('')+'</p></div>'
+  ).join('');
+  return '<div class="slide"><div class="scene"><div class="card" data-i="'+i+'" role="button" tabindex="0">'
+    +'<div class="face front">'
+      +'<div class="tagrow"><span class="tag">'+esc(d.t)+'</span><span class="cnt">'+n+'개 연어 · '+(i+1)+'/'+DECK.length+'</span></div>'
+      +'<div class="art">'+d.art+'</div>'
+      +'<p class="particle">'+esc(d.t)+'</p>'
+      +'<p class="core">'+d.core+'</p>'
+      +'<p class="flipnote">TAP TO FLIP</p>'
+    +'</div>'
+    +'<div class="face back">'
+      +'<h2>'+esc(d.t)+' <span style="font-size:12px;font-weight:400;color:var(--ink)">그림 '+d.imgs.length+'개</span></h2>'
+      +imgs
+      +(d.note?'<p class="note">⚠ '+esc(d.note)+'</p>':'')
+      +'<div class="exbox"><p>'+esc(d.ex[0])+'</p><p class="kr">'+esc(d.ex[1])+'</p>'
+      +'<button class="jump deck-jump" data-k="'+esc(d.k)+'" style="margin-left:0;margin-top:8px;background:var(--card)">목록에서 '+n+'개 보기 →</button></div>'
+    +'</div></div></div></div>';
+}).join('');
+
+dotsEl.innerHTML = DECK.map((d,i)=>'<button class="dot" data-i="'+i+'" aria-label="'+esc(d.t)+'"></button>').join('');
+
+function go(i){
+  cur=Math.max(0,Math.min(DECK.length-1,i));
+  track.style.transform='translateX('+(-cur*100)+'%)';
+  document.querySelectorAll('.dot').forEach((d,j)=>d.setAttribute('aria-current',String(j===cur)));
+  document.getElementById('prev').disabled = cur===0;
+  document.getElementById('next').disabled = cur===DECK.length-1;
+  posEl.textContent = DECK[cur].t + ' · ' + (cur+1) + ' / ' + DECK.length;
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('flipped'));
+}
+document.getElementById('prev').onclick=()=>go(cur-1);
+document.getElementById('next').onclick=()=>go(cur+1);
+dotsEl.addEventListener('click',e=>{const b=e.target.closest('.dot');if(b)go(+b.dataset.i)});
+
+track.addEventListener('click',e=>{
+  if(e.target.closest('.deck-jump')) return;
+  const c=e.target.closest('.card'); if(c) c.classList.toggle('flipped');
+});
+track.addEventListener('keydown',e=>{
+  const c=e.target.closest('.card');
+  if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();c.classList.toggle('flipped')}
+});
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('panel-deck').hidden) return;
+  if(e.key==='ArrowLeft')go(cur-1);
+  if(e.key==='ArrowRight')go(cur+1);
+});
+
+let sx=0,sy=0,drag=false;
+const vp=document.getElementById('viewport');
+vp.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;drag=true},{passive:true});
+vp.addEventListener('touchend',e=>{
+  if(!drag)return; drag=false;
+  const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+  if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)) go(dx<0?cur+1:cur-1);
+},{passive:true});
+
+/* ===================== LIST RENDER ===================== */
+const listEl=document.getElementById('list');
+const railEl=document.getElementById('rail');
+const drailEl=document.getElementById('drail');
+const countEl=document.getElementById('count');
+const qEl=document.getElementById('q');
+let active="all", activeDoc="all";
+
+DATA.forEach((d,i)=>d.push(i+1));
+
+function mkChip(rail,key,label,n,isDoc){
+  const b=document.createElement('button');
+  b.className='chip'; b.type='button';
+  b.setAttribute('aria-pressed', String((isDoc?activeDoc:active)===key));
+  b.innerHTML=esc(label)+'<span class="n">'+n+'</span>';
+  b.onclick=()=>{ if(isDoc){activeDoc=key}else{active=key} buildRails(); renderList(); };
+  rail.appendChild(b);
+}
+function buildRails(){
+  railEl.innerHTML=''; drailEl.innerHTML='';
+  mkChip(railEl,'all','전체',DATA.length,false);
+  ORDER.forEach(k=>mkChip(railEl,k,CHIP_LABEL[k]||k.toUpperCase(),COUNT[k]||0,false));
+  mkChip(drailEl,'all','전체',DATA.length,true);
+  Object.keys(DOCS).forEach(k=>mkChip(drailEl,k,DOCS[k],DOCCOUNT[k]||0,true));
+}
+
+function renderList(){
+  const q=qEl.value.trim().toLowerCase();
+  const rows=DATA.filter(d=>{
+    if(active!=='all' && d[0]!==active) return false;
+    if(activeDoc!=='all' && d[7]!==activeDoc) return false;
+    if(!q) return true;
+    return (d[1]+' '+d[2]+' '+d[3]+' '+d[4]+' '+d[5]+' '+d[6]+' '+d[8]).toLowerCase().includes(q);
+  });
+  countEl.textContent = rows.length+'개 표시 중 · 전체 '+DATA.length+'개';
+  if(!rows.length){listEl.innerHTML='<p class="empty">조건에 맞는 표현이 없습니다. 필터를 전체로 되돌려 보십시오.</p>';return}
+  let html='',c=null;
+  rows.forEach(d=>{
+    if(d[0]!==c){
+      if(c!==null)html+='</section>';
+      c=d[0];
+      const di=ORDER.indexOf(c);
+      html+='<section class="group"><div class="ghead"><span class="p">'+esc((CHIP_LABEL[c]||c.toUpperCase()))+'</span>'
+        +'<span class="g">'+esc(GROUP_LABEL[c]||'')+'</span>'
+        +'<button class="jump card-jump" data-i="'+di+'">카드 보기</button></div>';
+    }
+    html+='<article class="lcard">'
+      +'<div class="nbox"><span class="idx">'+d[9]+'</span>'
+        +(DOCS[d[7]]?'<span class="doc">'+esc(DOCS[d[7]])+'</span>':'')
+      +'</div>'
+      +'<div class="wbox">'
+        +'<span class="v">'+esc(d[1])+'</span>'
+        +'<span class="id">'+esc(d[3])+'</span>'
+        +'<span class="ko">'+esc(d[2])+'</span>'
+        +(d[4]?'<span class="sv">'+esc(d[4])+'</span>':'')
+      +'</div>'
+      +'<div class="ex">'
+        +'<p class="en"><span>'+esc(d[5])+'</span><button class="say" type="button" data-lang="en-US" data-say="'+esc(d[5])+'" aria-label="영어 예문 듣기">🔊</button></p>'
+        +'<p class="idex"><span class="idtx">'+esc(d[8])+'</span><button class="say" type="button" data-lang="id-ID" data-say="'+esc(d[8])+'" aria-label="인니어 예문 듣기">🔊</button></p>'
+        +'<p class="kr">'+esc(d[6])+'</p>'
+      +'</div></article>';
+  });
+  html+='</section>';
+  listEl.innerHTML=html;
+}
+qEl.addEventListener('input',renderList);
+
+const studyBtn=document.getElementById('study');
+studyBtn.addEventListener('click',()=>{
+  const on=studyBtn.getAttribute('aria-pressed')==='true';
+  studyBtn.setAttribute('aria-pressed',String(!on));
+  studyBtn.textContent = !on ? '뜻 보이기' : '뜻 가리기';
+  document.body.classList.toggle('study',!on);
+  document.querySelectorAll('.revealed').forEach(e=>e.classList.remove('revealed'));
+});
+/* ===================== 음성 읽기 (Web Speech API) ===================== */
+let sayBtn=null;
+// 표준 성별 속성이 없어 이름 기반으로 여성 보이스 우선 선택 (영어 TTS 여성 지정용)
+const FEMALE_EN=/\b(samantha|victoria|allison|ava|susan|zoe|nicky|karen|moira|tessa|fiona|serena|kate|female|zira|aria|jenny|catherine|libby|sonia|michelle|clara|google us english|google uk english female)\b/i;
+function pickVoice(vs,lang,female){
+  let pool=vs.filter(x=>x.lang===lang);
+  if(!pool.length)pool=vs.filter(x=>x.lang.slice(0,2)===lang.slice(0,2));
+  if(!pool.length)return null;
+  if(female){
+    const f=pool.find(x=>FEMALE_EN.test(x.name));
+    if(f)return f;
+    const notMale=pool.find(x=>!/\b(daniel|david|alex|fred|tom|male|oliver|arthur|george|rishi|aaron|gordon)\b/i.test(x.name));
+    if(notMale)return notMale;
+  }
+  return pool[0];
+}
+function speak(btn){
+  const synth=window.speechSynthesis;
+  if(!synth){alert('이 브라우저는 음성 읽기를 지원하지 않습니다.');return}
+  // 같은 버튼을 다시 누르면 정지(토글)
+  if(sayBtn===btn && (synth.speaking||synth.pending)){synth.cancel();return}
+  synth.cancel();
+  const u=new SpeechSynthesisUtterance(btn.dataset.say);
+  const lang=btn.dataset.lang;
+  u.lang=lang; u.rate=.95;
+  const v=pickVoice(synth.getVoices(),lang,lang.slice(0,2)==='en');  // 영어는 여성 보이스 우선
+  if(v)u.voice=v;
+  u.onstart=()=>{sayBtn=btn;btn.classList.add('playing')};
+  u.onend=u.onerror=()=>{btn.classList.remove('playing');if(sayBtn===btn)sayBtn=null};
+  synth.speak(u);
+}
+// 일부 브라우저는 voices가 늦게 로드됨 — 미리 트리거
+if(window.speechSynthesis){window.speechSynthesis.getVoices();window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices()}
+
+listEl.addEventListener('click',e=>{
+  const s=e.target.closest('.say');
+  if(s){e.stopPropagation();speak(s);return}
+  const j=e.target.closest('.card-jump');
+  if(j){showPanel('deck');go(+j.dataset.i);window.scrollTo({top:0,behavior:'smooth'});return}
+  if(!document.body.classList.contains('study'))return;
+  const t=e.target.closest('.ko,.id,.kr,.idtx');
+  if(t)t.classList.toggle('revealed');
+});
+
+/* ===================== ERROR RENDER ===================== */
+document.getElementById('errlist').innerHTML = ERRORS.map((e,i)=>
+  '<div class="ecard"><div class="erow"><span class="idx">'+(i+1)+'</span>'
+  +'<span class="bad">'+esc(e[0])+'</span><span class="to">→</span>'
+  +'<span class="good">'+esc(e[1])+'</span></div>'
+  +'<p class="why">'+esc(e[2])+'</p></div>'
+).join('');
+
+/* ===================== VIDEO RENDER ===================== */
+const vidEl=document.getElementById('vidlist');
+const PLACEHOLDER='<svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="170" fill="#ECEFF1"/>'
+ +'<rect x="42" y="34" width="216" height="102" rx="10" fill="#E3F2FD" stroke="#546E7A" stroke-width="2.5"/>'
+ +'<g stroke="#546E7A" stroke-width="3" stroke-linecap="round" opacity=".4"><line x1="62" y1="58" x2="122" y2="58"/><line x1="62" y1="76" x2="102" y2="76"/></g></svg>';
+
+function vcardHTML(v,i){
+  const url = v.list
+    ? 'https://www.youtube.com/playlist?list='+v.list
+    : 'https://www.youtube.com/watch?v='+v.id;
+  const thumb = v.id
+    ? '<img src="https://i.ytimg.com/vi/'+v.id+'/hqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">'
+    : '';
+  const cards = v.cards.map(c=>'<button class="link card-link" data-i="'+c+'">카드 · '+esc(DECK[c].t)+'</button>').join('');
+  const docBtn = v.doc ? '<button class="link doc-link" data-d="'+esc(v.doc)+'">표현 · '+esc(DOCS[v.doc])+' '+(DOCCOUNT[v.doc]||0)+'개</button>' : '';
+  const meta = [v.ch?esc(v.ch):null, v.yr?esc(v.yr):null, v.list?'재생목록':null].filter(Boolean).join('<span class="sep">·</span>');
+  return '<article class="vcard" data-v="'+i+'">'
+   +'<button class="thumb" data-v="'+i+'" aria-label="'+esc(v.t)+' 재생">'
+     +'<span class="ph">'+PLACEHOLDER+'</span>'+thumb+'<span class="play"></span>'
+   +'</button>'
+   +'<div class="vbody">'
+     +'<div class="vtop"><span class="vt">'+esc(v.t)+'</span>'+(v.pick?'<span class="pick">추천</span>':'')+'</div>'
+     +(meta?'<p class="vmeta">'+meta+'</p>':'')
+     +'<p class="vnote">'+esc(v.note)+'</p>'
+     +'<div class="links">'+cards+docBtn
+       +'<a class="link ext" href="'+url+'" target="_blank" rel="noopener noreferrer">YouTube에서 열기 ↗</a>'
+       +'<button class="done" data-v="'+i+'" aria-pressed="false">시청 완료</button>'
+     +'</div>'
+   +'</div></article>';
+}
+
+vidEl.innerHTML = STAGES.map((st,si)=>{
+  const items = VIDEOS.map((v,i)=>[v,i]).filter(p=>p[0].s===si);
+  let extra='';
+  if(si===3){
+    extra='<div class="gap"><b>이 구간은 유튜브가 비어 있습니다.</b><br>'
+      +'place an order · file a claim · present documents · issue a credit note 처럼 무역 문서에서만 쓰이는 연어를 다루는 영어 학습 채널은 사실상 없습니다. '
+      +'따라서 학습 영상이 아니라 <b>영어로 된 무역 실무 영상</b>을 보고, 표현은 목록 탭의 문서 유형 필터로 잡는 편이 빠릅니다.</div>';
+  }
+  return '<section class="stage"><div class="shead"><span class="sn">'+esc(st.n)+'</span>'
+    +'<span class="st">'+esc(st.t)+'</span><span class="sd">'+esc(st.d)+'</span></div>'
+    + items.map(p=>vcardHTML(p[0],p[1])).join('') + extra + '</section>';
+}).join('');
+
+const watched=new Set();
+function updateProg(){
+  const pct = Math.round(watched.size/VIDEOS.length*100);
+  document.getElementById('vcount').textContent = '시청 완료 '+watched.size+' / '+VIDEOS.length+'편 · '+pct+'%';
+  document.getElementById('vbar').style.width = pct+'%';
+}
+updateProg();
+
+vidEl.addEventListener('click',e=>{
+  const th=e.target.closest('.thumb');
+  if(th){
+    const v=VIDEOS[+th.dataset.v];
+    const src = v.list
+      ? 'https://www.youtube-nocookie.com/embed/videoseries?list='+v.list+'&autoplay=1'
+      : 'https://www.youtube-nocookie.com/embed/'+v.id+'?autoplay=1&rel=0';
+    const f=document.createElement('iframe');
+    f.src=src; f.allow='accelerometer; autoplay; encrypted-media; picture-in-picture';
+    f.setAttribute('allowfullscreen',''); f.title=v.t;
+    th.replaceWith(f);
+    return;
+  }
+  const cl=e.target.closest('.card-link');
+  if(cl){showPanel('deck');go(+cl.dataset.i);window.scrollTo({top:0,behavior:'smooth'});return}
+  const dl=e.target.closest('.doc-link');
+  if(dl){active='all';activeDoc=dl.dataset.d;buildRails();renderList();showPanel('list');window.scrollTo({top:0,behavior:'smooth'});return}
+  const dn=e.target.closest('.done');
+  if(dn){
+    const i=+dn.dataset.v, on=dn.getAttribute('aria-pressed')==='true';
+    dn.setAttribute('aria-pressed',String(!on));
+    dn.textContent = !on ? '완료됨 ✓' : '시청 완료';
+    if(on){watched.delete(i)}else{watched.add(i)}
+    updateProg();
+  }
+});
+
+/* ===================== TABS ===================== */
+const tabs={deck:document.getElementById('tab-deck'),list:document.getElementById('tab-list'),err:document.getElementById('tab-err'),vid:document.getElementById('tab-vid')};
+const panels={deck:document.getElementById('panel-deck'),list:document.getElementById('panel-list'),err:document.getElementById('panel-err'),vid:document.getElementById('panel-vid')};
+function showPanel(which){
+  Object.keys(tabs).forEach(k=>{
+    tabs[k].setAttribute('aria-selected',String(k===which));
+    panels[k].hidden = (k!==which);
+  });
+}
+tabs.deck.onclick=()=>showPanel('deck');
+tabs.list.onclick=()=>showPanel('list');
+tabs.err.onclick=()=>showPanel('err');
+tabs.vid.onclick=()=>showPanel('vid');
+
+track.addEventListener('click',e=>{
+  const j=e.target.closest('.deck-jump');
+  if(j){active=j.dataset.k;activeDoc='all';buildRails();renderList();showPanel('list');window.scrollTo({top:0,behavior:'smooth'})}
+});
+
+buildRails(); renderList(); go(0);
+</script>
+</body>
+</html>

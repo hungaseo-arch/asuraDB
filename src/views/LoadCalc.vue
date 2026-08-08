@@ -111,21 +111,21 @@ const OTR: Otr[] = ([
   .map(r => ({ brand: r[0], pattern: r[1], app: r[2], size: r[3], pr: r[4], pts: r[5].filter(p => p[1] != null) as [number, number][] }));
 
 /* ── 지게차 IND (ASCENDO INDUSTRIAL TYRES 카탈로그) ────────────────────────
-   출처: PT. Ascendo Internasional 'INDUSTRIAL TYRES — SOLID & PNEUMATIC' 카탈로그.
-   pneumatic = Max Load Capacity(kg) @ Standard Pressure(psi), solid = Load Capacity(kg).
+   출처: PT. Ascendo Internasional 'INDUSTRIAL TYRES — SOLID & PNEU' 카탈로그.
+   PNEU = Max Load Capacity(kg) @ Standard Pressure(psi), solid = Load Capacity(kg).
    solid 은 공기압 개념이 없어 psi = null.                                        */
-interface Ind { brand: string; pattern: string; type: 'PNEUMATIC' | 'SOLID'; size: string; pr: number | null; rim: string; od: number; sw: number; load: number; psi: number | null; nm: boolean }
+interface Ind { brand: string; pattern: string; type: 'PNEU' | 'SOLID'; size: string; pr: number | null; rim: string; od: number; sw: number; load: number; psi: number | null; nm: boolean }
 const IND: Ind[] = ([
-  // ── Pneumatic · AB700 (PR / RIM / O.D / SW / Max Load / Std Pressure)
-  ['AB700','PNEUMATIC','5.00-8',   10,  '3.50D', 470, 137, 1150, 145],
-  ['AB700','PNEUMATIC','18X7-8',   14,  '4.33R', 465, 173, 1440, 130],
-  ['AB700','PNEUMATIC','6.00-9',   12,  '4.00E', 533, 160, 1675, 150],
-  ['AB700','PNEUMATIC','7.00-9',   10,  '5.00S', 590, 190, 1995, 125],
-  ['AB700','PNEUMATIC','6.50-10',  12,  '5.00F', 586, 190, 1895, 125],
-  ['AB700','PNEUMATIC','7.00-12',  12,  '5.00S', 665, 190, 2375, 125],
-  ['AB700','PNEUMATIC','8.25-12',  12,  '6.50',  765, 235, 3060, 105],
-  ['AB700','PNEUMATIC','28X9-15',  16,  '7.00',  690, 220, 3115, 145],
-  ['AB700','PNEUMATIC','8.25-15',  14,  '6.50',  820, 235, 3775, 120],
+  // ── PNEU · AB700 (PR / RIM / O.D / SW / Max Load / Std Pressure)
+  ['AB700','PNEU','5.00-8',   10,  '3.50D', 470, 137, 1150, 145],
+  ['AB700','PNEU','18X7-8',   14,  '4.33R', 465, 173, 1440, 130],
+  ['AB700','PNEU','6.00-9',   12,  '4.00E', 533, 160, 1675, 150],
+  ['AB700','PNEU','7.00-9',   10,  '5.00S', 590, 190, 1995, 125],
+  ['AB700','PNEU','6.50-10',  12,  '5.00F', 586, 190, 1895, 125],
+  ['AB700','PNEU','7.00-12',  12,  '5.00S', 665, 190, 2375, 125],
+  ['AB700','PNEU','8.25-12',  12,  '6.50',  765, 235, 3060, 105],
+  ['AB700','PNEU','28X9-15',  16,  '7.00',  690, 220, 3115, 145],
+  ['AB700','PNEU','8.25-15',  14,  '6.50',  820, 235, 3775, 120],
   // ── Solid · S2000
   ['S200 RIB','SOLID','4.00-8',    null,'3.00D', 404, 113,  950, null],
   ['S2000','SOLID','5.00-8',       null,'3.00D', 452, 120, 1415, null],
@@ -164,7 +164,7 @@ const IND: Ind[] = ([
   ['S2000','SOLID','28X9-15',      null,'7.00',  688, 212, 3445, null, 1],
   ['S2000','SOLID','7.50-16',      null,'6.00',  780, 199, 3950, null, 1],
   ['S2000','SOLID','8.25-15',      null,'6.50F', 810, 208, 4750, null, 1],
-] as [string,'PNEUMATIC'|'SOLID',string,number|null,string,number,number,number,number|null,number?][])
+] as [string,'PNEU'|'SOLID',string,number|null,string,number,number,number,number|null,number?][])
   .map(r => ({ brand: 'ASCENDO', pattern: r[0], type: r[1], size: r[2], pr: r[3], rim: r[4], od: r[5], sw: r[6], load: r[7], psi: r[8], nm: !!r[9] }));
 
 /* ── 농기계 AGR ───────────────────────────────────────────────────────────── */
@@ -497,8 +497,8 @@ function calcTruck() {
       </div>
       <div class="rounded-xl border border-border bg-muted/30 p-3 text-muted-foreground flex items-center">${truckSVG(axles, gvw, hasTrailer)}</div>
     </div>
-    <div class="overflow-x-auto"><table class="w-full min-w-140 text-xs border-collapse table-fixed">
-      <tr class="bg-muted text-muted-foreground"><th class="px-2 py-1.5 text-left w-[22%]">축 위치</th><th class="px-2 py-1.5 text-right">축하중</th><th class="px-2 py-1.5 text-right">분포율</th><th class="px-2 py-1.5 text-right">타이어</th><th class="px-2 py-1.5 text-right">하중/본</th><th class="px-2 py-1.5 text-right">용량</th><th class="px-2 py-1.5 text-right">사용률</th></tr>
+    <div class="overflow-x-auto"><table class="w-full min-w-140 text-xs border-collapse table-fixed"><caption class="sr-only">축별 하중 계산 결과</caption>
+      <tr class="bg-muted text-muted-foreground"><th scope="col" class="px-2 py-1.5 text-left w-[22%]">축 위치</th><th scope="col" class="px-2 py-1.5 text-right">축하중</th><th scope="col" class="px-2 py-1.5 text-right">분포율</th><th scope="col" class="px-2 py-1.5 text-right">타이어</th><th scope="col" class="px-2 py-1.5 text-right">하중/본</th><th scope="col" class="px-2 py-1.5 text-right">용량</th><th scope="col" class="px-2 py-1.5 text-right">사용률</th></tr>
       ${rows}
     </table></div>
     ${cpk}
@@ -561,7 +561,7 @@ function indRank(pool: Ind[], load: number, n: number) {
 }
 // 논마킹은 규격·하중이 일반 라인과 겹쳐 추천 목록을 중복시키므로 본 추천에서 제외하고 별도 섹션으로 분리
 function indTires(load: number) {
-  return renderTires('적정 지게차 타이어 추천 · 최고부하 축 1본당 하중 기준 <span class="font-normal text-muted-foreground">— ASCENDO INDUSTRIAL (SOLID &amp; PNEUMATIC)</span>',
+  return renderTires('적정 지게차 타이어 추천 · 최고부하 축 1본당 하중 기준 <span class="font-normal text-muted-foreground">— ASCENDO INDUSTRIAL (SOLID &amp; PNEU)</span>',
       indRank(IND.filter(x => !x.nm), load, 8))
     + renderTires('논마킹 (NON MARKING) · 무착색 컴파운드 <span class="font-normal text-muted-foreground">— 제약·식품·음료 구역 등 바닥 자국이 문제되는 현장</span>',
       indRank(IND.filter(x => x.nm), load, 4));

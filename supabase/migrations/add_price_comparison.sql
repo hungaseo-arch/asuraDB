@@ -45,6 +45,10 @@ alter table public.price_comparison_columns add column if not exists tube_brand 
 alter table public.price_comparison_columns add column if not exists flap_brand text;
 -- PPN 적용 여부 (경쟁사 열 토글 · 자사는 항상 true)
 alter table public.price_comparison_columns add column if not exists apply_ppn boolean not null default true;
+-- 최종 판매가 직접입력(목표가). null = 품목단가·할인 기준 자동계산
+-- 자사: 목표가 입력 시 차액만큼 '추가 할인'을 역산해 가격을 맞춤 / 경쟁사: 총액 견적 입력
+alter table public.price_comparison_columns add column if not exists final_override numeric;
+comment on column public.price_comparison_columns.final_override is '최종 판매가 직접입력 목표가(PPN 포함가). null이면 tire/tube/flap + 프로모션 기준 자동계산. 자사는 차액을 추가 할인으로 역산';
 
 -- ── 3. 프로모션 다건 ────────────────────────────────────────
 create table if not exists public.price_comparison_promos (
@@ -54,6 +58,10 @@ create table if not exists public.price_comparison_promos (
   description   text,
   discount_rate numeric not null default 0               -- % (합산 적용)
 );
+
+-- 목표 최종가 맞추기용 자동 프로모션 표시 (불러올 때 final_override 기준 재계산 · 중복 생성 방지)
+alter table public.price_comparison_promos add column if not exists is_auto boolean not null default false;
+comment on column public.price_comparison_promos.is_auto is 'true = 최종 판매가 목표값(final_override)에서 역산된 「가격 조정 할인」. 할인율은 자동 계산';
 
 -- FK 조회 인덱스 (UNIQUE 중복 없음)
 create index if not exists price_comparison_columns_cmp on public.price_comparison_columns (comparison_id);

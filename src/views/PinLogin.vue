@@ -90,6 +90,8 @@ async function submit() {
       <!-- Error -->
       <p
         v-if="errorMsg"
+        data-testid="login-error"
+        role="alert"
         class="text-xs text-red-600 text-center -mt-2 max-w-full wrap-break-word"
       >{{ errorMsg }}</p>
 

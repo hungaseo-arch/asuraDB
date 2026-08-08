@@ -117,13 +117,14 @@ async function save() {
       <div class="flex-1 overflow-y-auto px-5 py-3">
         <p v-if="loading" class="text-xs text-muted-foreground py-8 text-center">불러오는 중…</p>
         <table v-else class="w-full text-sm">
+          <caption class="sr-only">KPI 월별 입력 표</caption>
           <thead>
             <tr class="border-b border-border text-xs text-muted-foreground">
-              <th class="text-left font-semibold py-2">지표</th>
-              <th class="text-left font-semibold py-2 w-16">단위</th>
-              <th class="text-right font-semibold py-2 w-32">목표</th>
-              <th class="text-right font-semibold py-2 w-32">실적</th>
-              <th class="w-8" />
+              <th scope="col" class="text-left font-semibold py-2">지표</th>
+              <th scope="col" class="text-left font-semibold py-2 w-16">단위</th>
+              <th scope="col" class="text-right font-semibold py-2 w-32">목표</th>
+              <th scope="col" class="text-right font-semibold py-2 w-32">실적</th>
+              <th scope="col" class="w-8" />
             </tr>
           </thead>
           <tbody>

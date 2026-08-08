@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Printer, X, Upload, Info, Download, CloudDownload } from 'lucide-vue-next';
+import { Printer, X, Upload, Info, Download, CloudDownload, RotateCw } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 import { sbGetAll, sbPost } from '@/lib/supabase';
 import { API_BASE, IS_HOST, ensureApiRunning } from '@/lib/api';
@@ -70,7 +70,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   mc:           'Motorcycle',
   bc:           'Bicycle',
   agr:          'Agricultural',
-  ind:          'Industrial/Pneumatic',
+  ind:          'Industrial/PNEU',
   mining_truck: 'Mining Truck',
   otr:          'OTR',
   aircraft:     'Aircraft',
@@ -121,12 +121,7 @@ const yearRows = computed(() =>
 );
 
 // 타이어 카테고리만 필터링 (KPI/차트/표 모두 공통) + 카테고리 드롭다운 적용
-const yearTireRows = computed(() =>
-  yearRows.value.filter(r =>
-    TIRE_CATEGORIES.includes(r.category) &&
-    (!selectedCategory.value || r.category === selectedCategory.value),
-  ),
-);
+const yearTireRows = computed(() => yearRows.value.filter(inScope));
 
 const yearTotal = computed(() =>
   yearTireRows.value.reduce((s, r) => s + (r.value_usd ?? 0), 0)
@@ -166,7 +161,7 @@ const catBreakdown = computed(() => {
   for (const r of yearTireRows.value) {
     map[r.category] = (map[r.category] ?? 0) + r.value_usd;
   }
-  return TIRE_CATEGORIES
+  return (selectedCategory.value ? [selectedCategory.value] : TIRE_CATEGORIES)
     .map(cat => ({ cat, usd: map[cat] ?? 0 }))
     .sort((a, b) => b.usd - a.usd);
 });
@@ -174,11 +169,7 @@ const catBreakdown = computed(() => {
 // 국가별 집계 (선택 연도, country != 'ALL') · pct = 국가별 총합 대비 비율
 const countryBreakdown = computed(() => {
   const map: Record<string, number> = {};
-  for (const r of yearRows.value.filter(r =>
-    r.country !== 'ALL' &&
-    TIRE_CATEGORIES.includes(r.category) &&
-    (!selectedCategory.value || r.category === selectedCategory.value),
-  )) {
+  for (const r of yearRows.value.filter(r => r.country !== 'ALL' && inScope(r))) {
     map[r.country] = (map[r.country] ?? 0) + r.value_usd;
   }
   const entries = Object.entries(map)
@@ -191,9 +182,13 @@ const countryBreakdown = computed(() => {
   }));
 });
 
-// 상단 필터(타이어 카테고리 + 선택 카테고리) 적용 스코프 — KPI·차트·표 공통
+// 상단 필터 적용 스코프 — KPI·차트·표 공통.
+// '카테고리 전체'면 신품 타이어 본계열(TIRE_CATEGORIES)만, 특정 카테고리 선택 시엔
+// aircraft·retread·used·tube·flap 등 집계 제외 계열도 그대로 조회 가능.
 function inScope(r: ImportRow): boolean {
-  return TIRE_CATEGORIES.includes(r.category) && (!selectedCategory.value || r.category === selectedCategory.value);
+  return selectedCategory.value
+    ? r.category === selectedCategory.value
+    : TIRE_CATEGORIES.includes(r.category);
 }
 
 // ── Annual trajectory ────────────────────────────────────────────────────────
@@ -362,18 +357,111 @@ function fmtUsd(v: number): string {
   return `$${v.toFixed(0)}`;
 }
 
+// ── TTM (Trailing Twelve Months) ─────────────────────────────────────────────
+
+// 각 월 시점의 "직전 12개월 누적 수입액". 연도 경계에 끊기는 연간 집계와 달리
+// 진행 중인 연도(부분 데이터)도 동일 척도로 비교할 수 있어 추세 판단에 쓴다.
+interface TtmPoint {
+  year: number;
+  month: number;
+  key: string;        // '2026-05'
+  ttm: number;        // 직전 12개월 합
+  yoy: number | null; // 12개월 전 TTM 대비 (%)
+  mom: number | null; // 직전 월 TTM 대비 (%)
+}
+
+const ttmSeries = computed((): TtmPoint[] => {
+  const rows = allRows.value.filter(inScope);
+  if (!rows.length) return [];
+
+  // 1) 월별 합계 → 연속 타임라인(빈 달은 0으로 채워 12개월 창을 정확히 유지)
+  const map = new Map<number, number>();   // key = year * 12 + (month - 1)
+  let minIdx = Infinity, maxIdx = -Infinity;
+  for (const r of rows) {
+    const idx = r.year * 12 + (r.month - 1);
+    map.set(idx, (map.get(idx) ?? 0) + (r.value_usd ?? 0));
+    if (idx < minIdx) minIdx = idx;
+    if (idx > maxIdx) maxIdx = idx;
+  }
+  const monthly: number[] = [];
+  for (let i = minIdx; i <= maxIdx; i++) monthly.push(map.get(i) ?? 0);
+
+  // 2) 12개월이 온전히 확보된 시점부터 롤링 합
+  const base: TtmPoint[] = [];
+  for (let i = 11; i < monthly.length; i++) {
+    let sum = 0;
+    for (let k = i - 11; k <= i; k++) sum += monthly[k];
+    const absIdx = minIdx + i;
+    const year   = Math.floor(absIdx / 12);
+    const month  = (absIdx % 12) + 1;
+    base.push({
+      year,
+      month,
+      key: `${year}-${String(month).padStart(2, '0')}`,
+      ttm: sum,
+      yoy: null,
+      mom: null,
+    });
+  }
+
+  return base.map((p, i) => ({
+    ...p,
+    yoy: i >= 12 && base[i - 12].ttm > 0 ? ((p.ttm - base[i - 12].ttm) / base[i - 12].ttm) * 100 : null,
+    mom: i >= 1  && base[i - 1].ttm  > 0 ? ((p.ttm - base[i - 1].ttm)  / base[i - 1].ttm)  * 100 : null,
+  }));
+});
+
+const ttmLatest = computed(() => ttmSeries.value[ttmSeries.value.length - 1] ?? null);
+
+const ttmRangeLabel = computed(() => {
+  const s = ttmSeries.value;
+  if (!s.length) return '';
+  return `${s[0].key}—${s[s.length - 1].key}`;
+});
+
+// 최근 6개 시점 (표용, 최신순)
+const ttmRecent = computed(() => [...ttmSeries.value].slice(-6).reverse());
+
+// TTM 라인 차트 geometry (좌측 막대차트와 동일 캔버스 규격 공유)
+const ttmChart = computed(() => {
+  const pts = ttmSeries.value;
+  if (pts.length < 2) return null;
+
+  const maxVal = niceCeil(Math.max(...pts.map(p => p.ttm), 1));
+  const innerW = CHART_W - CHART_PAD_L - CHART_PAD_R;
+  const baseY  = CHART_PAD_T + CHART_H;
+  const px = (i: number) => CHART_PAD_L + (innerW * i) / (pts.length - 1);
+  const py = (v: number) => CHART_PAD_T + CHART_H - (v / maxVal) * CHART_H;
+
+  const nodes = pts.map((p, i) => ({ p, i, cx: px(i), cy: py(p.ttm) }));
+  const line  = nodes.map((n, i) => `${i === 0 ? 'M' : 'L'}${n.cx.toFixed(1)},${n.cy.toFixed(1)}`).join(' ');
+  const area  = `${line} L${nodes[nodes.length - 1].cx.toFixed(1)},${baseY} L${nodes[0].cx.toFixed(1)},${baseY} Z`;
+
+  const peak = nodes.reduce((m, n) => (n.p.ttm > m.p.ttm ? n : m), nodes[0]);
+  const last = nodes[nodes.length - 1];
+
+  const ticks = [0, 1, 2, 3].map(i => {
+    const v = (maxVal * i) / 3;
+    return { value: v, y: py(v), label: fmtAxis(v) };
+  });
+
+  // x축: 매년 1월 시점에 연도 라벨 (굵게 찍는 최신 시점 라벨과 겹치면 생략)
+  const xLabels = nodes
+    .filter(n => n.p.month === 1 && Math.abs(n.cx - last.cx) > 80)
+    .map(n => ({ cx: n.cx, label: String(n.p.year) }));
+
+  return { nodes, line, area, peak, last, ticks, xLabels, baseY };
+});
+
 // ── Navigation ────────────────────────────────────────────────────────────────
 
 const availableYears = computed(() =>
   [...new Set(allRows.value.map(r => r.year))].sort((a, b) => a - b)
 );
 
-// 카테고리 드롭다운: 실제 데이터가 있는 카테고리만 (예: 'Other New' 데이터 없으면 제외).
-// HS 코드 안내 모달(HS_MASTER)에는 전체 유지.
-const dropdownCategories = computed(() => {
-  const present = new Set(allRows.value.map(r => r.category));
-  return TIRE_CATEGORIES.filter(c => present.has(c));
-});
+// 카테고리 드롭다운: HS 코드 마스터(BPS EXIM 기준)의 'DB 카테고리' 전체 분류 = 16종.
+// 순서는 CATEGORY_LABEL(=HS 마스터 안내표) 정의 순서 유지.
+const dropdownCategories = computed(() => Object.keys(CATEGORY_LABEL));
 
 // ── Data loading ─────────────────────────────────────────────────────────────
 
@@ -539,7 +627,8 @@ onMounted(loadData);
         </div>
       </template>
       <template #actions>
-        <div class="flex items-center gap-2 print-hide">
+        <!-- 좁은 폭에서 두 줄로 접혀도 우측 정렬이 흐트러지지 않도록 wrap + justify-end -->
+        <div class="flex items-center justify-end flex-wrap gap-2 print-hide">
         <button
           class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
           @click="showHsRef = !showHsRef"
@@ -620,11 +709,11 @@ onMounted(loadData);
         </div>
       </div>
 
-      <!-- 그래프 1개와 테이블 2개 묶음 : 가로 정렬-->
-      <div class="flex flex-col-2 md:flex-row gap-4">
-        
+      <!-- 추이 차트 2종 : 좌 = 연간(YoY) · 우 = TTM(직전 12개월) -->
+      <div class="flex flex-col md:flex-row gap-4">
+
         <!-- Annual trajectory bar chart -->
-        <div class="w-[50%] rounded-xl border border-border bg-card p-4 space-y-4">
+        <div class="w-full md:w-1/2 min-w-0 rounded-xl border border-border bg-card p-4 space-y-4">
           <div class="flex items-baseline justify-between">
             <p class="text-xs font-semibold tracking-[0.2em] uppercase">
               <span class="text-primary">§ 01</span>
@@ -770,11 +859,166 @@ onMounted(loadData);
           </div>
         </div>
 
-        <!-- Category breakdown + Country ranking -->
-        <div class="w-[50%] grid grid-row-1 gap-4">
+        <!-- TTM (직전 12개월 누적) line chart -->
+        <div class="w-full md:w-1/2 min-w-0 rounded-xl border border-border bg-card p-4 space-y-4">
+          <div class="flex items-baseline justify-between">
+            <p class="text-xs font-semibold tracking-[0.2em] uppercase">
+              <span class="text-primary">§ 02</span>
+              <span class="text-muted-foreground"> · </span>
+              <span>TTM Trajectory</span>
+              <span v-if="selectedCategory" class="text-primary normal-case tracking-normal"> · {{ CATEGORY_LABEL[selectedCategory] }}</span>
+            </p>
+            <p class="text-xs tracking-[0.2em] text-muted-foreground tabular-nums">
+              {{ ttmRangeLabel }}
+            </p>
+          </div>
+
+          <div v-if="!ttmChart" class="h-40 flex items-center justify-center text-sm text-muted-foreground">
+            12개월 미만 — TTM 산출 불가
+          </div>
+
+          <div v-else class="overflow-x-auto">
+            <svg
+              :viewBox="`0 0 ${CHART_W} ${CHART_H + CHART_PAD_T + 30}`"
+              class="w-full"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <!-- Y-axis grid lines + labels -->
+              <g>
+                <line
+                  v-for="t in ttmChart.ticks"
+                  :key="'tg-' + t.value"
+                  :x1="CHART_PAD_L"
+                  :x2="CHART_W - CHART_PAD_R"
+                  :y1="t.y"
+                  :y2="t.y"
+                  stroke="currentColor"
+                  stroke-opacity="0.12"
+                  stroke-width="1"
+                />
+                <text
+                  v-for="t in ttmChart.ticks"
+                  :key="'tyl-' + t.value"
+                  :x="CHART_PAD_L - 8"
+                  :y="t.y + 3"
+                  text-anchor="end"
+                  class="fill-muted-foreground"
+                  style="font-size: 10px; font-family: monospace"
+                >
+                  {{ t.label }}
+                </text>
+              </g>
+
+              <!-- Area + line -->
+              <path :d="ttmChart.area" fill="#1a1a1a" fill-opacity="0.06" />
+              <path :d="ttmChart.line" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round" />
+
+              <!-- Peak marker -->
+              <g v-if="ttmChart.peak.i !== ttmChart.last.i">
+                <circle :cx="ttmChart.peak.cx" :cy="ttmChart.peak.cy" r="3.5" fill="#c9a049" />
+                <text
+                  :x="ttmChart.peak.cx"
+                  :y="ttmChart.peak.cy - 12"
+                  text-anchor="middle"
+                  fill="#c9a049"
+                  style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em"
+                >
+                  PEAK · {{ fmtUsdCompact(ttmChart.peak.p.ttm) }}
+                </text>
+              </g>
+
+              <!-- Latest TTM -->
+              <circle
+                :cx="ttmChart.last.cx"
+                :cy="ttmChart.last.cy"
+                r="4"
+                :fill="ttmChart.last.p.yoy !== null && ttmChart.last.p.yoy < 0 ? '#d44a2a' : '#1a1a1a'"
+              />
+              <text
+                :x="ttmChart.last.cx"
+                :y="ttmChart.last.cy - 22"
+                text-anchor="end"
+                class="fill-foreground"
+                style="font-size: 11px; font-weight: 700"
+              >
+                TTM · {{ fmtUsdCompact(ttmChart.last.p.ttm) }}
+              </text>
+              <text
+                v-if="ttmChart.last.p.yoy !== null"
+                :x="ttmChart.last.cx"
+                :y="ttmChart.last.cy - 9"
+                text-anchor="end"
+                :fill="ttmChart.last.p.yoy > 0 ? '#10b981' : '#ef4444'"
+                style="font-size: 11px; font-weight: 600"
+              >
+                {{ ttmChart.last.p.yoy > 0 ? '+' : '' }}{{ ttmChart.last.p.yoy.toFixed(1) }}%
+              </text>
+
+              <!-- X-axis baseline + labels (매년 1월 + 최신 시점) -->
+              <line
+                :x1="CHART_PAD_L"
+                :x2="CHART_W - CHART_PAD_R"
+                :y1="ttmChart.baseY"
+                :y2="ttmChart.baseY"
+                stroke="currentColor"
+                stroke-opacity="0.2"
+                stroke-width="1"
+              />
+              <text
+                v-for="xl in ttmChart.xLabels"
+                :key="'tx-' + xl.label"
+                :x="xl.cx"
+                :y="CHART_PAD_T + CHART_H + 20"
+                text-anchor="middle"
+                class="fill-muted-foreground"
+                style="font-size: 11px; font-family: monospace; letter-spacing: 0.05em"
+              >
+                {{ xl.label }}
+              </text>
+              <text
+                :x="ttmChart.last.cx"
+                :y="CHART_PAD_T + CHART_H + 20"
+                text-anchor="end"
+                class="fill-foreground"
+                style="font-size: 11px; font-family: monospace; letter-spacing: 0.05em; font-weight: 700"
+              >
+                {{ ttmChart.last.p.key }}
+              </text>
+            </svg>
+          </div>
+
+          <!-- Recent TTM table -->
+          <div v-if="ttmRecent.length" class="pt-2">
+            <div class="grid grid-cols-[1fr_10rem_5rem] gap-x-6 text-xs uppercase tracking-[0.18em] text-muted-foreground border-b border-border pb-2">
+              <span>Period</span>
+              <span class="text-right">TTM Total</span>
+              <span class="text-right">YoY</span>
+            </div>
+            <div
+              v-for="p in ttmRecent"
+              :key="'ttm-' + p.key"
+              class="grid grid-cols-[1fr_10rem_5rem] gap-x-6 items-baseline py-3 border-b border-border last:border-b-0"
+            >
+              <span class="font-serif text-lg tabular-nums" :class="p.key === ttmLatest?.key && 'font-bold'">
+                {{ p.key }}
+              </span>
+              <span class="font-mono text-sm text-right tabular-nums">
+                {{ Math.round(p.ttm).toLocaleString('en-US') }}
+              </span>
+              <span class="text-right text-sm" :class="deltaClass(p.yoy)">
+                <span class="font-semibold">{{ deltaText(p.yoy) }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 선택 연도 상세 : 카테고리 · 원산지 -->
+      <div class="flex flex-col md:flex-row gap-4">
 
           <!-- Category breakdown -->
-          <div class="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div class="w-full md:w-1/2 min-w-0 rounded-xl border border-border bg-card p-4 space-y-3">
             <p class="text-sm font-semibold">{{ yearLabel }} · 카테고리별 수입금액</p>
             <div v-if="!catBreakdown.filter(c => c.usd > 0).length" class="text-sm text-muted-foreground py-4 text-center">
               선택 연도 데이터 없음
@@ -812,7 +1056,7 @@ onMounted(loadData);
           </div>
 
           <!-- Country ranking -->
-          <div class="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div class="w-full md:w-1/2 min-w-0 rounded-xl border border-border bg-card p-4 space-y-3">
             <p class="text-sm font-semibold">{{ yearLabel }} · 원산지별 수입금액 Top 7</p>
             <div v-if="!countryBreakdown.length" class="text-sm text-muted-foreground py-4 text-center">
               국가별 데이터 없음<br />
@@ -843,7 +1087,6 @@ onMounted(loadData);
               </div>
             </div>
           </div>
-        </div>
 
       </div>
 
@@ -882,6 +1125,13 @@ onMounted(loadData);
       <p class="text-xs text-muted-foreground">
         Supabase SQL Editor에서 <code class="bg-muted px-1 rounded">supabase/migrations/add_tire_imports.sql</code> 을 실행하세요.
       </p>
+      <button
+        type="button"
+        class="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+        @click="loadData"
+      >
+        <RotateCw :size="13" /> 다시 시도
+      </button>
     </div>
 
     <!-- HS 코드 안내 modal -->
@@ -897,14 +1147,15 @@ onMounted(loadData);
           </div>
           <div class="overflow-auto">
             <table class="w-full text-xs">
+              <caption class="sr-only">HS 코드 마스터 (BPS EXIM 기준)</caption>
               <thead class="sticky top-0 bg-card z-10">
                 <tr class="border-b border-border text-muted-foreground">
-                  <th class="px-3 py-2 text-right font-medium w-10">No</th>
-                  <th class="px-3 py-2 text-left font-medium">HS Code</th>
-                  <th class="px-3 py-2 text-left font-medium">분류</th>
-                  <th class="px-3 py-2 text-left font-medium">품목기술 (Uraian Barang)</th>
-                  <th class="px-3 py-2 text-left font-medium">Lartas</th>
-                  <th class="px-3 py-2 text-left font-medium">DB 카테고리</th>
+                  <th scope="col" class="px-3 py-2 text-right font-medium w-10">No</th>
+                  <th scope="col" class="px-3 py-2 text-left font-medium">HS Code</th>
+                  <th scope="col" class="px-3 py-2 text-left font-medium">분류</th>
+                  <th scope="col" class="px-3 py-2 text-left font-medium">품목기술 (Uraian Barang)</th>
+                  <th scope="col" class="px-3 py-2 text-left font-medium">Lartas</th>
+                  <th scope="col" class="px-3 py-2 text-left font-medium">DB 카테고리</th>
                 </tr>
               </thead>
               <tbody>

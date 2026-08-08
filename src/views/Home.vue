@@ -133,9 +133,11 @@ onUnmounted(() => window.removeEventListener('asura:refresh', onRefresh));
         <div class="flex gap-2">
           <div class="relative flex-1">
             <Search :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <label for="home-search" class="sr-only">로컬 검색어</label>
             <input
+              id="home-search"
               v-model="q"
-              type="text"
+              type="search"
               placeholder="문서·메일·노트 전체에서 검색…"
               class="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
               @keydown.enter="runSearch"
@@ -158,7 +160,9 @@ onUnmounted(() => window.removeEventListener('asura:refresh', onRefresh));
         <div class="flex gap-2">
           <div class="relative flex-1">
             <BrainCircuit :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <label for="home-ask" class="sr-only">AI 지식 Q&A 질문</label>
             <input
+              id="home-ask"
               v-model="aq"
               type="text"
               placeholder="질문하면 Claude가 DB 기반으로 답합니다…"
@@ -211,15 +215,21 @@ onUnmounted(() => window.removeEventListener('asura:refresh', onRefresh));
         <p v-else-if="!recent.length" class="text-xs text-muted-foreground py-4 text-center">최근 자료가 없습니다.</p>
         <ul v-else class="divide-y divide-border/60">
           <li v-for="(d, i) in recent" :key="i">
-            <a
-              :href="d.source_url || '#'" target="_blank" rel="noopener noreferrer"
+            <!-- 원본 링크가 없는 자료는 링크로 만들지 않는다(빈 링크 방지) -->
+            <component
+              :is="d.source_url ? 'a' : 'div'"
+              :href="d.source_url || undefined"
+              :target="d.source_url ? '_blank' : undefined"
+              :rel="d.source_url ? 'noopener noreferrer' : undefined"
+              :aria-label="d.source_url ? `${d.title || '(제목 없음)'} — 원본 열기` : undefined"
+              :title="d.title || '(제목 없음)'"
               class="flex items-center gap-3 py-2 group"
             >
               <SourceIcon :source="d.source" :size="16" class="shrink-0" />
               <span class="text-sm text-foreground/90 flex-1 truncate group-hover:text-primary transition-colors">{{ d.title || '(제목 없음)' }}</span>
               <span class="text-[11px] text-muted-foreground tabular-nums shrink-0">{{ localDate(d.updated_at).slice(5) }}</span>
-              <ExternalLink :size="13" class="text-muted-foreground/50 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </a>
+              <ExternalLink v-if="d.source_url" :size="13" class="text-muted-foreground/50 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </component>
           </li>
         </ul>
       </div>

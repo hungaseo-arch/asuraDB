@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { FileText, ArrowLeft, ChevronLeft, ChevronRight, Search } from 'lucide-vue-next';
 import PageHeader from '@/components/PageHeader.vue';
+import TableState from '@/components/ui/TableState.vue';
 import { sbGet } from '@/lib/supabase';
+import { errMsg } from '@/lib/utils';
 
 interface Post {
   id: number;
   title: string;
   category: string;
-  date: string;   // YYYY-MM-DD
-  file: string;   // public/docs/*.html
+  date: string;           // 등록일 YYYY-MM-DD
+  updated: string | null; // 수정일 YYYY-MM-DD (수정 이력 없으면 null)
+  file: string;           // public/docs/*.html
 }
 
 // 이 게시판은 '정리'(회사 자료)와 'SEO자료'(개인 자료실)가 공유한다.
@@ -25,29 +28,39 @@ const subtitle = computed(() =>
 
 // DB(doc_posts) 미적용 환경 폴백용 기본 목록 — 회사 자료(scope=company)에만 해당
 const DEFAULT_POSTS: Post[] = [
-  { id: 2, title: '타이어 원가 시뮬레이션', category: '원가 분석', date: '2026-07-03', file: 'asuradb_tire_cost_simulation.html' },
-  { id: 1, title: '재고·Buffer Stock 적정성 검토 산식 작성 가이드', category: '재고량 산정', date: '2026-06-25', file: 'buffer_stock_review.html' },
+  { id: 3, title: '인도네시아 타이어 수입 분석 보고서 · 2026', category: '수입 분석', date: '2026-07-22', updated: null, file: 'tire_import_report_2026.html' },
+  { id: 2, title: '타이어 원가 시뮬레이션', category: '원가 분석', date: '2026-07-03', updated: null, file: 'asuradb_tire_cost_simulation.html' },
+  { id: 1, title: '재고·Buffer Stock 적정성 검토 산식 작성 가이드', category: '재고량 산정', date: '2026-06-25', updated: null, file: 'buffer_stock_review.html' },
 ];
 
 const posts = ref<Post[]>([]);
 const loading = ref(true);
+const loadError = ref<string | null>(null);
 
-interface DocRow { id: number; title: string; category: string; published_on: string; file: string }
+interface DocRow { id: number; title: string; category: string; published_on: string; updated_on: string | null; file: string }
 
 async function loadPosts() {
   loading.value = true;
+  loadError.value = null;
   const isPersonal = scope.value === 'personal';
   try {
     const rows = await sbGet<DocRow[]>(
-      `doc_posts?select=id,title,category,published_on,file&scope=eq.${scope.value}&order=published_on.desc`,
+      `doc_posts?select=id,title,category,published_on,updated_on,file&scope=eq.${scope.value}&order=published_on.desc`,
     );
     posts.value = rows?.length
-      ? rows.map(r => ({ id: r.id, title: r.title, category: r.category, date: r.published_on, file: r.file }))
+      ? rows.map(r => ({
+          id: r.id, title: r.title, category: r.category,
+          date: r.published_on, file: r.file,
+          // 수정일 == 등록일 은 '수정 이력 없음' 과 같은 뜻 → null 로 눕혀 '—' 로 표기
+          updated: r.updated_on && r.updated_on !== r.published_on ? r.updated_on : null,
+        }))
       // 개인 자료실은 아직 문서가 없을 수 있다 — 회사 문서를 섞어 보여주면 안 되므로 빈 목록 유지
       : (isPersonal ? [] : DEFAULT_POSTS);
-  } catch {
-    // 테이블/컬럼 미적용 등 → 회사 자료만 기본 목록으로 폴백
+  } catch (e) {
+    // 회사 자료는 정적 기본 목록으로 폴백 가능 → 그대로 보여준다.
+    // 개인 자료실은 폴백이 없으므로 실패를 숨기지 않고 사유 + 재시도를 노출한다.
     posts.value = isPersonal ? [] : DEFAULT_POSTS;
+    if (isPersonal) loadError.value = errMsg(e);
   }
   loading.value = false;
 }
@@ -73,6 +86,31 @@ const paged = computed(() => filtered.value.slice((page.value - 1) * PAGE_SIZE, 
 const rowNo = (idx: number) => filtered.value.length - ((page.value - 1) * PAGE_SIZE + idx);
 // 검색·분류 변경 시 1페이지로
 watch([query, category], () => { page.value = 1; });
+
+// ── URL 쿼리 동기화 (?q=&page=) ───────────────────────────────────────────────
+// 검색어·페이지를 주소에 실어 새로고침·뒤로가기에서 유지하고, 검색 결과 링크를 공유할 수 있게 한다.
+const router = useRouter();
+const qs = (v: unknown) => (typeof v === 'string' ? v : undefined);
+const isBoard = () => route.name === 'docs' || route.name === 'seo-docs';
+
+watch([query, page], () => {
+  const next: Record<string, string> = {};
+  const kw = query.value.trim();
+  if (kw) next.q = kw;
+  if (page.value > 1) next.page = String(page.value);
+  if ((next.q ?? '') === (qs(route.query.q) ?? '') && (next.page ?? '') === (qs(route.query.page) ?? '')) return;
+  void router.replace({ query: next });
+});
+
+function applyQuery(rq: typeof route.query) {
+  const kw = qs(rq.q) ?? '';
+  if (kw !== query.value) query.value = kw;
+  const n = Math.max(1, Number(qs(rq.page) ?? 1) || 1);
+  // 검색어 변경 watch 가 page 를 1 로 되돌리므로 그 뒤(다음 tick)에 적용한다
+  void nextTick(() => { if (page.value !== n) page.value = n; });
+}
+watch(() => route.query, rq => { if (isBoard()) applyQuery(rq); });
+applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
 
 // ── 문서 뷰어 ────────────────────────────────────────────────────────────────
 const selected = ref<Post | null>(null);
@@ -126,7 +164,10 @@ watch(scope, () => {
       <div class="rounded-xl border border-border bg-card overflow-hidden">
         <div class="px-5 py-3 border-b border-border bg-muted/20">
           <h2 class="text-sm font-bold text-foreground">{{ selected.title }}</h2>
-          <p class="text-[11px] text-muted-foreground mt-0.5">{{ selected.category }} · {{ selected.date }}</p>
+          <p class="text-[11px] text-muted-foreground mt-0.5">
+            {{ selected.category }} · 등록일 {{ selected.date }}
+            <span v-if="selected.updated"> · 수정일 {{ selected.updated }}</span>
+          </p>
         </div>
         <iframe
           :src="docSrc(selected)"
@@ -141,18 +182,25 @@ watch(scope, () => {
     <div v-else class="rounded-xl border border-border bg-card overflow-hidden">
       <div class="overflow-x-auto">
       <table class="w-full text-sm">
+        <caption class="sr-only">자료실 게시글 목록</caption>
         <thead>
           <tr class="border-b border-border bg-muted/20 text-xs text-muted-foreground">
-            <th class="w-16 text-center font-semibold px-3 py-2.5">No.</th>
-            <th class="text-left font-semibold px-3 py-2.5">제목</th>
-            <th class="w-40 text-left font-semibold px-3 py-2.5 hidden sm:table-cell">분류</th>
-            <th class="w-32 text-right font-semibold px-3 py-2.5 hidden sm:table-cell">날짜</th>
+            <th scope="col" class="w-16 text-center font-semibold px-3 py-2.5">No.</th>
+            <th scope="col" class="text-left font-semibold px-3 py-2.5">제목</th>
+            <th scope="col" class="w-40 text-left font-semibold px-3 py-2.5 hidden sm:table-cell">분류</th>
+            <th scope="col" class="w-28 text-right font-semibold px-3 py-2.5 hidden sm:table-cell">등록일</th>
+            <th scope="col" class="w-28 text-right font-semibold px-3 py-2.5 hidden md:table-cell">수정일</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading">
-            <td colspan="4" class="text-center text-muted-foreground py-10">불러오는 중…</td>
-          </tr>
+          <TableState
+            v-if="loading || loadError || !paged.length"
+            :colspan="5" :loading="loading" :error="loadError" :skeleton-rows="6"
+            :empty-text="query || category !== '전체'
+              ? '검색 결과가 없습니다.'
+              : (scope === 'personal' ? '등록된 개인 자료가 없습니다.' : '문서가 없습니다.')"
+            @retry="loadPosts"
+          />
           <tr
             v-for="(p, i) in paged"
             v-else
@@ -169,12 +217,9 @@ watch(scope, () => {
             </td>
             <td class="px-3 py-3 text-muted-foreground hidden sm:table-cell">{{ p.category }}</td>
             <td class="px-3 py-3 text-right text-muted-foreground tabular-nums hidden sm:table-cell">{{ p.date }}</td>
-          </tr>
-          <tr v-if="!loading && !paged.length">
-            <td colspan="4" class="text-center text-muted-foreground py-10">
-              {{ query || category !== '전체'
-                ? '검색 결과가 없습니다.'
-                : (scope === 'personal' ? '등록된 개인 자료가 없습니다.' : '문서가 없습니다.') }}
+            <td class="px-3 py-3 text-right text-muted-foreground tabular-nums hidden md:table-cell">
+              <span v-if="p.updated">{{ p.updated }}</span>
+              <span v-else title="수정 이력 없음 (등록 후 변경되지 않음)" aria-label="수정 이력 없음">—</span>
             </td>
           </tr>
         </tbody>
@@ -182,7 +227,7 @@ watch(scope, () => {
       </div>
 
       <!-- 페이지네이션 -->
-      <div v-if="!loading" class="flex items-center justify-center gap-1 py-3 border-t border-border">
+      <div v-if="!loading && !loadError && paged.length" class="flex items-center justify-center gap-1 py-3 border-t border-border">
         <button
           :disabled="page <= 1"
           class="inline-flex items-center justify-center h-8 w-8 rounded-md border border-border text-muted-foreground hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"

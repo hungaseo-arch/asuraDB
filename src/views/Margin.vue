@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, shallowRef } from 'vue';
-import { ChevronLeft, ChevronRight, Printer, Download, TrendingUp, TrendingDown, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, AlertCircle, Database } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight, Printer, Download, TrendingUp, TrendingDown, ChevronUp, ChevronDown, ChevronsUpDown, Loader2, AlertCircle, RotateCw, Database } from 'lucide-vue-next';
 import { sbGetAll } from '@/lib/supabase';
 import PageHeader from '@/components/PageHeader.vue';
-import { exportCsv } from '@/lib/csv';
+import DataState from '@/components/ui/DataState.vue';
+import { errMsg } from '@/lib/utils';
+import { exportXlsx, exportXlsxSheets } from '@/lib/xlsx';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -107,7 +109,7 @@ async function loadDetailForMonth(ym: string): Promise<void> {
     const records = await sbGetAll<MarginRecordRow>(path);
     detailCache.value = { ...detailCache.value, [ym]: buildDetail(month, records) };
   } catch (e) {
-    loadError.value = e instanceof Error ? e.message : String(e);
+    loadError.value = errMsg(e);
   } finally {
     loadingDetail.value = false;
   }
@@ -160,7 +162,7 @@ async function loadYearSumDetail(sumKey: string): Promise<void> {
       [sumKey]: { totalSales, totalMargin, brands, products, customers, items },
     };
   } catch (e) {
-    loadError.value = e instanceof Error ? e.message : String(e);
+    loadError.value = errMsg(e);
   } finally {
     loadingDetail.value = false;
   }
@@ -170,21 +172,143 @@ function loadForKey(key: string): Promise<void> {
   return key.endsWith('-sum') ? loadYearSumDetail(key) : loadDetailForMonth(key);
 }
 
-onMounted(async () => {
+// ── SAP 대사 ──────────────────────────────────────────────────────────────────
+// 마진 월 요약(margin_months.total_sales)과 SAP 판매이력(A/R, 할인 후 금액) 월합계를 대조한다.
+// 두 소스가 같은 거래를 다른 경로로 집계하므로 일치율이 100% 근처면 정상.
+interface SapCheckRow { year_month: string; margin_total_sales: number | string; sap_sales: number | string }
+const sapCheck = ref<SapCheckRow[]>([]);
+const sapMatch = computed<number | null>(() => {
+  const key = selectedMonth.value;
+  if (!key || !sapCheck.value.length) return null;
+  // 연 합계(YYYY-sum) 선택 시에는 해당 연도 전체를 합산해 일치율을 낸다.
+  const year = key.endsWith('-sum') ? key.slice(0, 4) : null;
+  const rows = year ? sapCheck.value.filter(r => r.year_month.startsWith(year)) : sapCheck.value.filter(r => r.year_month === key);
+  if (!rows.length) return null;
+  const base = rows.reduce((a, r) => a + Number(r.margin_total_sales ?? 0), 0);
+  const sap = rows.reduce((a, r) => a + Number(r.sap_sales ?? 0), 0);
+  if (!base || !sap) return null;
+  return (sap / base) * 100;
+});
+const sapMatchOk = computed(() => sapMatch.value != null && Math.abs(sapMatch.value - 100) <= 1);
+
+// ── 교차 조회 (고객사 × SKU) ──────────────────────────────────────────────────
+// margin_records 는 4개 축을 각각 따로 집계한 요약이라 축을 교차할 수 없다.
+// margin_lines(월간 리포트 엑셀의 1.Row_Data 시트, 라인 단위)를 써서 두 조건을 동시에 건다.
+interface CrossLine {
+  year_month: string; doc_no: number | string; status: string; delivery_date: string | null;
+  buyer: string; sku: string; description: string; brand: string | null;
+  type1: string | null; type2: string | null; type3: string | null;
+  qty: number | string; unit_price_idr: number | string;
+  sales_idr: number | string; cost_idr: number | string; margin_idr: number | string;
+}
+interface CrossAgg { buyer: string; description: string; sku: string; qty: number; sales: number; cost: number; margin: number }
+const crossOpen    = ref(false);
+const crossBuyer   = ref('');
+const crossSku     = ref('');
+const crossLines   = ref<CrossLine[]>([]);
+const crossLoading = ref(false);
+const crossError   = ref<string | null>(null);
+const crossLoadedKey = ref('');
+
+// 월별 명세 보유/정합 상태 — 엑셀이 없는 달(none)·구버전인 달(mismatch)을 화면에 알린다.
+const linesCheck = ref<Record<string, 'ok' | 'mismatch' | 'none'>>({});
+const crossState = computed<'ok' | 'mismatch' | 'none' | ''>(() => {
+  const key = selectedMonth.value;
+  if (!key) return '';
+  if (!key.endsWith('-sum')) return linesCheck.value[key] ?? '';
+  // 연 합계는 해당 연도에서 가장 나쁜 상태를 대표값으로 쓴다.
+  const year = key.slice(0, 4);
+  const st = Object.entries(linesCheck.value).filter(([k]) => k.startsWith(year)).map(([, v]) => v);
+  if (!st.length) return '';
+  return st.includes('none') ? 'none' : st.includes('mismatch') ? 'mismatch' : 'ok';
+});
+
+async function loadCrossLines(): Promise<void> {
+  const key = selectedMonth.value;
+  if (!key || crossLoadedKey.value === key) return;
+  crossLoading.value = true; crossError.value = null;
+  try {
+    const cols = 'year_month,doc_no,status,delivery_date,buyer,sku,description,brand,type1,type2,type3,'
+      + 'qty,unit_price_idr,sales_idr,cost_idr,margin_idr';
+    const where = key.endsWith('-sum')
+      ? `year_month=like.${key.slice(0, 4)}-*`
+      : `year_month=eq.${encodeURIComponent(key)}`;
+    crossLines.value = await sbGetAll<CrossLine>(`v_margin_lines?select=${cols}&${where}`);
+    crossLoadedKey.value = key;
+  } catch (e) {
+    crossLines.value = [];
+    crossError.value = errMsg(e);   // '명세 없음' 과 구분 — 조회 실패는 재시도할 수 있게 알린다
+  }
+  crossLoading.value = false;
+}
+watch([crossOpen, selectedMonth], ([open]) => { if (open) void loadCrossLines(); });
+function retryCrossLines() { crossLoadedKey.value = ''; crossError.value = null; void loadCrossLines(); }
+
+// 두 조건은 AND 로 걸린다 — 이것이 요약 축으로는 불가능했던 부분.
+const crossRows = computed<CrossAgg[]>(() => {
+  const b = crossBuyer.value.trim().toLowerCase();
+  const s = crossSku.value.trim().toLowerCase();
+  const agg = new Map<string, CrossAgg>();
+  for (const l of crossLines.value) {
+    if (b && !l.buyer.toLowerCase().includes(b)) continue;
+    if (s && !(l.description.toLowerCase().includes(s) || l.sku.toLowerCase().includes(s))) continue;
+    const k = `${l.buyer}\u0000${l.description}`;
+    const cur = agg.get(k) ?? { buyer: l.buyer, description: l.description, sku: l.sku, qty: 0, sales: 0, cost: 0, margin: 0 };
+    cur.qty    += Number(l.qty);
+    cur.sales  += Number(l.sales_idr);
+    cur.cost   += Number(l.cost_idr);
+    cur.margin += Number(l.margin_idr);
+    agg.set(k, cur);
+  }
+  return [...agg.values()].sort((x, y) => y.margin - x.margin);
+});
+const crossTotal = computed(() => crossRows.value.reduce(
+  (a, r) => ({ qty: a.qty + r.qty, sales: a.sales + r.sales, margin: a.margin + r.margin }),
+  { qty: 0, sales: 0, margin: 0 },
+));
+const crossAnyFilter = computed(() => !!crossBuyer.value.trim() || !!crossSku.value.trim());
+
+// 엑셀용 원본 명세 — 화면 표는 (고객사 × 품명) 집계지만, 내려받기는 라인 그대로 준다.
+// 정렬은 월 → 주문번호(SAP Doc. No.) 순.
+const crossRawRows = computed<CrossLine[]>(() => {
+  const b = crossBuyer.value.trim().toLowerCase();
+  const s = crossSku.value.trim().toLowerCase();
+  return crossLines.value
+    .filter(l => (!b || l.buyer.toLowerCase().includes(b))
+      && (!s || l.description.toLowerCase().includes(s) || l.sku.toLowerCase().includes(s)))
+    .sort((x, y) => x.year_month.localeCompare(y.year_month) || Number(x.doc_no) - Number(y.doc_no));
+});
+// 자동완성 — 현재 기간 명세에 실제로 있는 값만 제안한다.
+const crossBuyerOptions = computed(() => [...new Set(crossLines.value.map(l => l.buyer))].sort());
+const crossSkuOptions = computed(() => [...new Set(crossLines.value.map(l => l.description))].sort());
+function crossClear() { crossBuyer.value = ''; crossSku.value = ''; }
+
+async function initLoad(): Promise<void> {
+  loadError.value = null;
+  loadingMonths.value = true;
   try {
     const rows = await sbGetAll<MarginMonthRow>('margin_months?select=year_month,total_sales,total_margin&order=year_month.asc');
     monthsList.value = rows;
+    // 대사 배지는 부가 정보 — 실패해도 마진 화면은 그대로 동작한다.
+    sbGetAll<SapCheckRow>('v_margin_sap_check?select=year_month,margin_total_sales,sap_sales')
+      .then(r => { sapCheck.value = r; })
+      .catch(() => { sapCheck.value = []; });
+    // 명세(margin_lines) 보유·정합 상태 — 교차 조회 배지용
+    sbGetAll<{ year_month: string; state: 'ok' | 'mismatch' | 'none' }>('v_margin_lines_check?select=year_month,state')
+      .then(r => { linesCheck.value = Object.fromEntries(r.map(x => [x.year_month, x.state])); })
+      .catch(() => { linesCheck.value = {}; });
     if (rows.length > 0) {
       selectedMonth.value = rows[rows.length - 1].year_month;
       await loadForKey(selectedMonth.value);
       if (rows.length > 1) void loadDetailForMonth(rows[rows.length - 2].year_month);
     }
   } catch (e) {
-    loadError.value = e instanceof Error ? e.message : String(e);
+    loadError.value = errMsg(e);
   } finally {
     loadingMonths.value = false;
   }
-});
+}
+onMounted(initLoad);
 
 watch(selectedMonth, async (key) => {
   if (!key) return;
@@ -602,8 +726,8 @@ const rowIndexOffset = computed(() =>
   needsPagination.value ? (currentPage.value - 1) * PAGE_SIZE : 0,
 );
 
-// ── CSV 내보내기 (현재 축·기간의 전체 행) ────────────────────────────────────
-function downloadMarginCsv() {
+// ── 엑셀(.xlsx) 내보내기 (현재 축·기간의 전체 행) ───────────────────────────
+function downloadMarginXlsx() {
   const tab = activeTab.value;
   const withQty = tab === 'product' || tab === 'item';
   const headers = ['구분', '세부', ...(withQty ? ['수량'] : []), '매출(IDR)', '마진(IDR)', '마진율(%)', '매출비중(%)', '마진비중(%)'];
@@ -616,7 +740,35 @@ function downloadMarginCsv() {
     Number((r.marginRatio ?? 0).toFixed(1)),
   ]);
   const tabKo = tab === 'brand' ? '브랜드' : tab === 'product' ? '제품' : tab === 'customer' ? '고객사' : 'SKU';
-  exportCsv(`마진_${tabKo}_${selectedMonth.value}`, headers, rows);
+  exportXlsx(`마진_${tabKo}_${selectedMonth.value}`, headers, rows, `마진_${tabKo}`);
+}
+
+// 교차 조회 내보내기 — ①원본 명세(월·주문번호별 라인) ②화면과 같은 집계, 2개 시트.
+function downloadCrossXlsx() {
+  const n = (v: number | string) => Number(v) || 0;
+  const raw = {
+    name: '명세(raw)',
+    headers: ['월', '주문번호', '구분', '배송일', '고객사', 'SKU', '품명', '브랜드',
+      'Type1', 'Type2', 'Type3', '수량', '단가(IDR)', '매출(IDR)', '원가(IDR)', '마진(IDR)', '마진율(%)'],
+    rows: crossRawRows.value.map(l => {
+      const sales = n(l.sales_idr), margin = n(l.margin_idr);
+      return [
+        l.year_month, n(l.doc_no), l.status === 'DLV_CXL' ? '취소' : '배송', l.delivery_date ?? '',
+        l.buyer, l.sku, l.description, l.brand ?? '', l.type1 ?? '', l.type2 ?? '', l.type3 ?? '',
+        n(l.qty), Math.round(n(l.unit_price_idr)), Math.round(sales), Math.round(n(l.cost_idr)), Math.round(margin),
+        Number((sales ? (margin / sales) * 100 : 0).toFixed(1)),
+      ];
+    }),
+  };
+  const agg = {
+    name: '집계(고객사×SKU)',
+    headers: ['고객사', 'SKU', '품명', '수량', '매출(IDR)', '원가(IDR)', '마진(IDR)', '마진율(%)'],
+    rows: crossRows.value.map(r => [
+      r.buyer, r.sku, r.description, r.qty, Math.round(r.sales), Math.round(r.cost), Math.round(r.margin),
+      Number((r.sales ? (r.margin / r.sales) * 100 : 0).toFixed(1)),
+    ]),
+  };
+  exportXlsxSheets(`마진_교차_${selectedMonth.value}`, [raw, agg]);
 }
 
 const pageRangeLabel = computed(() => {
@@ -670,7 +822,7 @@ async function loadYearRecords(year: string): Promise<void> {
     const records = await sbGetAll<MarginRecordRow>(path);
     yearRecordsCache.value = { ...yearRecordsCache.value, [year]: records };
   } catch (e) {
-    loadError.value = e instanceof Error ? e.message : String(e);
+    loadError.value = errMsg(e);
   } finally {
     loadingDetail.value = false;
   }
@@ -854,11 +1006,13 @@ const dividerX = computed(() => {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
+// IDR 대금액 — 인니 실무 단위(juta 10^6 · miliar 10^9 · triliun 10^12) + 소수 둘째자리.
+// 천단위 콤마/소수점 마침표는 영미식 고정(en-US). 사내 보고용이라 단위 표기만 사용.
 function fmtIdr(v: number): string {
-  if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)}B`;
-  if (v >= 1_000_000)     return `${(v / 1_000_000).toFixed(0)}M`;
-  if (v >= 1_000)         return `${(v / 1_000).toFixed(0)}K`;
-  return v.toLocaleString();
+  if (v >= 1_000_000_000_000) return `${(v / 1_000_000_000_000).toFixed(2)} triliun`;
+  if (v >= 1_000_000_000)     return `${(v / 1_000_000_000).toFixed(2)} miliar`;
+  if (v >= 1_000_000)         return `${(v / 1_000_000).toFixed(2)} juta`;
+  return Math.round(v).toLocaleString('en-US');
 }
 
 function fmtPct(v: number, digits = 1): string {
@@ -930,6 +1084,14 @@ const TAB_LABEL: Record<Tab, string> = {
           >
             <Database :size="10" /> Supabase · {{ MONTH_KEYS.length }}개월
           </span>
+          <!-- SAP 대사 — 선택 기간의 마진 매출 대비 SAP 판매이력(A/R) 합계 비율 -->
+          <span
+            v-if="sapMatch != null"
+            :class="['inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md border',
+              sapMatchOk ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                         : 'bg-amber-500/10 text-amber-600 border-amber-500/20']"
+            :title="sapMatchOk ? 'SAP 판매이력과 ±1% 이내 일치' : 'SAP 판매이력과 1% 넘게 차이 — 원본 대조 필요'"
+          >SAP 대사 {{ sapMatch.toFixed(1) }}%</span>
         </p>
       </template>
       <template #controls>
@@ -978,9 +1140,12 @@ const TAB_LABEL: Record<Tab, string> = {
           >
             <ChevronRight :size="14" />
           </button>
+          <!-- 모바일(<sm)에서는 필터 4종이 한 줄씩 쌓여 첫 화면을 다 먹으므로 2열 그리드로 접는다.
+               sm 이상은 종전과 동일한 한 줄 flex. -->
+          <div class="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto sm:items-center sm:gap-2">
           <select
             v-model="brandFilter"
-            class="text-xs px-2 py-1.5 rounded-md border border-border bg-card text-foreground hover:bg-accent transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+            class="w-full sm:w-auto text-xs px-2 py-1.5 rounded-md border border-border bg-card text-foreground hover:bg-accent transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
             :class="brandFilter ? 'font-semibold' : ''"
           >
             <option value="">브랜드 전체</option>
@@ -988,7 +1153,7 @@ const TAB_LABEL: Record<Tab, string> = {
           </select>
           <select
             v-model="productFilter"
-            class="text-xs px-2 py-1.5 rounded-md border border-border bg-card text-foreground hover:bg-accent transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+            class="w-full sm:w-auto text-xs px-2 py-1.5 rounded-md border border-border bg-card text-foreground hover:bg-accent transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
             :class="productFilter ? 'font-semibold' : ''"
           >
             <option value="">제품별 전체</option>
@@ -996,13 +1161,13 @@ const TAB_LABEL: Record<Tab, string> = {
           </select>
           <select
             v-model="typeFilter"
-            class="text-xs px-2 py-1.5 rounded-md border border-border bg-card text-foreground hover:bg-accent transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+            class="w-full sm:w-auto text-xs px-2 py-1.5 rounded-md border border-border bg-card text-foreground hover:bg-accent transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
             :class="typeFilter ? 'font-semibold' : ''"
           >
             <option value="">유형별 전체</option>
             <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
           </select>
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1 min-w-0">
             <select
               v-model="filterMode"
               class="text-xs px-2 py-1.5 rounded-md border border-border bg-card text-foreground hover:bg-accent transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
@@ -1010,12 +1175,12 @@ const TAB_LABEL: Record<Tab, string> = {
               <option value="customer">고객사</option>
               <option value="item">SKU</option>
             </select>
-            <div class="relative">
+            <div class="relative w-full sm:w-auto">
               <input
                 v-model="filterQuery"
                 type="text"
                 :placeholder="filterMode === 'customer' ? '고객사 키워드' : 'SKU 키워드'"
-                class="text-xs px-2 py-1.5 pr-6 rounded-md border border-border bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-44"
+                class="text-xs px-2 py-1.5 pr-6 rounded-md border border-border bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-44"
                 @focus="openFilter"
                 @blur="closeFilter"
               />
@@ -1043,15 +1208,16 @@ const TAB_LABEL: Record<Tab, string> = {
               </div>
             </div>
           </div>
+          </div>
         </div>
       </template>
       <template #actions>
         <button
           class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
-          @click="downloadMarginCsv"
+          @click="downloadMarginXlsx"
         >
           <Download :size="12" />
-          CSV
+          엑셀
         </button>
         <button
           class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
@@ -1069,9 +1235,16 @@ const TAB_LABEL: Record<Tab, string> = {
       class="rounded-xl border border-red-500/30 bg-red-500/10 p-3 flex items-start gap-2 text-sm text-red-600"
     >
       <AlertCircle :size="14" class="mt-0.5 shrink-0" />
-      <div>
+      <div class="min-w-0">
         <p class="font-semibold">데이터 로드 실패</p>
-        <p class="text-xs mt-0.5 text-red-600/80 font-mono break-all">{{ loadError }}</p>
+        <p class="text-xs mt-0.5 text-red-600/80 break-all">{{ loadError }}</p>
+        <button
+          type="button"
+          class="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+          @click="initLoad"
+        >
+          <RotateCw :size="13" /> 다시 시도
+        </button>
       </div>
     </div>
 
@@ -1093,38 +1266,38 @@ const TAB_LABEL: Record<Tab, string> = {
 
     <!-- KPI cards -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div class="rounded-xl border border-border bg-card p-4 space-y-1">
+      <div class="rounded-xl border border-border bg-card p-4 space-y-1 min-w-0">
         <p class="text-[11.5px] text-muted-foreground">총 매출{{ anyFilter ? ' · 필터' : '' }}</p>
-        <p class="text-2xl font-extrabold tabular-nums">{{ fmtIdr(viewTotals.sales) }} <span class="text-xs text-muted-foreground font-normal">IDR</span></p>
+        <p class="text-xl sm:text-2xl font-extrabold tabular-nums">{{ fmtIdr(viewTotals.sales) }} <span class="text-xs text-muted-foreground font-normal">IDR</span></p>
         <p class="text-xs flex items-center gap-1" :class="momClass(salesMoM)">
           <component :is="(salesMoM ?? 0) >= 0 ? TrendingUp : TrendingDown" :size="10" />
           {{ compareLabel }} {{ fmtMoM(salesMoM) }}
         </p>
       </div>
-      <div class="rounded-xl border border-border bg-card p-4 space-y-1">
+      <div class="rounded-xl border border-border bg-card p-4 space-y-1 min-w-0">
         <p class="text-[11.5px] text-muted-foreground">총 마진{{ anyFilter ? ' · 필터' : '' }}</p>
-        <p class="text-2xl font-extrabold tabular-nums">{{ fmtIdr(viewTotals.margin) }} <span class="text-xs text-muted-foreground font-normal">IDR</span></p>
+        <p class="text-xl sm:text-2xl font-extrabold tabular-nums">{{ fmtIdr(viewTotals.margin) }} <span class="text-xs text-muted-foreground font-normal">IDR</span></p>
         <p class="text-xs flex items-center gap-1" :class="momClass(marginMoM)">
           <component :is="(marginMoM ?? 0) >= 0 ? TrendingUp : TrendingDown" :size="10" />
           {{ compareLabel }} {{ fmtMoM(marginMoM) }}
         </p>
       </div>
-      <div class="rounded-xl border border-border bg-card p-4 space-y-1">
+      <div class="rounded-xl border border-border bg-card p-4 space-y-1 min-w-0">
         <p class="text-[11.5px] text-muted-foreground">마진율</p>
-        <p class="text-2xl font-extrabold tabular-nums" :class="marginPctClass(marginPct)">{{ fmtPct(marginPct, 1) }}</p>
+        <p class="text-xl sm:text-2xl font-extrabold tabular-nums" :class="marginPctClass(marginPct)">{{ fmtPct(marginPct, 1) }}</p>
         <p class="text-xs text-muted-foreground">매출 대비</p>
       </div>
-      <div class="rounded-xl border border-border bg-card p-4 space-y-1">
+      <div class="rounded-xl border border-border bg-card p-4 space-y-1 min-w-0">
         <template v-if="anyFilter">
           <p class="text-[11.5px] text-muted-foreground">전체 대비 비중</p>
-          <p class="text-2xl font-extrabold tabular-nums text-primary">{{ fmtPct(viewMarginShare, 1) }}</p>
+          <p class="text-xl sm:text-2xl font-extrabold tabular-nums text-primary">{{ fmtPct(viewMarginShare, 1) }}</p>
           <p class="text-xs text-muted-foreground">마진 기준 · 매출 {{ fmtPct(viewSalesShare, 1) }}</p>
         </template>
         <template v-else>
           <p class="text-[11.5px] text-muted-foreground">최대 마진 브랜드</p>
           <p class="text-base font-bold truncate flex items-center gap-1.5">
             <span v-if="topBrand" class="w-2 h-2 rounded-full shrink-0" :style="{ background: BRAND_COLOR[topBrand.brand] }" />
-            {{ topBrand?.brand ?? '—' }}
+            <span class="truncate">{{ topBrand?.brand ?? '—' }}</span>
           </p>
           <p class="text-xs text-muted-foreground">
             {{ topBrand ? `${fmtIdr(topBrand.margin)}${detail.totalMargin > 0 ? ' · ' + fmtPct((topBrand.margin / detail.totalMargin) * 100, 1) : ''}` : '' }}
@@ -1278,10 +1451,11 @@ const TAB_LABEL: Record<Tab, string> = {
 
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
+          <caption class="sr-only">마진 분석 집계 표</caption>
           <thead>
             <tr class="text-xs uppercase tracking-wide text-muted-foreground border-b border-border select-none">
-              <th class="px-4 py-2.5 text-left font-medium w-8">#</th>
-              <th class="px-4 py-2.5 text-left font-medium">
+              <th scope="col" class="px-4 py-2.5 text-left font-medium w-8">#</th>
+              <th scope="col" class="px-4 py-2.5 text-left font-medium">
                 <button class="inline-flex items-center gap-1 hover:text-foreground transition-colors" @click="toggleSort('primary')">
                   {{ activeTab === 'brand'    ? '브랜드' :
                      activeTab === 'product'  ? '제품 / 유형' :
@@ -1290,37 +1464,37 @@ const TAB_LABEL: Record<Tab, string> = {
                   <component :is="sortIcon('primary')" :size="11" :class="sortKey === 'primary' ? 'text-primary' : 'opacity-50'" />
                 </button>
               </th>
-              <th v-if="activeTab === 'product' || activeTab === 'item'" class="px-4 py-2.5 text-right font-medium">
+              <th scope="col" v-if="activeTab === 'product' || activeTab === 'item'" class="px-4 py-2.5 text-right font-medium">
                 <button class="inline-flex items-center gap-1 hover:text-foreground transition-colors" @click="toggleSort('qty')">
                   수량
                   <component :is="sortIcon('qty')" :size="11" :class="sortKey === 'qty' ? 'text-primary' : 'opacity-50'" />
                 </button>
               </th>
-              <th class="px-4 py-2.5 text-right font-medium">
+              <th scope="col" class="px-4 py-2.5 text-right font-medium">
                 <button class="inline-flex items-center gap-1 hover:text-foreground transition-colors" @click="toggleSort('sales')">
                   매출 (IDR)
                   <component :is="sortIcon('sales')" :size="11" :class="sortKey === 'sales' ? 'text-primary' : 'opacity-50'" />
                 </button>
               </th>
-              <th class="px-4 py-2.5 text-right font-medium">
+              <th scope="col" class="px-4 py-2.5 text-right font-medium">
                 <button class="inline-flex items-center gap-1 hover:text-foreground transition-colors" @click="toggleSort('margin')">
                   마진 (IDR)
                   <component :is="sortIcon('margin')" :size="11" :class="sortKey === 'margin' ? 'text-primary' : 'opacity-50'" />
                 </button>
               </th>
-              <th class="px-4 py-2.5 text-right font-medium">
+              <th scope="col" class="px-4 py-2.5 text-right font-medium">
                 <button class="inline-flex items-center gap-1 hover:text-foreground transition-colors" @click="toggleSort('marginPct')">
                   마진율
                   <component :is="sortIcon('marginPct')" :size="11" :class="sortKey === 'marginPct' ? 'text-primary' : 'opacity-50'" />
                 </button>
               </th>
-              <th class="px-4 py-2.5 text-right font-medium w-32">
+              <th scope="col" class="px-4 py-2.5 text-right font-medium w-32">
                 <button class="inline-flex items-center gap-1 hover:text-foreground transition-colors" @click="toggleSort('salesRatio')">
                   매출 비중
                   <component :is="sortIcon('salesRatio')" :size="11" :class="sortKey === 'salesRatio' ? 'text-primary' : 'opacity-50'" />
                 </button>
               </th>
-              <th class="px-4 py-2.5 text-right font-medium w-32">
+              <th scope="col" class="px-4 py-2.5 text-right font-medium w-32">
                 <button class="inline-flex items-center gap-1 hover:text-foreground transition-colors" @click="toggleSort('marginRatio')">
                   마진 기여도
                   <component :is="sortIcon('marginRatio')" :size="11" :class="sortKey === 'marginRatio' ? 'text-primary' : 'opacity-50'" />
@@ -1424,12 +1598,112 @@ const TAB_LABEL: Record<Tab, string> = {
       </div>
     </div>
 
+    <!-- 교차 조회 (고객사 × SKU) — 요약 축이 아니라 명세(margin_lines) 기반이라 두 조건을 동시에 건다 -->
+    <div class="rounded-xl border border-border bg-card overflow-hidden">
+      <button
+        class="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-accent/40 transition-colors"
+        @click="crossOpen = !crossOpen"
+      >
+        <span class="text-sm font-semibold">교차 조회 · 고객사 × SKU</span>
+        <span class="text-[11px] text-muted-foreground">두 조건 동시 적용 · 원가·마진 포함</span>
+        <span
+          v-if="crossOpen && crossState === 'mismatch'"
+          class="text-[11px] px-1.5 py-0.5 rounded-md border bg-amber-500/10 text-amber-600 border-amber-500/20"
+          title="이 달의 명세 엑셀이 요약본보다 이전 판이라 합계가 다릅니다"
+        >명세 구버전</span>
+        <span
+          v-else-if="crossOpen && crossState === 'none'"
+          class="text-[11px] px-1.5 py-0.5 rounded-md border bg-muted text-muted-foreground border-border"
+          title="이 달은 명세 엑셀이 없어 교차 조회를 할 수 없습니다"
+        >명세 없음</span>
+        <ChevronDown :size="14" class="ml-auto text-muted-foreground transition-transform" :class="crossOpen && 'rotate-180'" />
+      </button>
+
+      <div v-if="crossOpen" class="border-t border-border">
+        <div class="flex items-end gap-2 flex-wrap px-4 py-3 bg-muted/20">
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] font-semibold text-muted-foreground">고객사</span>
+            <input v-model="crossBuyer" list="cross-buyers" type="text" placeholder="고객사명"
+              class="w-64 bg-card border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+            <datalist id="cross-buyers"><option v-for="b in crossBuyerOptions" :key="b" :value="b" /></datalist>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] font-semibold text-muted-foreground">SKU · 품명</span>
+            <input v-model="crossSku" list="cross-skus" type="text" placeholder="품명 또는 품목코드"
+              class="w-64 bg-card border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+            <datalist id="cross-skus"><option v-for="s in crossSkuOptions" :key="s" :value="s" /></datalist>
+          </label>
+          <button v-if="crossAnyFilter" class="px-3 py-2 text-xs rounded-lg border border-border hover:bg-accent transition-colors" @click="crossClear">필터 해제</button>
+          <div class="ml-auto flex items-center gap-2">
+            <span class="text-[11px] text-muted-foreground tabular-nums">
+              {{ crossRows.length.toLocaleString() }}개 조합 · 수량 {{ crossTotal.qty.toLocaleString('en-US') }} ·
+              매출 {{ fmtIdr(crossTotal.sales) }} · 마진 {{ fmtIdr(crossTotal.margin) }}
+              ({{ crossTotal.sales ? fmtPct(crossTotal.margin / crossTotal.sales * 100) : '—' }})
+            </span>
+            <button class="px-3 py-2 text-xs rounded-lg border border-border hover:bg-accent transition-colors disabled:opacity-40"
+              :disabled="!crossRows.length"
+              :title="`원본 명세 ${crossRawRows.length.toLocaleString()}건(월·주문번호별) + 집계 ${crossRows.length.toLocaleString()}건`"
+              @click="downloadCrossXlsx">엑셀 (명세 {{ crossRawRows.length.toLocaleString() }}건)</button>
+          </div>
+        </div>
+
+        <DataState
+          v-if="crossLoading || crossError || !crossLines.length"
+          :loading="crossLoading" :error="crossError" :empty="!crossLines.length"
+          loading-text="명세 불러오는 중…" empty-text="이 기간은 명세 데이터가 없습니다."
+          skeleton-class="h-40 m-4"
+          @retry="retryCrossLines"
+        />
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <caption class="sr-only">거래 명세 상세</caption>
+            <thead>
+              <tr class="text-xs uppercase tracking-wide text-muted-foreground border-b border-border">
+                <th scope="col" class="px-4 py-2.5 text-left font-medium w-8">#</th>
+                <th scope="col" class="px-4 py-2.5 text-left font-medium">고객사</th>
+                <th scope="col" class="px-4 py-2.5 text-left font-medium">SKU · 품명</th>
+                <th scope="col" class="px-4 py-2.5 text-right font-medium">수량</th>
+                <th scope="col" class="px-4 py-2.5 text-right font-medium">매출 (IDR)</th>
+                <th scope="col" class="px-4 py-2.5 text-right font-medium">원가 (IDR)</th>
+                <th scope="col" class="px-4 py-2.5 text-right font-medium">마진 (IDR)</th>
+                <th scope="col" class="px-4 py-2.5 text-right font-medium">마진율</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(r, i) in crossRows.slice(0, 200)" :key="`${r.buyer}|${r.description}`"
+                  class="border-b border-border/50 last:border-b-0 hover:bg-accent/40 transition-colors">
+                <td class="px-4 py-2.5 text-xs text-muted-foreground tabular-nums">{{ i + 1 }}</td>
+                <td class="px-4 py-2.5">{{ r.buyer }}</td>
+                <td class="px-4 py-2.5">
+                  <div>{{ r.description }}</div>
+                  <div class="text-[11px] text-muted-foreground font-mono">{{ r.sku }}</div>
+                </td>
+                <td class="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{{ r.qty.toLocaleString('en-US') }}</td>
+                <td class="px-4 py-2.5 text-right tabular-nums">{{ fmtIdr(r.sales) }}</td>
+                <td class="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmtIdr(r.cost) }}</td>
+                <td class="px-4 py-2.5 text-right tabular-nums font-medium" :class="r.margin < 0 && 'text-red-600'">{{ fmtIdr(r.margin) }}</td>
+                <td class="px-4 py-2.5 text-right tabular-nums">{{ r.sales ? fmtPct(r.margin / r.sales * 100) : '—' }}</td>
+              </tr>
+              <tr v-if="!crossRows.length">
+                <td colspan="8" class="px-4 py-8 text-center text-sm text-muted-foreground">조건에 맞는 거래가 없습니다.</td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-if="crossRows.length > 200" class="px-4 py-2 text-[11px] text-muted-foreground border-t border-border">
+            상위 200개 조합만 표시합니다 — 전체는 엑셀로 내려받으세요.
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Note -->
     <div class="rounded-xl border border-border bg-muted/20 p-4 space-y-1">
       <p class="text-xs font-semibold text-muted-foreground">데이터 소스</p>
       <p class="text-xs text-muted-foreground">
         Supabase 테이블 <code class="bg-muted px-1 rounded">margin_months</code> ·
         <code class="bg-muted px-1 rounded">margin_records</code> — 월별 <code class="bg-muted px-1 rounded">sales analysis report</code> PDF 추출본 기반.
+        「교차 조회」는 같은 리포트 엑셀의 명세 시트를 적재한 <code class="bg-muted px-1 rounded">margin_lines</code>(라인 단위)를 쓰므로
+        요약 축으로는 불가능한 <strong>고객사 × SKU 동시 조건</strong>과 원가·마진을 함께 볼 수 있습니다.
         전월 대비(MoM)는 직전 월 데이터와 비교하며, 추이 차트는 선택 월이 속한 연도의 월별 매출/마진과 전년·당년 평균을 함께 표시합니다.
       </p>
     </div>

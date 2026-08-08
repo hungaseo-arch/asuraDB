@@ -31,9 +31,9 @@ insert into public.margin_records (year_month, axis, primary_key, secondary, qty
   ('2026-05', 'product', 'FLAP', 'LTB', 4297, 168116604, 54066608),
   ('2026-05', 'product', 'TIRE', 'LTB', 666, 730834106, 42060701),
   ('2026-05', 'product', 'FLAP', 'OTR', 887, 142627815, 37810104),
-  ('2026-05', 'product', 'VULKANISIR', 'TIRE', 278, 215533200, 14356491),
-  ('2026-05', 'product', 'TIRE', 'PNEUMATIC', 4, 2930797, 864652),
-  ('2026-05', 'product', 'TUBE', 'PNEUMATIC', 20, 1163959, 206979),
+  ('2026-05', 'product', 'VUL', 'TIRE', 278, 215533200, 14356491),
+  ('2026-05', 'product', 'TIRE', 'PNEU', 4, 2930797, 864652),
+  ('2026-05', 'product', 'TUBE', 'PNEU', 20, 1163959, 206979),
   ('2026-05', 'product', 'ETC', 'Others', 206, 32960000, 0),
   ('2026-05', 'customer', 'PT. SUMBER SAKTI PRIMA MANDIRI', null, null, 2720159084, 260291409),
   ('2026-05', 'customer', 'PT. BAN ANUGRAH NUSANTARA', null, null, 2008162748, 222894545),
@@ -352,6 +352,6 @@ insert into public.margin_records (year_month, axis, primary_key, secondary, qty
   ('2026-05', 'item', 'ASC 8.25-16TR177A Heavy Duty', null, 4, 627028, 73437),
   ('2026-05', 'item', 'ASC 7.00-16TR177A', null, 4, 439640, 53360),
   ('2026-05', 'item', 'GIS 11.00-20 AJ101', null, 1, 1400000, 27991),
-  ('2026-05', 'item', 'JASA VULKANISIR', null, 206, 32960000, 0);
+  ('2026-05', 'item', 'JASA VUL', null, 206, 32960000, 0);
 
 commit;

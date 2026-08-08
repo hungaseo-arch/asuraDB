@@ -4,6 +4,7 @@ import { Search, Package, Download } from 'lucide-vue-next';
 import { TUBE_SPECS, type TubeSpec } from '@/data/tubeSpecs';
 import { sbGet } from '@/lib/supabase';
 import { exportCsv } from '@/lib/csv';
+import TableState from '@/components/ui/TableState.vue';
 
 // 스펙은 전부 TUBE 분류 → 가격 탭과 동일하게 [전체, TUBE]
 const CATS = ['전체', 'TUBE'] as const;
@@ -12,6 +13,7 @@ const category = ref<(typeof CATS)[number]>('전체');
 
 // DB(specs_tube) 우선, 미적용 시 정적 데이터 폴백
 const specs = ref<TubeSpec[]>([]);
+const loading = ref(true);
 interface TubeRow { no: number; category: string; article: string | null; description: string | null; size: string; valve: string; w_std: number | null; w_min: number | null; w_max: number | null; lebar: number | null; tebal: number | null; packaging: string; qty: number | null }
 onMounted(async () => {
   try {
@@ -20,8 +22,10 @@ onMounted(async () => {
       ? rows.map(r => ({ no: r.no, category: r.category as TubeSpec['category'], article: r.article ?? '', description: r.description ?? '', size: r.size, valve: r.valve, wStd: r.w_std, wMin: r.w_min, wMax: r.w_max, lebar: r.lebar, tebal: r.tebal, packaging: r.packaging as TubeSpec['packaging'], qty: r.qty }))
       : TUBE_SPECS;
   } catch {
+    // 정적 제원(TUBE_SPECS)이 있으니 실패를 노출하지 않고 폴백한다 — 표가 비는 경우는 없다
     specs.value = TUBE_SPECS;
   }
+  loading.value = false;
 });
 
 const filtered = computed(() => {
@@ -43,7 +47,7 @@ watch([query, category], () => { page.value = 1; });
 const w = (n: number | null) => (n == null ? '—' : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
 function downloadCsv() {
-  const headers = ['No.', '분류', '제품', 'Article', 'Size', 'Valve', 'Std', 'Min', 'Max', 'Lebar', 'Tebal', 'Packaging', 'Qty/Pkg'];
+  const headers = ['No.', '아이템', '제품', 'Article', 'Size', 'Valve', 'Std', 'Min', 'Max', 'Lebar', 'Tebal', 'Packaging', 'Qty/Pkg'];
   const rows = filtered.value.map((s: TubeSpec) => [
     s.no, 'TUBE', s.description ?? '', s.article ?? '', s.size, s.valve ?? '',
     s.wStd ?? '', s.wMin ?? '', s.wMax ?? '', s.lebar ?? '', s.tebal ?? '', s.packaging, s.qty ?? '',
@@ -60,7 +64,7 @@ function downloadCsv() {
       </p>
       <div class="flex items-center gap-2">
         <div class="inline-flex items-center gap-1.5 bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-teal-400">
-          <span class="text-[11px] font-semibold text-muted-foreground shrink-0">분류</span>
+          <span class="text-[11px] font-semibold text-muted-foreground shrink-0">아이템</span>
           <select v-model="category" class="text-xs font-semibold bg-transparent text-foreground py-2 pr-6 focus:outline-none cursor-pointer">
             <option v-for="c in CATS" :key="c" :value="c">{{ c }}</option>
           </select>
@@ -81,25 +85,31 @@ function downloadCsv() {
     <div class="rounded-xl border border-border bg-card overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-sm whitespace-nowrap">
+          <caption class="sr-only">튜브 제원 목록</caption>
           <thead>
             <tr class="border-b border-border bg-muted/20 text-xs text-muted-foreground">
-              <th class="w-12 text-center font-semibold px-3 py-2.5">No.</th>
-              <th class="text-left font-semibold px-3 py-2.5">분류</th>
-              <th class="text-left font-semibold px-3 py-2.5">제품</th>
-              <th class="text-left font-semibold px-3 py-2.5">Size</th>
-              <th class="text-left font-semibold px-3 py-2.5">Valve</th>
-              <th class="text-right font-semibold px-3 py-2.5">Std</th>
-              <th class="text-right font-semibold px-3 py-2.5">Min</th>
-              <th class="text-right font-semibold px-3 py-2.5">Max</th>
-              <th class="text-right font-semibold px-3 py-2.5">Lebar</th>
-              <th class="text-right font-semibold px-3 py-2.5">Tebal</th>
-              <th class="text-left font-semibold px-3 py-2.5">Packaging</th>
-              <th class="text-right font-semibold px-3 py-2.5">Qty/Pkg</th>
+              <th scope="col" class="w-12 text-center font-semibold px-3 py-2.5">No.</th>
+              <th scope="col" class="text-left font-semibold px-3 py-2.5">아이템</th>
+              <th scope="col" class="text-left font-semibold px-3 py-2.5">제품</th>
+              <th scope="col" class="text-left font-semibold px-3 py-2.5">Size</th>
+              <th scope="col" class="text-left font-semibold px-3 py-2.5">Valve</th>
+              <th scope="col" class="text-right font-semibold px-3 py-2.5">Std</th>
+              <th scope="col" class="text-right font-semibold px-3 py-2.5">Min</th>
+              <th scope="col" class="text-right font-semibold px-3 py-2.5">Max</th>
+              <th scope="col" class="text-right font-semibold px-3 py-2.5">Lebar</th>
+              <th scope="col" class="text-right font-semibold px-3 py-2.5">Tebal</th>
+              <th scope="col" class="text-left font-semibold px-3 py-2.5">Packaging</th>
+              <th scope="col" class="text-right font-semibold px-3 py-2.5">Qty/Pkg</th>
             </tr>
           </thead>
           <tbody>
+            <TableState
+              v-if="loading || !paged.length"
+              :colspan="12" :loading="loading" :skeleton-rows="6"
+              empty-text="검색 결과가 없습니다."
+            />
             <tr
-              v-for="s in paged" :key="s.no"
+              v-for="s in paged" v-else :key="s.no"
               class="border-b border-border/50 last:border-b-0 hover:bg-accent/40 transition-colors"
             >
               <td class="text-center text-muted-foreground tabular-nums px-3 py-2.5">{{ s.no }}</td>

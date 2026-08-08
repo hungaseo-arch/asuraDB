@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import {
   Home, Search, BrainCircuit, ClipboardList, BarChart3, Ship, Percent, Store,
@@ -84,13 +84,55 @@ const quoteOnlyItems: NavItem[] = [
 
 // 드롭다운 열림 상태
 const openGroup = ref<string | null>(null);
-function toggleGroup(key: string) { openGroup.value = openGroup.value === key ? null : key; }
+
+// 키보드 조작용 DOM 조회 — 그룹 래퍼에 data-navgroup="<key>" 를 달아 두고 그 안에서 찾는다
+function menuItems(key: string): HTMLElement[] {
+  const menu = document.querySelector(`[data-navgroup="${key}"] [role="menu"]`);
+  return Array.from(menu?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+}
+function groupTrigger(key: string): HTMLElement | null {
+  return document.querySelector<HTMLElement>(`[data-navgroup="${key}"] > button`);
+}
+
+async function toggleGroup(key: string) {
+  const opening = openGroup.value !== key;
+  openGroup.value = opening ? key : null;
+  // 열면 첫 항목으로 포커스를 옮긴다 — 키보드만으로 메뉴 진입이 가능해진다
+  if (opening) { await nextTick(); menuItems(key)[0]?.focus(); }
+}
+
 function closeGroups() { openGroup.value = null; mobileNavOpen.value = false; }
+
+// Escape·포커스 이탈로 닫을 때는 열었던 트리거로 포커스를 되돌린다(포커스 유실 방지).
+// closeGroups 는 RouterLink @click 핸들러로도 쓰여 이벤트 객체를 받으므로 별 함수로 분리.
+function closeGroupsAndRestore() {
+  const key = openGroup.value;
+  closeGroups();
+  if (key) groupTrigger(key)?.focus();
+}
+
 function onWindowClick(e: MouseEvent) {
   if (!(e.target as HTMLElement).closest?.('[data-navgroup]')) openGroup.value = null;
 }
-// Escape 로도 닫는다(외부 클릭·라우트 이동과 함께 3경로 모두 차단)
-function onWindowKeydown(e: KeyboardEvent) { if (e.key === 'Escape') closeGroups(); }
+
+// Escape 로도 닫는다(외부 클릭·라우트 이동과 함께 3경로 모두 차단).
+// 메뉴가 열려 있으면 ↑/↓ 로 항목 이동, Tab 은 메뉴 안에 가둔다(포커스 트랩 — 탈출은 Esc).
+function onWindowKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') { closeGroupsAndRestore(); return; }
+
+  const key = openGroup.value;
+  if (!key || !['ArrowDown', 'ArrowUp', 'Tab'].includes(e.key)) return;
+  const items = menuItems(key);
+  if (!items.length) return;
+
+  const cur = items.indexOf(document.activeElement as HTMLElement);
+  e.preventDefault();
+  const forward = e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey);
+  const next = forward
+    ? (cur + 1) % items.length
+    : (cur <= 0 ? items.length - 1 : cur - 1);
+  items[next].focus();
+}
 function groupActive(g: NavGroup): boolean { return g.items.some(it => isActive(it.to!, it.exact)); }
 
 // 모바일(<md) 네비게이션 드로어 — 좁은 폭에서 헤더 메뉴가 겹치지 않도록 분리
@@ -283,7 +325,7 @@ const pageTitle = computed(() =>
       <!-- ② 메뉴바(가운데) — 그룹 드롭다운 (경영·성과 / 영업·견적 / 운영·데이터 / SEO자료) -->
       <!-- 드롭다운이 잘리지 않도록 overflow 없음. 좁은 폭(<lg)에서는 아래 햄버거 드로어로 대체 -->
       <nav v-if="!isQuoteOnly" class="shrink-0 hidden lg:flex items-center justify-center gap-1 px-1">
-        <div v-for="g in NAV_GROUPS" :key="g.key" class="relative" data-navgroup>
+        <div v-for="g in NAV_GROUPS" :key="g.key" class="relative" :data-navgroup="g.key">
           <!-- 항목이 하나뿐인 그룹은 드롭다운 없이 바로 이동 (2번 클릭 방지) -->
           <RouterLink
             v-if="g.items.length === 1"
@@ -318,6 +360,7 @@ const pageTitle = computed(() =>
             <div v-if="openGroup === g.key" role="menu" class="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 min-w-48 rounded-xl border border-border bg-card shadow-xl p-1.5">
               <RouterLink
                 v-for="item in g.items" :key="item.to" :to="item.to!" :title="item.label"
+                role="menuitem"
                 :class="cn(
                   'flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm whitespace-nowrap transition-colors',
                   isActive(item.to!, item.exact)
@@ -383,8 +426,8 @@ const pageTitle = computed(() =>
             class="lg:hidden h-7 w-7 rounded-md flex items-center justify-center text-foreground/80 hover:bg-accent transition-colors shrink-0"
             :aria-expanded="mobileNavOpen"
             aria-controls="mobile-nav"
-            aria-label="메뉴 열기"
-            data-navgroup
+            :aria-label="mobileNavOpen ? '메뉴 닫기' : '메뉴 열기'"
+            data-navgroup="mobile"
             @click="mobileNavOpen = !mobileNavOpen"
           >
             <Menu :size="18" />

@@ -3,6 +3,9 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { Search, Download } from 'lucide-vue-next';
 import { sbGetAll } from '@/lib/supabase';
 import { exportCsv } from '@/lib/csv';
+import { errMsg } from '@/lib/utils';
+import DataState from '@/components/ui/DataState.vue';
+import TableState from '@/components/ui/TableState.vue';
 
 interface Payroll {
   nik: string; npwp: string | null; no_rek: string | null;
@@ -16,7 +19,8 @@ interface Payroll {
 
 const rows = ref<Payroll[]>([]);
 const loading = ref(true);
-const missing = ref(false);
+const missing = ref(false);              // 테이블 자체가 없음(마이그레이션 미적용)
+const loadError = ref<string | null>(null);   // 권한·네트워크 등 그 외 실패 → 재시도 UI
 
 // staff 마스터(nik → 성명·직급). position 컬럼은 마이그레이션 후 존재(없으면 undefined → —)
 interface StaffRow { nik: string; name: string | null; grade?: string | null; position?: string | null }
@@ -26,7 +30,7 @@ const gradeOf = (nik: string) => staffMap.value.get(nik)?.grade || '—';
 const posOf   = (nik: string) => staffMap.value.get(nik)?.position || '—';
 
 async function load() {
-  loading.value = true; missing.value = false;
+  loading.value = true; missing.value = false; loadError.value = null;
   try {
     const [pay, staff] = await Promise.all([
       sbGetAll<Payroll>('staff_payroll?select=*&order=periode.desc,nik.asc'),
@@ -34,8 +38,16 @@ async function load() {
     ]);
     rows.value = pay;
     staffMap.value = new Map(staff.map(s => [s.nik, s]));
-  } catch {
-    missing.value = true; rows.value = [];
+    // 기본 조회는 '최신월' — '전체'면 같은 사람이 월마다 중복 나열돼 목록이 길고 합계도 오해를 부른다.
+    // (추이가 필요하면 기간 드롭다운에서 '전체'나 다른 월을 고르면 된다)
+    const latest = pay.map(r => r.periode).sort().at(-1);
+    if (latest) periode.value = latest;
+  } catch (e) {
+    rows.value = [];
+    // 404 = 관계 없음(마이그레이션 미적용) → 안내문. 그 외(401·5xx·네트워크)는 사유 + 재시도.
+    const raw = e instanceof Error ? e.message : String(e);
+    if (/:\s*404\b/.test(raw)) missing.value = true;
+    else loadError.value = errMsg(e);
   }
   loading.value = false;
 }
@@ -116,6 +128,8 @@ function downloadCsv() {
       <code>staff_payroll</code> 테이블이 아직 없습니다. <code>supabase/migrations/add_staff_payroll.sql</code> 을 대시보드 SQL Editor에서 실행하면 표시됩니다.
     </div>
 
+    <DataState v-else-if="loadError" :error="loadError" @retry="load" />
+
     <template v-else>
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <p class="text-[11px] text-muted-foreground">
@@ -142,9 +156,10 @@ function downloadCsv() {
       <div class="rounded-xl border border-border bg-card overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-sm whitespace-nowrap">
+            <caption class="sr-only">직원별 급여 상세</caption>
             <thead>
               <tr class="border-b border-border bg-muted/20 text-xs text-muted-foreground">
-                <th v-for="col in STAFF_COLS" :key="col.key" class="font-semibold px-3 py-2.5 cursor-pointer select-none hover:text-foreground" :class="col.right ? 'text-right' : col.center ? 'text-center' : 'text-left'" @click="sortBy(col.key)">
+                <th scope="col" v-for="col in STAFF_COLS" :key="col.key" class="font-semibold px-3 py-2.5 cursor-pointer select-none hover:text-foreground" :class="col.right ? 'text-right' : col.center ? 'text-center' : 'text-left'" @click="sortBy(col.key)">
                   <span class="inline-flex items-center gap-1" :class="[col.right && 'flex-row-reverse', col.center && 'justify-center']">
                     {{ col.label }}
                     <span class="text-[9px] w-2" :class="sort.key === col.key ? 'text-primary' : 'text-muted-foreground/30'">{{ sort.key === col.key ? (sort.dir === 1 ? '▲' : '▼') : '▲' }}</span>
@@ -153,7 +168,11 @@ function downloadCsv() {
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loading"><td colspan="10" class="text-center text-muted-foreground py-10">불러오는 중…</td></tr>
+              <TableState
+                v-if="loading || !paged.length"
+                :colspan="10" :loading="loading" :skeleton-rows="6"
+                empty-text="검색 결과가 없습니다."
+              />
               <tr
                 v-for="r in paged" v-else :key="r.nik + r.periode"
                 class="border-b border-border/50 last:border-b-0 hover:bg-accent/40 transition-colors"
@@ -168,9 +187,6 @@ function downloadCsv() {
                 <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmt(r.total_tunj_tidak_tetap) }}</td>
                 <td class="px-3 py-2.5 text-right tabular-nums font-semibold text-teal-700">{{ fmt(r.total_gaji_gross) }}</td>
                 <td class="px-3 py-2.5 text-center text-muted-foreground tabular-nums">{{ r.periode }}</td>
-              </tr>
-              <tr v-if="!loading && !paged.length">
-                <td colspan="10" class="text-center text-muted-foreground py-10">검색 결과가 없습니다.</td>
               </tr>
             </tbody>
           </table>

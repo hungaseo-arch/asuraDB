@@ -6,8 +6,8 @@
   · 연도마다 제품 분류(Radial/Bias/Solid/Tire/LTR·TBR …)가 달라도 PRODUCT_MAP 으로 흡수.
   · 인코딩(UTF-8 / CP949 / 이중인코딩 mojibake) 자동 복구.
 
-매핑: Radial·Tire·LTR/TBR → TBR, Bias → TBB, Solid·Pneumatic → IND,
-      OTR → OTR, AGR → AGR, Vulkan → Vulkan, Tube → Tube, Flap → Flap.
+매핑: Radial·Tire·LTR/TBR → TBR, Bias → TBB, Solid·PNEU → IND,
+      OTR → OTR, AGR → AGR, VUL → VUL, Tube → Tube, Flap → Flap.
 
 실행:
   uv run python collectors/kpi_importer.py --dry-run     # DB 미반영, 파싱·검증만 출력
@@ -32,9 +32,9 @@ PRODUCT_MAP = {
     "bias": "TBB", "tbb": "TBB",
     "otr": "OTR",
     "agr": "AGR",
-    # → IND (Solid + Pneumatic)
-    "solid": "IND", "pneumatic": "IND", "ind": "IND",
-    "vulkan": "Vulkan",
+    # → IND (Solid + PNEU)
+    "solid": "IND", "PNEU": "IND", "ind": "IND",
+    "VUL": "VUL",
     "tube": "Tube",
     "flap": "Flap",
     # 한글 라벨 (2022 실적 등) — 정상 UTF-8
@@ -59,7 +59,7 @@ for _raw, _code in (
 
 CODE = {  # 표준 제품 → metric id suffix
     "TBR": "tbr", "TBB": "tbb", "OTR": "otr", "AGR": "agr",
-    "IND": "ind", "Vulkan": "vulkan", "Tube": "tube", "Flap": "flap",
+    "IND": "ind", "VUL": "VUL", "Tube": "tube", "Flap": "flap",
 }
 
 # 지표 정의 (kpi_metrics) — 마이그레이션과 동일, 멱등 upsert

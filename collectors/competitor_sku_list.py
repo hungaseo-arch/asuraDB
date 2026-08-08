@@ -57,7 +57,7 @@ SKU_MASTER: list[dict] = [
     {"sku": "OTR-07", "category": "OTR", "size": "20.5R25", "brand_self": "GT Radial XT7",      "brand_comp": "Michelin XADN"},
     {"sku": "OTR-08", "category": "OTR", "size": "24.00R35","brand_self": "GT Radial XT-3",     "brand_comp": "Bridgestone VRTS"},
 
-    # ── IND (Industrial / Forklift — Solid & Pneumatic) ── 6 SKUs ───────────
+    # ── IND (Industrial / Forklift — Solid & PNEU) ── 6 SKUs ───────────
     {"sku": "IND-01", "category": "IND", "size": "6.00-9",  "brand_self": "Forceum Solid F1",   "brand_comp": "Trelleborg T900"},
     {"sku": "IND-02", "category": "IND", "size": "7.00-12", "brand_self": "Forceum Solid F1",   "brand_comp": "Continental SC20"},
     {"sku": "IND-03", "category": "IND", "size": "8.25-15", "brand_self": "Forceum Solid F2",   "brand_comp": "Trelleborg T800"},

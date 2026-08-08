@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { TrendingUp, TrendingDown, Minus, Plus, X, Pencil } from 'lucide-vue-next';
+import { TrendingUp, TrendingDown, Minus, Plus, X, Pencil, Download, RotateCw } from 'lucide-vue-next';
 import { sbGet, sbGetAll, sbPost } from '@/lib/supabase';
 import KpiEntryModal from '@/components/KpiEntryModal.vue';
 import KpiTrendModal, { type TrendSeries } from '@/components/KpiTrendModal.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { exportXlsx } from '@/lib/xlsx';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -313,6 +314,9 @@ function sparkFromVals(vals: number[]): string {
   }).join('L');
 }
 
+// 제품 카드 표시 라벨(데이터·매칭은 원본 유지, 화면 라벨만 치환). Vulkan → VUL
+const PRODUCT_LABELS: Record<string, string> = { Vulkan: 'VUL' };
+const prodLabel = (p: string) => PRODUCT_LABELS[p] ?? p;
 const productCards = computed<ProductCard[]>(() => {
   const order: string[] = [];
   for (const m of kpiMetrics.value) {
@@ -367,6 +371,33 @@ const latestActualLabel = computed<string>(() => {
   return maxMonth ? `${String(y).slice(2)}년 ${maxMonth}월까지 월평균` : '월평균';
 });
 
+// ── 엑셀(.xlsx) 내보내기 — 선택 연도의 지표별 월별 목표/실적 ──────────────────
+function downloadKpiXlsx() {
+  const y = selectedYear.value;
+  const MON = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+  const headers = ['지표', '영문', '단위', '구분', ...MON, '연평균'];
+  const avg = (arr: (number | null)[]) => {
+    const v = arr.filter((n): n is number => n != null);
+    return v.length ? Number((v.reduce((s, n) => s + n, 0) / v.length).toFixed(2)) : null;
+  };
+  const rows: (string | number | null)[][] = [];
+  const metrics = [...kpiMetrics.value].sort((a, b) => a.sort_order - b.sort_order);
+  for (const m of metrics) {
+    const s = kpiSeries.value[m.id];
+    if (!s) continue;
+    const pick = (which: 'actual' | 'target') =>
+      MON.map((_, mi) => {
+        const idx = s.months.indexOf(`${y}-${String(mi + 1).padStart(2, '0')}`);
+        return idx >= 0 ? s[which][idx] ?? null : null;
+      });
+    const act = pick('actual');
+    const tgt = pick('target');
+    rows.push([m.name_ko, m.name_en ?? '', m.unit, '실적', ...act, avg(act)]);
+    rows.push([m.name_ko, m.name_en ?? '', m.unit, '목표', ...tgt, avg(tgt)]);
+  }
+  exportXlsx(`KPI_${y}`, headers, rows, `KPI ${y}`);
+}
+
 // ── Trend modal openers ─────────────────────────────────────────────────────
 
 function toTrendSeries(s: MetricSeries, label: string): TrendSeries {
@@ -378,7 +409,7 @@ function openProductTrend(pc: ProductCard) {
   if (pc.amount) series.push(toTrendSeries(pc.amount, '판매금액'));
   if (pc.qty)    series.push(toTrendSeries(pc.qty, '판매량'));
   if (!series.length) return;
-  trendTitle.value    = `${pc.product} — 판매 추이`;
+  trendTitle.value    = `${prodLabel(pc.product)} — 판매 추이`;
   trendSubtitle.value = '목표 vs 실적 · 월간/연간';
   trendInfo.value     = '';
   trendSource.value   = '';
@@ -579,24 +610,25 @@ onMounted(async () => {
     <!-- Header -->
     <PageHeader title="KPI 모니터링" subtitle="사업 실적 · 산업 핵심 지표 대시보드">
       <template #controls>
-        <div v-if="hasKpi" class="flex items-center gap-1 flex-wrap">
-          <span class="text-xs text-muted-foreground mr-0.5">연도</span>
-          <button
-            v-for="y in availableYears"
-            :key="y"
-            :class="[
-              'px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors tabular-nums',
-              selectedYear === y
-                ? 'bg-primary/15 border-primary/40 text-primary'
-                : 'bg-card border-border text-foreground/80 hover:bg-accent',
-            ]"
-            @click="selectedYear = y"
+        <div v-if="hasKpi" class="flex items-center gap-2">
+          <span class="text-xs text-muted-foreground">연도</span>
+          <select
+            v-model.number="selectedYear"
+            class="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold tabular-nums text-foreground/90 focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
-            {{ y }}
-          </button>
+            <option v-for="y in availableYears" :key="y" :value="y">{{ y }}년</option>
+          </select>
         </div>
       </template>
       <template #actions>
+        <button
+          v-if="hasKpi"
+          class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-2 transition-colors"
+          title="선택 연도 KPI 월별 목표·실적 엑셀 다운로드"
+          @click="downloadKpiXlsx"
+        >
+          <Download :size="14" /> 엑셀
+        </button>
         <button
           v-if="canEditKpi && hasKpi"
           class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-2 transition-colors"
@@ -660,7 +692,7 @@ onMounted(async () => {
               />
             </svg>
 
-            <p v-if="fc.view?.avgMonths" class="absolute top-3 right-3 text-[9px] text-muted-foreground/40 tabular-nums">
+            <p v-if="fc.view?.avgMonths" class="absolute top-9 right-3 text-[9px] text-muted-foreground/40 tabular-nums">
               {{ fc.view.avgMonths }}개월 평균
             </p>
           </button>
@@ -684,7 +716,7 @@ onMounted(async () => {
             @click="openProductTrend(pc)"
           >
             <div class="flex items-center justify-between">
-              <span class="text-sm font-bold text-foreground">{{ pc.product }}</span>
+              <span class="text-sm font-bold text-foreground">{{ prodLabel(pc.product) }}</span>
               <span
                 v-if="pc.amountView?.achv != null"
                 :title="`누적 목표달성률 ${pc.amountView.achv.toFixed(0)}% = ${pc.amountView.avgMonths}개월(Jan~) 실적합÷목표합 — 단월 아님 · 시트 전년대비 Achiv.(%)와 다른 지표`"
@@ -719,7 +751,7 @@ onMounted(async () => {
               </svg>
             </div>
 
-            <p v-if="pc.amountView?.avgMonths" class="absolute top-3 right-3 text-[9px] text-muted-foreground/40 tabular-nums">
+            <p v-if="pc.amountView?.avgMonths" class="absolute top-9 right-3 text-[9px] text-muted-foreground/40 tabular-nums">
               {{ pc.amountView.avgMonths }}개월 평균
             </p>
           </button>
@@ -892,6 +924,13 @@ onMounted(async () => {
       <code class="block text-[11px] bg-muted rounded-lg px-4 py-2 text-left text-muted-foreground whitespace-pre-wrap break-all">
         {{ loadError }}
       </code>
+      <button
+        type="button"
+        class="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+        @click="loadData"
+      >
+        <RotateCw :size="13" /> 다시 시도
+      </button>
     </div>
 
     <!-- Filter empty -->

@@ -1,16 +1,70 @@
 <script setup lang="ts">
-// 경영·성과 › 인건비 — 지점별·월별 인원/인건비(Gross)/평균 인건비
+// 경영·성과 › 인건비 — 지점별·월별 인원/인건비/보상비/THR/상여금/총인건비
 // 데이터: src/data/payrollMonthly.ts (정적 SSOT). 라이트(화이트) 테마 · 기존 뷰(Margin/Monitor) 컨벤션 준수.
 import { ref, computed } from 'vue';
-import { Users, Wallet, Coins, CalendarRange } from 'lucide-vue-next';
+import { Users, Wallet, Coins, CalendarRange, Download } from 'lucide-vue-next';
 import { Bar } from 'vue-chartjs';
 import type { ChartData, ChartDataset, ChartOptions } from 'chart.js';
 import '@/components/charts/chartSetup'; // Chart.js 1회 등록(Line/Bar/Point 포함)
 import PageHeader from '@/components/PageHeader.vue';
+import { exportXlsx } from '@/lib/xlsx';
 import { PAYROLL_TABS, PAYROLL_MONTHS_2026, PAYROLL_UPDATED } from '@/data/payrollMonthly';
+import type { PayrollSeries, PayrollAddon } from '@/data/payrollMonthly';
 
 const cur = ref(0);
 const tab = computed(() => PAYROLL_TABS[cur.value]);
+
+// ── 인건비 부가항목 표 행 (인건비 + 보상비 + THR + 상여금) ──────────────────
+// series 가 없으면(원천 미적재) '-' 로 표시해 0 과 구분한다. THR 은 원천 미정이라 항상 '-'.
+const costRows = computed(() => {
+  const t = tab.value;
+  return [
+    { label: '인건비 (백만IDR)', series: t.salary as PayrollSeries | undefined },
+    { label: '보상비 (백만IDR)', series: t.kompensasi },
+    { label: 'THR (백만IDR)',    series: t.thr },
+    { label: '상여금 (백만IDR)', series: t.insentif },
+  ];
+});
+
+// 총인건비 = 인건비 + 보상비 + THR + 상여금 (없는 항목은 0 취급) — 저장하지 않는 파생값.
+// 2025 평균: 부가항목의 2025 원천이 없으면(avg2025=null) 총합도 산출 불가 → null('-').
+const totalCost = computed<PayrollAddon>(() => {
+  const t = tab.value;
+  const add = (...vals: (number | null | undefined)[]) => vals.reduce<number>((s, v) => s + (v ?? 0), 0);
+  const addons = [t.kompensasi, t.thr, t.insentif].filter(Boolean) as PayrollAddon[];
+  const addons2025Known = addons.every(s => s.avg2025 != null);
+  return {
+    avg2025: addons2025Known
+      ? add(t.salary.avg2025, t.kompensasi?.avg2025, t.thr?.avg2025, t.insentif?.avg2025)
+      : null,
+    m2026: PAYROLL_MONTHS_2026.map((_, i) =>
+      add(t.salary.m2026[i], t.kompensasi?.m2026[i], t.thr?.m2026[i], t.insentif?.m2026[i])),
+    avg2026: add(t.salary.avg2026, t.kompensasi?.avg2026, t.thr?.avg2026, t.insentif?.avg2026),
+  };
+});
+
+// ── 엑셀(.xlsx) 내보내기 — 현재 탭의 피벗 표 전체(인원·평균·인건비 구성·총인건비) ──
+function downloadLaborXlsx() {
+  const t = tab.value;
+  const headers = ['구분', '2025 평균', ...PAYROLL_MONTHS_2026, '2026 Avg'];
+  const rows: (string | number)[][] = [];
+  const dash = (v: number | null | undefined) => (v == null ? '-' : v);
+  // ① 인원 (지점/부서별)
+  for (const r of t.rows) rows.push([r.label, r.avg2025, ...r.m2026, r.avg2026]);
+  // ② 인원 합계 · 평균 인건비
+  rows.push(['인원 합계 (명)', t.total.avg2025, ...t.total.m2026, t.total.avg2026]);
+  rows.push(['평균 인건비 (백만IDR/인)', t.avgcost.avg2025, ...t.avgcost.m2026, t.avgcost.avg2026]);
+  // ③ 인건비 구성 (미적재 항목은 '-', 2025 원천 없는 부가항목도 '-')
+  for (const cr of costRows.value) {
+    rows.push(cr.series
+      ? [cr.label, dash(cr.series.avg2025), ...cr.series.m2026, cr.series.avg2026]
+      : [cr.label, '-', ...PAYROLL_MONTHS_2026.map(() => '-'), '-']);
+  }
+  // ④ 총인건비 (파생 합계)
+  const tc = totalCost.value;
+  rows.push(['총인건비 (백만IDR)', dash(tc.avg2025), ...tc.m2026, tc.avg2026]);
+  exportXlsx(`인건비_${t.name}_${PAYROLL_UPDATED}`, headers, rows, `인건비_${t.name}`);
+}
 
 const fmt = (n: number, d = 1) =>
   Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -27,7 +81,7 @@ const kpis = computed(() => {
   return [
     { icon: Users,  label: '인원 (최신월)',     value: fmt(t.total.m2026[i], 0),  unit: '명',
       delta: pct(t.total.m2026[i], t.total.avg2025), foot: 'vs 2025평균' },
-    { icon: Wallet, label: '인건비 Gross (최신월)', value: fmt(t.salary.m2026[i], 1), unit: '백만IDR',
+    { icon: Wallet, label: '인건비 (최신월)', value: fmt(t.salary.m2026[i], 1), unit: '백만IDR',
       delta: pct(t.salary.m2026[i], t.salary.avg2025), foot: 'vs 2025평균' },
     { icon: Coins,  label: '평균 인건비 (최신월)',   value: fmt(t.avgcost.m2026[i], 1), unit: '백만IDR/인',
       delta: pct(t.avgcost.m2026[i], t.avgcost.avg2025), foot: 'vs 2025평균' },
@@ -91,7 +145,7 @@ const notes = computed(() => {
   <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
     <PageHeader
       title="인건비"
-      :subtitle="`지점별·월별 인원 / 인건비(Gross) / 평균 인건비 · 단위: 인원=명, 인건비=백만 IDR(Juta) · 기준 ${PAYROLL_UPDATED}`"
+      :subtitle="`지점별·월별 인원 / 인건비 / 평균 인건비 · 단위: 인원=명, 인건비=백만 IDR(Juta) · 기준 ${PAYROLL_UPDATED}`"
     >
       <template #controls>
         <div class="flex flex-wrap gap-1.5">
@@ -104,6 +158,15 @@ const notes = computed(() => {
             @click="cur = i"
           >{{ t.name }}</button>
         </div>
+      </template>
+      <template #actions>
+        <button
+          class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-2 transition-colors"
+          title="현재 탭 표를 엑셀(.xlsx)로 내려받기"
+          @click="downloadLaborXlsx"
+        >
+          <Download :size="14" /> 엑셀
+        </button>
       </template>
     </PageHeader>
 
@@ -125,7 +188,7 @@ const notes = computed(() => {
     <!-- 월별 추이 차트 -->
     <div class="rounded-xl border border-border bg-card p-4">
       <h2 class="text-sm font-semibold mb-3">2026년 월별 추이 — 인건비(막대) · 인원(선)</h2>
-      <div class="relative h-75">
+      <div class="relative h-56.25 w-3/4 mx-auto">
         <Bar :data="chartData" :options="chartOptions" />
       </div>
     </div>
@@ -135,15 +198,16 @@ const notes = computed(() => {
       <h2 class="text-sm font-semibold mb-3">{{ tab.name }} — 월별 상세</h2>
       <div class="overflow-x-auto">
         <table class="w-full text-xs tabular-nums whitespace-nowrap border-collapse">
+          <caption class="sr-only">{{ tab.name }} — 월별 인건비 상세</caption>
           <thead>
             <tr class="text-muted-foreground">
-              <th rowspan="2" class="text-left font-semibold px-2 py-2 border-b border-border">구분 (Kategori)</th>
-              <th rowspan="2" class="px-2 py-2 border-b border-border bg-muted/40">2025<br>평균</th>
-              <th :colspan="PAYROLL_MONTHS_2026.length" class="px-2 py-1 border-b border-border">2026</th>
-              <th rowspan="2" class="px-2 py-2 border-b border-border bg-primary/10 text-primary">2026<br>Avg</th>
+              <th scope="col" rowspan="2" class="text-left font-semibold px-2 py-2 border-b border-border">구분 (Kategori)</th>
+              <th scope="col" rowspan="2" class="px-2 py-2 border-b border-border bg-muted/40">2025<br>평균</th>
+              <th scope="colgroup" :colspan="PAYROLL_MONTHS_2026.length" class="px-2 py-1 border-b border-border">2026</th>
+              <th scope="col" rowspan="2" class="px-2 py-2 border-b border-border bg-primary/10 text-primary">2026<br>Avg</th>
             </tr>
             <tr class="text-muted-foreground">
-              <th v-for="m in PAYROLL_MONTHS_2026" :key="m" class="px-2 py-1.5 border-b border-border font-semibold">{{ m }}</th>
+              <th scope="col" v-for="m in PAYROLL_MONTHS_2026" :key="m" class="px-2 py-1.5 border-b border-border font-semibold">{{ m }}</th>
             </tr>
           </thead>
           <tbody>
@@ -159,17 +223,32 @@ const notes = computed(() => {
               <td v-for="(v, i) in tab.total.m2026" :key="i" class="text-center px-2 py-2">{{ fmt(v, 0) }}</td>
               <td class="text-center px-2 py-2">{{ fmt(tab.total.avg2026, 1) }}</td>
             </tr>
-            <tr class="border-b border-border bg-primary/10 font-bold text-primary">
-              <td class="text-left px-2 py-2">인건비 Gross (백만IDR)</td>
-              <td class="text-center px-2 py-2">{{ fmt(tab.salary.avg2025, 1) }}</td>
-              <td v-for="(v, i) in tab.salary.m2026" :key="i" class="text-center px-2 py-2">{{ fmt(v, 1) }}</td>
-              <td class="text-center px-2 py-2">{{ fmt(tab.salary.avg2026, 1) }}</td>
-            </tr>
             <tr class="bg-muted/20">
               <td class="text-left px-2 py-2">평균 인건비 (백만IDR/인)</td>
               <td class="text-center px-2 py-2">{{ fmt(tab.avgcost.avg2025, 1) }}</td>
               <td v-for="(v, i) in tab.avgcost.m2026" :key="i" class="text-center px-2 py-2">{{ fmt(v, 1) }}</td>
               <td class="text-center px-2 py-2">{{ fmt(tab.avgcost.avg2026, 1) }}</td>
+            </tr>
+
+            <!-- ── 인건비 구성: 인건비 + 보상비 + THR + 상여금 → 총인건비 ──
+                 값 미적재(보상비·THR·상여금) 셀은 '-' 로 표시(0 과 구분). -->
+            <tr
+              v-for="(cr, ri) in costRows" :key="cr.label"
+              class="border-b border-border/50"
+              :class="ri === 0 ? 'border-t-2 border-t-border' : ''"
+            >
+              <td class="text-left px-2 py-2 text-foreground/90">{{ cr.label }}</td>
+              <td class="text-center px-2 py-2 bg-muted/20">{{ cr.series && cr.series.avg2025 != null ? fmt(cr.series.avg2025, 1) : '-' }}</td>
+              <td v-for="(_m, i) in PAYROLL_MONTHS_2026" :key="i" class="text-center px-2 py-2">{{ cr.series ? fmt(cr.series.m2026[i], 1) : '-' }}</td>
+              <td class="text-center px-2 py-2 bg-primary/5">{{ cr.series ? fmt(cr.series.avg2026, 1) : '-' }}</td>
+            </tr>
+
+            <!-- 총인건비 = 4개 합계(파생값) · SAGE GREEN 강조(§7) -->
+            <tr class="font-bold" :style="{ background: '#E8F5E9', color: '#546E7A' }">
+              <td class="text-left px-2 py-2">총인건비 (백만IDR)</td>
+              <td class="text-center px-2 py-2">{{ totalCost.avg2025 != null ? fmt(totalCost.avg2025, 1) : '-' }}</td>
+              <td v-for="(v, i) in totalCost.m2026" :key="i" class="text-center px-2 py-2">{{ fmt(v, 1) }}</td>
+              <td class="text-center px-2 py-2">{{ fmt(totalCost.avg2026, 1) }}</td>
             </tr>
           </tbody>
         </table>

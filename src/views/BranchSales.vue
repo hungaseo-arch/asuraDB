@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { Download, Upload, Loader2, MoreHorizontal } from 'lucide-vue-next';
+import { Download, Upload, Loader2, MoreHorizontal, RotateCw } from 'lucide-vue-next';
 import PageHeader from '@/components/PageHeader.vue';
-import { exportCsv } from '@/lib/csv';
+import { exportXlsx } from '@/lib/xlsx';
 import { sbGetAll, sbPost, sbDelete } from '@/lib/supabase';
 
 // ⋯ 액션 메뉴 (엑셀·업로드·데이터입력) — 바깥 클릭으로 닫힘
@@ -31,7 +31,7 @@ interface Branch {
   excluded: string[];
 }
 
-const LEGACY_DATA: Record<string, Branch> = {"surabaya": {"name": "Surabaya", "m25": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nop", "Des"], "m26": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun"], "sectionI": {"rows": [{"name": "RADIAL", "v25": [45, 34, 75, 42, 24, 191, 484, 617, 484, 514, 1109, 121], "a25": 312, "v26": [455, 139, 148, 324, 50, 696], "a26": 302}, {"name": "AGR", "v25": [null, null, null, null, null, null, null, null, null, null, null, null], "a25": null, "v26": [null, 3, 2, 4, 5, 52], "a26": 11}, {"name": "OTR", "v25": [null, null, null, 2, null, null, null, null, null, 25, 8, 1], "a25": 3, "v26": [12, 4, 5, 17, 3, 21], "a26": 10}, {"name": "BIAS", "v25": [398, 224, 224, 269, 311, 217, 343, 303, 382, 349, 312, 254], "a25": 299, "v26": [383, 170, 115, 217, 79, 106], "a26": 178}, {"name": "SOLID", "v25": [null, 2, null, null, 6, null, 14, 28, 50, 23, 48, 64], "a25": 20, "v26": [2, 42, 16, 18, 8, 10], "a26": 16}, {"name": "PNEUMATIC", "v25": [null, null, null, null, null, null, null, null, null, null, null, null], "a25": null, "v26": [10, 4, 2, null, null, null], "a26": 3}, {"name": "TUBE", "v25": [135, 115, 252, 175, 269, 678, 1279, 1795, 1072, 1054, 1793, 1028], "a25": 804, "v26": [1363, 2592, 481, 1195, 285, 1509], "a26": 1238}, {"name": "FLAP", "v25": [127, 495, 188, 168, 230, 416, 697, 848, 843, 987, 1422, 353], "a25": 565, "v26": [1183, 500, 277, 680, 198, 850], "a26": 615}, {"name": "VULKANISIRJADI", "v25": [null, 22, 20, 10, 20, 4, 12, null, 4, null, null, null], "a25": 8, "v26": [null, null, null, null, null, null], "a26": null}], "grandTotal": {"v25": [705, 892, 759, 666, 860, 1506, 2829, 3591, 2835, 2952, 4692, 1821], "a25": 2009, "v26": [3408, 3454, 1046, 2455, 628, 3244], "a26": 2370}, "amount": {"v25": [905, 671, 721, 706, 761, 1023, 2077, 3043, 2440, 2635, 5411, 1138], "a25": 1794, "v26": [2059, 1233, 695, 1413, 371, 2945], "a26": 1453}}, "sectionII": {"rows": [{"name": "RADIAL", "v25": [45, 34, 75, 42, 24, 191, 362, 191, 143, 247, 385, 97], "a25": 153, "v26": [256, 139, 148, 324, 50, 154], "a26": 179}, {"name": "AGR", "v25": [null, null, null, null, null, null, null, null, null, null, null, null], "a25": null, "v26": [null, 3, 2, 4, 5, 32], "a26": 8}, {"name": "OTR", "v25": [null, null, null, 2, null, null, null, null, null, 5, 8, 1], "a25": 1, "v26": [12, 4, 5, 17, 3, 21], "a26": 10}, {"name": "BIAS", "v25": [398, 224, 224, 269, 311, 217, 343, 303, 382, 349, 312, 254], "a25": 299, "v26": [373, 170, 115, 217, 79, 106], "a26": 177}, {"name": "SOLID", "v25": [null, 2, null, null, 6, null, 14, 28, 50, 8, 48, 64], "a25": 18, "v26": [2, 42, 16, 18, 8, 10], "a26": 16}, {"name": "PNEUMATIC", "v25": [null, null, null, null, null, null, null, null, null, null, null, null], "a25": null, "v26": [10, 4, 2, null, null, null], "a26": 3}, {"name": "TUBE", "v25": [135, 115, 252, 175, 269, 382, 961, 743, 531, 647, 698, 658], "a25": 464, "v26": [1154, 2132, 441, 1065, 271, 687], "a26": 958}, {"name": "FLAP", "v25": [127, 495, 188, 148, 230, 416, 605, 360, 484, 585, 728, 353], "a25": 393, "v26": [974, 350, 217, 680, 198, 266], "a26": 448}, {"name": "VULKANISIRJADI", "v25": [null, 22, 20, 10, 20, 4, 12, null, 4, null, null, null], "a25": 8, "v26": [null, null, null, null, null, null], "a26": null}], "grandTotal": {"v25": [705, 892, 759, 646, 860, 1210, 2297, 1625, 1594, 1841, 2179, 1427], "a25": 1336, "v26": [2781, 2844, 946, 2325, 614, 1276], "a26": 1798}, "amount": {"v25": [905, 671, 721, 705, 761, 911, 1679, 1129, 1166, 1156, 2217, 889], "a25": 1076, "v26": [1444, 1046, 674, 1362, 368, 805], "a26": 950}}, "sectionIII": {"people": [{"name": "Arif", "v25": [null, null, 60, null, 39, null, 10, null, null, null, 20, null], "a25": 11, "v26": [208, 6, null, null, null, null], "a26": 36}, {"name": "Farhan", "v25": [null, null, null, null, null, 22, 284, 137, 60, 9, 172, 374], "a25": 88, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Fiki", "v25": [null, null, null, 4, 1, null, null, null, null, null, null, null], "a25": 0, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Hanif", "v25": [null, null, 34, null, 20, 112, null, 80, null, 60, 50, null], "a25": 30, "v26": [0, 88, null, null, null, 25], "a26": 19}, {"name": "Hari", "v25": [76, 86, 254, 203, 204, 131, 387, 486, 521, 535, 434, 356], "a25": 306, "v26": [325, 437, 230, 431, 82, 93], "a26": 266}, {"name": "Heris", "v25": [null, null, null, null, null, 17, 116, 5, null, null, null, null], "a25": 12, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Julmi", "v25": [null, null, null, null, null, null, null, null, null, null, 60, null], "a25": 5, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Lubis", "v25": [null, null, null, null, null, null, null, null, null, null, 510, null], "a25": 43, "v26": [null, null, 13, null, null, null], "a26": 2}, {"name": "Rendi", "v25": [null, null, null, null, null, null, null, null, null, null, null, null], "a25": null, "v26": [null, null, 40, 49, null, null], "a26": 15}, {"name": "Rio", "v25": [null, null, null, null, null, null, 250, null, null, 126, 129, null], "a25": 42, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Rizki", "v25": [24, 24, 14, 18, 32, 303, 17, 48, 20, null, 2, 3], "a25": 42, "v26": [260, 154, 104, 117, 7, 71], "a26": 119}, {"name": "Tri", "v25": [null, null, null, null, null, null, null, null, 57, 38, 17, 46], "a25": 13, "v26": [22, 8, null, null, null, null], "a26": 5}, {"name": "Wisnu", "v25": [null, 2, null, 2, null, null, null, 26, 36, null, null, 6], "a25": 6, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Yono", "v25": [605, 380, 397, 419, 564, 625, 1233, 820, 836, 1045, 764, 642], "a25": 694, "v26": [628, 353, 287, 765, 279, 616], "a26": 488}, {"name": "Yudha", "v25": [null, null, null, null, null, null, null, 23, null, null, 21, null], "a25": 4, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Yusuf", "v25": [null, 400, null, null, null, null, null, null, 64, 28, null, null], "a25": 41, "v26": [null, null, null, null, null, null], "a26": null}], "grandTotal": {"v25": [705, 892, 759, 646, 860, 1210, 2297, 1625, 1594, 1841, 2179, 1427], "a25": 1336, "v26": [2781, 2844, 946, 2325, 614, 1276], "a26": 1798}, "amount": {"v25": [905, 671, 721, 705, 761, 911, 1679, 1129, 1166, 1156, 2217, 889], "a25": 1076, "v26": [1444, 1046, 674, 1362, 368, 805], "a26": 950}}, "sectionIV": {"Sales": {"v25": [2, 2, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3], "a25": 3, "v26": [3, 4, 3, 3, 2, 2], "a26": 3}, "Admin": {"v25": [2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2], "a25": 2, "v26": [2, 2, 2, 2, 2, 2], "a26": 2}, "Delivery": {"v25": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2], "a25": 1, "v26": [2, 3, 3, 3, 4, 4], "a26": 3}, "Sub. Total": {"v25": [5, 5, 7, 7, 7, 7, 6, 5, 6, 7, 7, 7], "a25": 6, "v26": [7, 9, 8, 8, 8, 8], "a26": 8}, "Petty": {"v25": [10, 11, 11, 10, 14, 11, 14, 16, 18, 15, 19, 13], "a25": 13, "v26": [15, 9, 15, 11, 8, 6], "a26": 11}}, "excluded": ["CV. Arena Ban Indonesia", "CV. Sumber Sakti", "PT. Grand Prix Indoagung", "PT. Jangkar Emas Teguh", "PT. Sumber Sakti Prima Mandiri", "Aneka Roda Kencana"]}, "semarang": {"name": "Semarang", "m25": ["Okt", "Nop", "Des"], "m26": ["Jan", "Feb", "Mar", "Apr", "Mei"], "sectionI": {"rows": [{"name": "RADIAL", "v25": [null, 36, 81], "a25": 39, "v26": [111, 74, 31, 115, 127], "a26": 91.6}, {"name": "BIAS", "v25": [null, null, null], "a25": null, "v26": [null, null, null, 20, null], "a26": 4}, {"name": "SOLID", "v25": [16, 19, 14], "a25": 16, "v26": [22, 42, 14, 81, 7], "a26": 33.2}, {"name": "TUBE", "v25": [null, 41, 111], "a25": 51, "v26": [261, 305, 236, 794, 1039], "a26": 527}, {"name": "FLAP", "v25": [null, 92, 91], "a25": 61, "v26": [191, 120, 111, 389, 437], "a26": 249.6}, {"name": "VULKANISIR JADI", "v25": [null, null, null], "a25": null, "v26": [null, null, null, 5, null], "a26": 1}], "grandTotal": {"v25": [16, 188, 297], "a25": 167, "v26": [585, 541, 392, 1404, 1610], "a26": 906.4}, "amount": {"v25": [25, 109, 145], "a25": 93, "v26": [267, 260, 164, 599, 448], "a26": 347.6}}, "sectionII": {"rows": [{"name": "RADIAL", "v25": [null, 36, 81], "a25": 59, "v26": [111, 74, 31, 115, 127], "a26": 91.6}, {"name": "BIAS", "v25": [null, null, null], "a25": null, "v26": [null, null, null, 20, null], "a26": 4}, {"name": "SOLID", "v25": [null, 2, 2], "a25": 2, "v26": [null, null, 6, 18, 7], "a26": 6.2}, {"name": "TUBE", "v25": [null, 41, 111], "a25": 76, "v26": [261, 305, 236, 790, 1039], "a26": 526.2}, {"name": "FLAP", "v25": [null, 32, 91], "a25": 62, "v26": [171, 120, 111, 355, 437], "a26": 238.8}, {"name": "VULKANISIRJADI", "v25": [null, null, null], "a25": null, "v26": [null, null, null, null, null], "a26": null}], "grandTotal": {"v25": [null, 111, 285], "a25": 198, "v26": [543, 499, 384, 1298, 1610], "a26": 866.8}, "amount": {"v25": [null, 75, 129], "a25": 102, "v26": [232, 201, 148, 485, 448], "a26": 302.8}}, "sectionIII": {"people": [{"name": "Firman", "v25": [null, 90, null], "a25": 45, "v26": [145, 238, 210, 774, 475], "a26": 368.4}, {"name": "Joko", "v25": [null, 21, 283], "a25": 152, "v26": [298, 198, 117, 523, 1133], "a26": 453.8}, {"name": "Putra", "v25": [null, null, null], "a25": null, "v26": [null, null, null, null, 2], "a26": 0.4}, {"name": "Rozzaq", "v25": [null, null, null], "a25": null, "v26": [null, null, null, 1, null], "a26": 0.2}, {"name": "Sam an", "v25": [null, null, 2], "a25": 1, "v26": [null, null, null, null, null], "a26": null}, {"name": "Ugi", "v25": [null, null, null], "a25": null, "v26": [100, 63, 57, null, null], "a26": 44}], "grandTotal": {"v25": [null, 111, 285], "a25": 198, "v26": [543, 499, 384, 1298, 1610], "a26": 866.8}, "amount": {"v25": [null, 75, 129], "a25": 102, "v26": [232, 201, 148, 485, 448], "a26": 302.8}}, "sectionIV": {"Sales": {"v25": [2, 2, 1], "a25": 2, "v26": [3, 4, 4, 3, 3], "a26": 3.4}, "Admin": {"v25": [1, 1, 1], "a25": 1, "v26": [1, 1, 1, 1, 1], "a26": 1}, "Delivery": {"v25": [null, null, null], "a25": null, "v26": [null, null, null, null, null], "a26": null}, "Total (Person)": {"v25": [3, 3, 2], "a25": 3, "v26": [4, 5, 5, 4, 4], "a26": 4.4}, "Petty": {"v25": [0.3, 1, 2.2], "a25": 1.2, "v26": [8.9, 7.5, 5.2, 10.7, 5.4], "a26": 7.5}}, "excluded": ["CV. NASAMED INTI SUKSES", "CV. MAJESTI MITRA SEJATI", "CV. KARYA MAJU BAN", "CV. MASA SEMPURNA", "PT. DIAMOND FAJAR JAYA", "PT. DOA KELUARGA TIGASATUTIGA"]}};
+const LEGACY_DATA: Record<string, Branch> = {"surabaya": {"name": "Surabaya", "m25": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nop", "Des"], "m26": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun"], "sectionI": {"rows": [{"name": "RADIAL", "v25": [45, 34, 75, 42, 24, 191, 484, 617, 484, 514, 1109, 121], "a25": 312, "v26": [455, 139, 148, 324, 50, 696], "a26": 302}, {"name": "AGR", "v25": [null, null, null, null, null, null, null, null, null, null, null, null], "a25": null, "v26": [null, 3, 2, 4, 5, 52], "a26": 11}, {"name": "OTR", "v25": [null, null, null, 2, null, null, null, null, null, 25, 8, 1], "a25": 3, "v26": [12, 4, 5, 17, 3, 21], "a26": 10}, {"name": "BIAS", "v25": [398, 224, 224, 269, 311, 217, 343, 303, 382, 349, 312, 254], "a25": 299, "v26": [383, 170, 115, 217, 79, 106], "a26": 178}, {"name": "SOLID", "v25": [null, 2, null, null, 6, null, 14, 28, 50, 23, 48, 64], "a25": 20, "v26": [2, 42, 16, 18, 8, 10], "a26": 16}, {"name": "PNEU", "v25": [null, null, null, null, null, null, null, null, null, null, null, null], "a25": null, "v26": [10, 4, 2, null, null, null], "a26": 3}, {"name": "TUBE", "v25": [135, 115, 252, 175, 269, 678, 1279, 1795, 1072, 1054, 1793, 1028], "a25": 804, "v26": [1363, 2592, 481, 1195, 285, 1509], "a26": 1238}, {"name": "FLAP", "v25": [127, 495, 188, 168, 230, 416, 697, 848, 843, 987, 1422, 353], "a25": 565, "v26": [1183, 500, 277, 680, 198, 850], "a26": 615}, {"name": "VUL", "v25": [null, 22, 20, 10, 20, 4, 12, null, 4, null, null, null], "a25": 8, "v26": [null, null, null, null, null, null], "a26": null}], "grandTotal": {"v25": [705, 892, 759, 666, 860, 1506, 2829, 3591, 2835, 2952, 4692, 1821], "a25": 2009, "v26": [3408, 3454, 1046, 2455, 628, 3244], "a26": 2370}, "amount": {"v25": [905, 671, 721, 706, 761, 1023, 2077, 3043, 2440, 2635, 5411, 1138], "a25": 1794, "v26": [2059, 1233, 695, 1413, 371, 2945], "a26": 1453}}, "sectionII": {"rows": [{"name": "RADIAL", "v25": [45, 34, 75, 42, 24, 191, 362, 191, 143, 247, 385, 97], "a25": 153, "v26": [256, 139, 148, 324, 50, 154], "a26": 179}, {"name": "AGR", "v25": [null, null, null, null, null, null, null, null, null, null, null, null], "a25": null, "v26": [null, 3, 2, 4, 5, 32], "a26": 8}, {"name": "OTR", "v25": [null, null, null, 2, null, null, null, null, null, 5, 8, 1], "a25": 1, "v26": [12, 4, 5, 17, 3, 21], "a26": 10}, {"name": "BIAS", "v25": [398, 224, 224, 269, 311, 217, 343, 303, 382, 349, 312, 254], "a25": 299, "v26": [373, 170, 115, 217, 79, 106], "a26": 177}, {"name": "SOLID", "v25": [null, 2, null, null, 6, null, 14, 28, 50, 8, 48, 64], "a25": 18, "v26": [2, 42, 16, 18, 8, 10], "a26": 16}, {"name": "PNEU", "v25": [null, null, null, null, null, null, null, null, null, null, null, null], "a25": null, "v26": [10, 4, 2, null, null, null], "a26": 3}, {"name": "TUBE", "v25": [135, 115, 252, 175, 269, 382, 961, 743, 531, 647, 698, 658], "a25": 464, "v26": [1154, 2132, 441, 1065, 271, 687], "a26": 958}, {"name": "FLAP", "v25": [127, 495, 188, 148, 230, 416, 605, 360, 484, 585, 728, 353], "a25": 393, "v26": [974, 350, 217, 680, 198, 266], "a26": 448}, {"name": "VUL", "v25": [null, 22, 20, 10, 20, 4, 12, null, 4, null, null, null], "a25": 8, "v26": [null, null, null, null, null, null], "a26": null}], "grandTotal": {"v25": [705, 892, 759, 646, 860, 1210, 2297, 1625, 1594, 1841, 2179, 1427], "a25": 1336, "v26": [2781, 2844, 946, 2325, 614, 1276], "a26": 1798}, "amount": {"v25": [905, 671, 721, 705, 761, 911, 1679, 1129, 1166, 1156, 2217, 889], "a25": 1076, "v26": [1444, 1046, 674, 1362, 368, 805], "a26": 950}}, "sectionIII": {"people": [{"name": "Arif", "v25": [null, null, 60, null, 39, null, 10, null, null, null, 20, null], "a25": 11, "v26": [208, 6, null, null, null, null], "a26": 36}, {"name": "Farhan", "v25": [null, null, null, null, null, 22, 284, 137, 60, 9, 172, 374], "a25": 88, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Fiki", "v25": [null, null, null, 4, 1, null, null, null, null, null, null, null], "a25": 0, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Hanif", "v25": [null, null, 34, null, 20, 112, null, 80, null, 60, 50, null], "a25": 30, "v26": [0, 88, null, null, null, 25], "a26": 19}, {"name": "Hari", "v25": [76, 86, 254, 203, 204, 131, 387, 486, 521, 535, 434, 356], "a25": 306, "v26": [325, 437, 230, 431, 82, 93], "a26": 266}, {"name": "Heris", "v25": [null, null, null, null, null, 17, 116, 5, null, null, null, null], "a25": 12, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Julmi", "v25": [null, null, null, null, null, null, null, null, null, null, 60, null], "a25": 5, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Lubis", "v25": [null, null, null, null, null, null, null, null, null, null, 510, null], "a25": 43, "v26": [null, null, 13, null, null, null], "a26": 2}, {"name": "Rendi", "v25": [null, null, null, null, null, null, null, null, null, null, null, null], "a25": null, "v26": [null, null, 40, 49, null, null], "a26": 15}, {"name": "Rio", "v25": [null, null, null, null, null, null, 250, null, null, 126, 129, null], "a25": 42, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Rizki", "v25": [24, 24, 14, 18, 32, 303, 17, 48, 20, null, 2, 3], "a25": 42, "v26": [260, 154, 104, 117, 7, 71], "a26": 119}, {"name": "Tri", "v25": [null, null, null, null, null, null, null, null, 57, 38, 17, 46], "a25": 13, "v26": [22, 8, null, null, null, null], "a26": 5}, {"name": "Wisnu", "v25": [null, 2, null, 2, null, null, null, 26, 36, null, null, 6], "a25": 6, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Yono", "v25": [605, 380, 397, 419, 564, 625, 1233, 820, 836, 1045, 764, 642], "a25": 694, "v26": [628, 353, 287, 765, 279, 616], "a26": 488}, {"name": "Yudha", "v25": [null, null, null, null, null, null, null, 23, null, null, 21, null], "a25": 4, "v26": [null, null, null, null, null, null], "a26": null}, {"name": "Yusuf", "v25": [null, 400, null, null, null, null, null, null, 64, 28, null, null], "a25": 41, "v26": [null, null, null, null, null, null], "a26": null}], "grandTotal": {"v25": [705, 892, 759, 646, 860, 1210, 2297, 1625, 1594, 1841, 2179, 1427], "a25": 1336, "v26": [2781, 2844, 946, 2325, 614, 1276], "a26": 1798}, "amount": {"v25": [905, 671, 721, 705, 761, 911, 1679, 1129, 1166, 1156, 2217, 889], "a25": 1076, "v26": [1444, 1046, 674, 1362, 368, 805], "a26": 950}}, "sectionIV": {"Sales": {"v25": [2, 2, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3], "a25": 3, "v26": [3, 4, 3, 3, 2, 2], "a26": 3}, "Admin": {"v25": [2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2], "a25": 2, "v26": [2, 2, 2, 2, 2, 2], "a26": 2}, "Delivery": {"v25": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2], "a25": 1, "v26": [2, 3, 3, 3, 4, 4], "a26": 3}, "Sub. Total": {"v25": [5, 5, 7, 7, 7, 7, 6, 5, 6, 7, 7, 7], "a25": 6, "v26": [7, 9, 8, 8, 8, 8], "a26": 8}, "Petty": {"v25": [10, 11, 11, 10, 14, 11, 14, 16, 18, 15, 19, 13], "a25": 13, "v26": [15, 9, 15, 11, 8, 6], "a26": 11}}, "excluded": ["CV. Arena Ban Indonesia", "CV. Sumber Sakti", "PT. Grand Prix Indoagung", "PT. Jangkar Emas Teguh", "PT. Sumber Sakti Prima Mandiri", "Aneka Roda Kencana"]}, "semarang": {"name": "Semarang", "m25": ["Okt", "Nop", "Des"], "m26": ["Jan", "Feb", "Mar", "Apr", "Mei"], "sectionI": {"rows": [{"name": "RADIAL", "v25": [null, 36, 81], "a25": 39, "v26": [111, 74, 31, 115, 127], "a26": 91.6}, {"name": "BIAS", "v25": [null, null, null], "a25": null, "v26": [null, null, null, 20, null], "a26": 4}, {"name": "SOLID", "v25": [16, 19, 14], "a25": 16, "v26": [22, 42, 14, 81, 7], "a26": 33.2}, {"name": "TUBE", "v25": [null, 41, 111], "a25": 51, "v26": [261, 305, 236, 794, 1039], "a26": 527}, {"name": "FLAP", "v25": [null, 92, 91], "a25": 61, "v26": [191, 120, 111, 389, 437], "a26": 249.6}, {"name": "VUL JADI", "v25": [null, null, null], "a25": null, "v26": [null, null, null, 5, null], "a26": 1}], "grandTotal": {"v25": [16, 188, 297], "a25": 167, "v26": [585, 541, 392, 1404, 1610], "a26": 906.4}, "amount": {"v25": [25, 109, 145], "a25": 93, "v26": [267, 260, 164, 599, 448], "a26": 347.6}}, "sectionII": {"rows": [{"name": "RADIAL", "v25": [null, 36, 81], "a25": 59, "v26": [111, 74, 31, 115, 127], "a26": 91.6}, {"name": "BIAS", "v25": [null, null, null], "a25": null, "v26": [null, null, null, 20, null], "a26": 4}, {"name": "SOLID", "v25": [null, 2, 2], "a25": 2, "v26": [null, null, 6, 18, 7], "a26": 6.2}, {"name": "TUBE", "v25": [null, 41, 111], "a25": 76, "v26": [261, 305, 236, 790, 1039], "a26": 526.2}, {"name": "FLAP", "v25": [null, 32, 91], "a25": 62, "v26": [171, 120, 111, 355, 437], "a26": 238.8}, {"name": "VUL", "v25": [null, null, null], "a25": null, "v26": [null, null, null, null, null], "a26": null}], "grandTotal": {"v25": [null, 111, 285], "a25": 198, "v26": [543, 499, 384, 1298, 1610], "a26": 866.8}, "amount": {"v25": [null, 75, 129], "a25": 102, "v26": [232, 201, 148, 485, 448], "a26": 302.8}}, "sectionIII": {"people": [{"name": "Firman", "v25": [null, 90, null], "a25": 45, "v26": [145, 238, 210, 774, 475], "a26": 368.4}, {"name": "Joko", "v25": [null, 21, 283], "a25": 152, "v26": [298, 198, 117, 523, 1133], "a26": 453.8}, {"name": "Putra", "v25": [null, null, null], "a25": null, "v26": [null, null, null, null, 2], "a26": 0.4}, {"name": "Rozzaq", "v25": [null, null, null], "a25": null, "v26": [null, null, null, 1, null], "a26": 0.2}, {"name": "Sam an", "v25": [null, null, 2], "a25": 1, "v26": [null, null, null, null, null], "a26": null}, {"name": "Ugi", "v25": [null, null, null], "a25": null, "v26": [100, 63, 57, null, null], "a26": 44}], "grandTotal": {"v25": [null, 111, 285], "a25": 198, "v26": [543, 499, 384, 1298, 1610], "a26": 866.8}, "amount": {"v25": [null, 75, 129], "a25": 102, "v26": [232, 201, 148, 485, 448], "a26": 302.8}}, "sectionIV": {"Sales": {"v25": [2, 2, 1], "a25": 2, "v26": [3, 4, 4, 3, 3], "a26": 3.4}, "Admin": {"v25": [1, 1, 1], "a25": 1, "v26": [1, 1, 1, 1, 1], "a26": 1}, "Delivery": {"v25": [null, null, null], "a25": null, "v26": [null, null, null, null, null], "a26": null}, "Total (Person)": {"v25": [3, 3, 2], "a25": 3, "v26": [4, 5, 5, 4, 4], "a26": 4.4}, "Petty": {"v25": [0.3, 1, 2.2], "a25": 1.2, "v26": [8.9, 7.5, 5.2, 10.7, 5.4], "a26": 7.5}}, "excluded": ["CV. MAJESTI MITRA SEJATI", "CV. MASA SEMPURNA", "PT. DIAMOND FAJAR JAYA", "PT. DOA KELUARGA TIGASATUTIGA", "PT. RAJAWALI DWIPUTRA INDONESIA"]}};
 
 // ── 운영 손익(P&L) 데이터 (250808 수라바야 지점운영 보고 PDF 이식) ──────────────
 // 금액 단위: 백만 루피아(M.IDR). 비율(%)·BEP는 PDF 값 그대로. FY24=7~12월, FY25=1~7월.
@@ -120,7 +120,11 @@ interface MonthlyRow {
 }
 const MON_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nop', 'Des'];
 // 표에 노출할 카테고리 순서 (그 외 값은 뒤에 등장순으로 붙음)
-const CAT_ORDER = ['RADIAL', 'AGR', 'OTR', 'BIAS', 'SOLID', 'PNEUMATIC', 'TUBE', 'FLAP', 'VULKANISIRJADI'];
+const CAT_ORDER = ['RADIAL', 'AGR', 'OTR', 'BIAS', 'SOLID', 'PNEU', 'TUBE', 'FLAP', 'VUL'];
+// 카테고리 표기 통일 — 원시행(DB)과 기존 표(legacy)의 이름이 달라 같은 항목이 두 줄로 나뉘던 것을 하나로 합친다.
+// PNEUMATIC = PNEU, VULKANISIRJADI = VUL JADI = VUL.
+const CAT_ALIAS: Record<string, string> = { PNEUMATIC: 'PNEU', VULKANISIRJADI: 'VUL', 'VUL JADI': 'VUL' };
+const catName = (v: string) => CAT_ALIAS[(v ?? '').toUpperCase()] ?? v;
 
 // 매출 표의 표시 지표 — 카테고리/담당자 행을 수량으로 볼지 금액(M.IDR)으로 볼지.
 // DB 원시행에 so_amt 가 있어 두 벌을 모두 만들어 두고 토글로 바꾼다.
@@ -139,6 +143,8 @@ const avgOfArr = (a: (number | null)[]): number | null =>
 /** 지점 1곳의 DB 행 → Branch 구조. 해당 연도 행이 없으면 legacy 값을 그대로 둔다. */
 function buildBranch(rows: MonthlyRow[], legacy: Branch, metric: 'qty' | 'amt' = 'qty'): Branch {
   const out: Branch = JSON.parse(JSON.stringify(legacy));
+  // legacy 표기도 같은 규칙으로 통일해 둔다(예: 'VUL JADI' → 'VUL') — 안 그러면 DB 행과 별도 줄로 남는다.
+  for (const s of [out.sectionI, out.sectionII] as const) s.rows.forEach(r => { r.name = catName(r.name); });
 
   for (const y of [2025, 2026] as const) {
     const yr = rows.filter(r => r.year === y);
@@ -229,10 +235,11 @@ function buildBranch(rows: MonthlyRow[], legacy: Branch, metric: 'qty' | 'amt' =
 async function loadData() {
   loading.value = true; loadError.value = '';
   try {
-    const [rows, excl] = await Promise.all([
+    const [raw, excl] = await Promise.all([
       sbGetAll<MonthlyRow>('branch_sales_monthly?select=*'),
       sbGetAll<{ branch: string; buyer: string }>('branch_excluded_buyers?select=*').catch(() => []),
     ]);
+    const rows = raw.map(r => ({ ...r, category: catName(r.category) }));   // PNEUMATIC → PNEU 등 표기 통일
     if (!rows.length) { loadError.value = 'DB에 지점 판매 데이터가 없습니다 — 기존 값으로 표시합니다.'; return; }
     const next: Record<string, Branch> = {};
     const nextAmt: Record<string, Branch> = {};
@@ -284,10 +291,10 @@ const MONTH_KO: Record<string, string> = {
 };
 function monthKo(m: string): string { return MONTH_KO[m] ?? m; }
 
-// 타이어 카테고리만 (Tube · Flap · Vulkanisir 제외)
+// 타이어 카테고리만 (Tube · Flap · VUL 제외)
 function isTire(name: string): boolean {
   const n = name.toUpperCase().replace(/\s+/g, '');
-  return n !== 'TUBE' && n !== 'FLAP' && !n.startsWith('VULKANISIR');
+  return n !== 'TUBE' && n !== 'FLAP' && !n.startsWith('VUL');
 }
 
 // 행 집합의 월별 합 / 평균 합 (null=미입력은 0으로, 전부 null이면 null)
@@ -404,7 +411,7 @@ function buildRows(section: { rows?: MetricRow[]; people?: MetricRow[]; grandTot
       list.forEach((r, i) => { if (isTire(r.name)) lastTire = i; });
       cat.splice(lastTire + 1, 0, sub);
     }
-    // 기타 합계 — 비타이어(TUBE·FLAP·VULKANISIRJADI) 소계
+    // 기타 합계 — 비타이어(TUBE·FLAP·VUL) 소계
     const etc = mkSub('기타 합계', list.filter(r => !isTire(r.name)));
     if (etc) cat.push(etc);
     // 전체 합계 — 타이어+기타. 소계와 동일하게 '표시된 값'을 더하므로 화면 덧셈이 맞는다.
@@ -612,8 +619,8 @@ const pnlKpi = computed(() => {
   };
 });
 
-// ── CSV 내보내기 (현재 탭 표) ─────────────────────────────────────────────────
-function downloadCurrentCsv() {
+// ── 엑셀(.xlsx) 내보내기 (현재 탭 표) ────────────────────────────────────────
+function downloadCurrentXlsx() {
   const yr = year.value, b = bn.value;
   if (mainTab.value === 'pnl') {
     const ms = pnlMonths.value;
@@ -621,7 +628,7 @@ function downloadCurrentCsv() {
     const rows = pnlRows.value.map(r => [
       r.label, r.prev, ...ms.map((_, i) => r.v[i]), r.a,
     ]);
-    exportCsv(`지점손익_${b}_${yr}`, headers, rows);
+    exportXlsx(`지점손익_${b}_${yr}`, headers, rows, `손익_${b}`);
     return;
   }
   const ms = months.value, hp = hasPrev.value;
@@ -630,7 +637,7 @@ function downloadCurrentCsv() {
     r.label, ...(hp ? [prevAvgOf(r)] : []), ...ms.map((_, i) => valsOf(r)[i]), avgOf(r),
   ]);
   const tag = activeTab.value === 'I' ? '전체매출' : activeTab.value === 'II' ? '순매출' : '담당자별매출';
-  exportCsv(`지점${tag}_${b}_${yr}`, headers, rows);
+  exportXlsx(`지점${tag}_${b}_${yr}`, headers, rows, `${tag}_${b}`);
 }
 
 // ── CSV 업로드 (지점 월별 판매 원본 → branch_sales_rows 전량 교체) ──────────
@@ -837,7 +844,7 @@ async function onUpload(e: Event) {
           >
             <button
               class="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-accent text-left"
-              @click="actMenu = false; downloadCurrentCsv()"
+              @click="actMenu = false; downloadCurrentXlsx()"
             >
               <Download :size="14" class="text-muted-foreground" /> 엑셀 내려받기
             </button>
@@ -855,8 +862,15 @@ async function onUpload(e: Event) {
 
     <!-- 로드/업로드 상태 -->
     <p v-if="loading" class="text-xs text-muted-foreground">DB에서 불러오는 중…</p>
-    <p v-if="loadError" class="text-xs text-amber-700 bg-amber-50/60 border border-amber-200 rounded-lg px-3 py-2">
-      {{ loadError }}
+    <p v-if="loadError" class="text-xs text-amber-700 bg-amber-50/60 border border-amber-200 rounded-lg px-3 py-2 flex items-center justify-between gap-2 flex-wrap">
+      <span>{{ loadError }}</span>
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-card px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-accent transition-colors shrink-0"
+        @click="loadData"
+      >
+        <RotateCw :size="12" /> 다시 시도
+      </button>
     </p>
     <p
       v-if="uploadMsg"
@@ -927,6 +941,7 @@ async function onUpload(e: Event) {
       </div> 
       <div class="overflow-x-auto border rounded-xl bg-card">
         <table class="w-full table-fixed text-xs border-collapse whitespace-nowrap">
+          <caption class="sr-only">지점 월별 실적 상세</caption>
           <colgroup>
             <col class="w-44" />                                  <!-- Category -->
             <col v-if="hasPrev" class="w-20" />                   <!-- 전년 평균 -->
@@ -935,19 +950,19 @@ async function onUpload(e: Event) {
           </colgroup>
           <thead>
             <tr>
-              <th rowspan="2" class="sticky left-0 z-10 bg-card text-left px-2.5 py-1.5 font-semibold text-foreground min-w-30 shadow-[1px_0_0_var(--border)]">Category</th>
-              <th v-if="hasPrev" class="px-2 py-1.5 bg-muted/40 text-muted-foreground font-semibold text-center border-b border-border/50 tabular-nums">{{ year - 1 }}</th>
-              <th :colspan="months.length + 1" class="px-2 py-1.5 bg-primary/10 text-primary font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
+              <th scope="col" rowspan="2" class="sticky left-0 z-10 bg-card text-left px-2.5 py-1.5 font-semibold text-foreground min-w-30 shadow-[1px_0_0_var(--border)]">Category</th>
+              <th scope="col" v-if="hasPrev" class="px-2 py-1.5 bg-muted/40 text-muted-foreground font-semibold text-center border-b border-border/50 tabular-nums">{{ year - 1 }}</th>
+              <th scope="colgroup" :colspan="months.length + 1" class="px-2 py-1.5 bg-primary/10 text-primary font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
             </tr>
             <tr>
-              <th v-if="hasPrev" class="px-2 py-1 bg-muted/30 text-muted-foreground font-semibold text-right border-b border-border/50">평균</th>
-              <th
+              <th scope="col" v-if="hasPrev" class="px-2 py-1 bg-muted/30 text-muted-foreground font-semibold text-right border-b border-border/50">평균</th>
+              <th scope="col"
                 v-for="(m, mi) in months" :key="'h'+m"
                 class="px-2 py-1 bg-muted/20 text-muted-foreground font-medium text-right border-b border-border/50"
                 :class="isPersonTab ? 'cursor-pointer select-none hover:bg-primary/15' : ''"
                 @click="toggleSort(mi)"
               >{{ monthKo(m) }}<span v-if="isPersonTab && sortCol === mi" class="ml-0.5">{{ sortDir === 'desc' ? '▾' : '▴' }}</span></th>
-              <th
+              <th scope="col"
                 class="px-2 py-1 bg-primary/15 text-primary font-semibold text-right border-b border-border/50"
                 :class="isPersonTab ? 'cursor-pointer select-none hover:bg-primary/25' : ''"
                 @click="toggleSort('avg')"
@@ -1019,6 +1034,7 @@ async function onUpload(e: Event) {
       <!-- P&L 표 -->
       <div class="overflow-x-auto border rounded-xl bg-card">
         <table class="w-full table-fixed text-xs border-collapse whitespace-nowrap">
+          <caption class="sr-only">지점 손익 월별 상세</caption>
           <colgroup>
             <col class="w-48" />                                  <!-- ITEM -->
             <col class="w-20" />                                  <!-- 전년 평균 -->
@@ -1027,14 +1043,14 @@ async function onUpload(e: Event) {
           </colgroup>
           <thead>
             <tr>
-              <th rowspan="2" class="sticky left-0 z-10 bg-card text-left px-2.5 py-1.5 font-semibold text-foreground min-w-32 shadow-[1px_0_0_var(--border)]">ITEM</th>
-              <th class="px-2 py-1.5 bg-muted/40 text-muted-foreground font-semibold text-center border-b border-border/50 tabular-nums">{{ year - 1 }}</th>
-              <th :colspan="pnlMonths.length + 1" class="px-2 py-1.5 bg-primary/10 text-primary font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
+              <th scope="col" rowspan="2" class="sticky left-0 z-10 bg-card text-left px-2.5 py-1.5 font-semibold text-foreground min-w-32 shadow-[1px_0_0_var(--border)]">ITEM</th>
+              <th scope="col" class="px-2 py-1.5 bg-muted/40 text-muted-foreground font-semibold text-center border-b border-border/50 tabular-nums">{{ year - 1 }}</th>
+              <th scope="colgroup" :colspan="pnlMonths.length + 1" class="px-2 py-1.5 bg-primary/10 text-primary font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
             </tr>
             <tr>
-              <th class="px-2 py-1 bg-muted/30 text-muted-foreground font-semibold text-right border-b border-border/50">평균</th>
-              <th v-for="m in pnlMonths" :key="'ph'+m" class="px-2 py-1 bg-muted/20 text-muted-foreground font-medium text-right border-b border-border/50">{{ monthKo(m) }}</th>
-              <th class="px-2 py-1 bg-primary/15 text-primary font-semibold text-right border-b border-border/50">평균</th>
+              <th scope="col" class="px-2 py-1 bg-muted/30 text-muted-foreground font-semibold text-right border-b border-border/50">평균</th>
+              <th scope="col" v-for="m in pnlMonths" :key="'ph'+m" class="px-2 py-1 bg-muted/20 text-muted-foreground font-medium text-right border-b border-border/50">{{ monthKo(m) }}</th>
+              <th scope="col" class="px-2 py-1 bg-primary/15 text-primary font-semibold text-right border-b border-border/50">평균</th>
             </tr>
           </thead>
           <tbody>

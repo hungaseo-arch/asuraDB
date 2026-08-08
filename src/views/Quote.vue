@@ -17,9 +17,9 @@ interface Product {
   brand:        string;
   description:  string;
   sku:          string;
-  wh_price:     number;   // 원가 — 권한 없는 역할에선 0
-  wh_price_set: number;   // 원가(set) — 권한 없는 역할에선 0
-  dist_price:   number | null;  // 대리점가(pcs 기준) — 없으면 원가 기준 추천가로 대체
+  wh_price_pcs:   number;   // 입고가(원가) 단품 — 권한 없는 역할에선 0
+  wh_price_set:   number;   // 입고가(원가) set — 권한 없는 역할에선 0
+  dist_price_pcs: number | null;  // 대리점가(pcs 기준) — 없으면 원가 기준 추천가로 대체
   unit:         'pcs' | 'set';
 }
 
@@ -40,11 +40,11 @@ async function loadProducts() {
     if (canViewCost) {
       // super_admin / staff — 원가 포함 조회
       products.value = await sbGet<Product[]>(
-        'products?select=id,item,brand,description,sku,wh_price,wh_price_set,dist_price,unit&is_active=eq.true&order=brand.asc,description.asc',
+        'products_priced?select=id,item,brand,description,sku,wh_price_pcs,wh_price_set,dist_price_pcs,unit&is_active=eq.true&order=brand.asc,description.asc',
       ) ?? [];
     } else {
       // distributor / end_user — products RLS 로 차단됨 → products_sell 뷰 사용
-      // 서버에서 wh_price/0.8 로 계산된 판매가만 노출, 원가 컬럼은 응답에 없음.
+      // 서버에서 wh_price_pcs/0.8 로 계산된 판매가만 노출, 원가 컬럼은 응답에 없음.
       // UI 호환을 위해 unit_price → whPrice 슬롯에 그대로 담아 unit_price 계산에 재사용.
       const rows = await sbGet<ProductsSellRow[]>(
         'products_sell?select=id,item,brand,description,sku,unit_price,unit_price_set,unit&order=brand.asc,description.asc',
@@ -52,10 +52,10 @@ async function loadProducts() {
       products.value = rows.map((r) => ({
         id: r.id, item: r.item, brand: r.brand, description: r.description, sku: r.sku, unit: r.unit,
         // products_sell 은 이미 판매가만 가짐 → '원가' 슬롯에 채워두고 applyProductPricing 이 그대로 사용하게 함
-        wh_price:     r.unit_price,
-        wh_price_set: r.unit_price_set ?? 0,
+        wh_price_pcs:   r.unit_price,
+        wh_price_set:   r.unit_price_set ?? 0,
         // 대리점가는 원가 기반 값이라 이 뷰에 없음 → 기존 판매가 규칙을 그대로 따른다
-        dist_price:   null,
+        dist_price_pcs: null,
       }));
     }
   } catch {
@@ -212,10 +212,10 @@ const DIST_MARGIN = 0.25;
 const recommendDist = (cost: number) => (cost > 0 ? Math.round(cost / (1 - DIST_MARGIN)) : 0);
 
 // 라인의 대리점가(Dist Price).
-// products.dist_price 가 있으면 그 값, 없으면 원가 기준 25% 마진 추천가.
-// dist_price 는 pcs 단가이므로 set 라인에는 쓰지 않고 원가(set) 기준 추천가를 쓴다.
+// products.dist_price_pcs 가 있으면 그 값, 없으면 원가 기준 25% 마진 추천가.
+// dist_price_pcs 는 pcs 단가이므로 set 라인에는 쓰지 않고 원가(set) 기준 추천가를 쓴다.
 function distPriceFor(p: Product | undefined, unit: 'pcs' | 'set', cost: number): number {
-  const dp = unit === 'pcs' ? Number(p?.dist_price) || 0 : 0;
+  const dp = unit === 'pcs' ? Number(p?.dist_price_pcs) || 0 : 0;
   return dp || recommendDist(cost);
 }
 
@@ -227,7 +227,7 @@ function distPriceOf(l: LineItem): number {
 
 // 제품 가격을 라인에 적용 (대리점가를 기본 단가로 설정)
 function applyProductPricing(line: LineItem, p: Product) {
-  const raw = line.unit === 'set' ? p.wh_price_set : p.wh_price;
+  const raw = line.unit === 'set' ? p.wh_price_set : p.wh_price_pcs;
   line.whPrice = Number(raw) || 0;
   // products_sell 은 원가가 아닌 판매가를 whPrice 슬롯에 담고 있어 기존 규칙(÷0.8)을 유지한다.
   line.unitPrice = canViewCost
@@ -566,18 +566,19 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
     class="quote-doc p-4 md:p-6 max-w-300 mx-auto space-y-5 pb-10"
   >
     <!-- 인쇄 문서 제목 (화면엔 아래 PageHeader에, 인쇄엔 이 제목만 표시) -->
-    <h1 class="hidden print:block text-center text-2xl font-bold tracking-wide text-foreground">QUOTATION</h1>
+    <h2 class="hidden print:block text-center text-2xl font-bold tracking-wide text-foreground">QUOTATION</h2>
 
     <!-- Header -->
     <PageHeader class="print:hidden">
       <!-- Quote는 문서형이라 제목을 화면 헤더에도 표시 -->
       <template #subtitle>
-        <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+        <h2 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
           <ClipboardList :size="20" class="text-primary" /> QUOTATION
-        </h1>
+        </h2>
       </template>
       <template #actions>
-        <div class="flex items-center gap-2">
+        <!-- 모바일(390px)에서 SAVE·Print 가 화면 밖으로 밀려 아예 누를 수 없었다 → 줄바꿈 허용 -->
+        <div class="flex flex-wrap items-center justify-end gap-2 max-w-full">
         <span v-if="productsLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Loader2 :size="12" class="animate-spin" />
           Item is loading…
@@ -716,6 +717,7 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
 
       <div class="overflow-x-auto px-10">
         <table class="w-full text-sm border-collapse">
+          <caption class="sr-only">견적 품목 명세</caption>
           <colgroup>
             <col :style="{ width: '2%' }" />
             <col :style="{ width: '8%' }" />
@@ -732,18 +734,18 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
           </colgroup>
           <thead>
             <tr class="border-b border-border bg-muted/10">
-              <th class="hidden md:table-cell text-left   px-3 py-2.5 text-xs font-semibold text-muted-foreground">No.</th>
-              <th class="hidden md:table-cell text-left   px-2 py-2.5 text-xs font-semibold text-muted-foreground">Item</th>
-              <th class="hidden md:table-cell text-left   px-2 py-2.5 text-xs font-semibold text-muted-foreground">Brand</th>
-              <th class="w-full md:w-auto text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground">Item Description</th>
-              <th class="hidden md:table-cell text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground">Qty</th>
-              <th class="hidden md:table-cell text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground">Unit</th>
-              <th class="hidden md:table-cell text-right  px-2 py-2.5 text-xs font-semibold text-muted-foreground print:hidden">Dist Price</th>
-              <th class="hidden md:table-cell text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground print:hidden">Discount</th>
-              <th class="text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground">Unit Price</th>
-              <th class="text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground print:hidden">Margin</th>
-              <th class="hidden md:table-cell text-right  px-3 py-2.5 text-xs font-semibold text-muted-foreground">Amount</th>
-              <th class="hidden md:table-cell" />
+              <th scope="col" class="hidden md:table-cell text-left   px-3 py-2.5 text-xs font-semibold text-muted-foreground">No.</th>
+              <th scope="col" class="hidden md:table-cell text-left   px-2 py-2.5 text-xs font-semibold text-muted-foreground">Item</th>
+              <th scope="col" class="hidden md:table-cell text-left   px-2 py-2.5 text-xs font-semibold text-muted-foreground">Brand</th>
+              <th scope="col" class="w-full md:w-auto text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground">Item Description</th>
+              <th scope="col" class="hidden md:table-cell text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground">Qty</th>
+              <th scope="col" class="hidden md:table-cell text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground">Unit</th>
+              <th scope="col" class="hidden md:table-cell text-right  px-2 py-2.5 text-xs font-semibold text-muted-foreground print:hidden">Dist Price</th>
+              <th scope="col" class="hidden md:table-cell text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground print:hidden">Discount</th>
+              <th scope="col" class="text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground">Unit Price</th>
+              <th scope="col" class="text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground print:hidden">Margin</th>
+              <th scope="col" class="hidden md:table-cell text-right  px-3 py-2.5 text-xs font-semibold text-muted-foreground">Amount</th>
+              <th scope="col" class="hidden md:table-cell" />
             </tr>
           </thead>
           <tbody>
@@ -1079,7 +1081,7 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
           </div>
         </div>
         <div v-if="!isQuoteOnly" class="text-right shrink-0 text-[10px] font-mono">
-          <div class="text-foreground">{{ (p.wh_price ?? 0).toLocaleString() }} <span class="text-muted-foreground/50">pcs</span></div>
+          <div class="text-foreground">{{ (p.wh_price_pcs ?? 0).toLocaleString() }} <span class="text-muted-foreground/50">pcs</span></div>
           <div v-if="p.wh_price_set" class="text-muted-foreground">
             {{ (p.wh_price_set ?? 0).toLocaleString() }} <span class="text-muted-foreground/50">set</span>
           </div>
@@ -1155,12 +1157,20 @@ input[type="number"] {
     box-shadow: none !important;
   }
 
-  /* 화면의 배경색·선을 인쇄에도 그대로 출력 (브라우저 기본 '배경 생략' 방지) */
+  /* 인쇄는 배경 그래픽 없이 출력 — 음영·색 채움을 모두 없애고 선(border)·글자색만 남긴다 */
   .quote-doc,
   .quote-doc * {
-    print-color-adjust: exact !important;
-    -webkit-print-color-adjust: exact !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
   }
+  /* 배경으로 그리던 구분선(Sub-Total 위 굵은 선 · Total 아래 파란 선)은 border 로 대체 */
+  .quote-doc .total-rule {
+    height: 0 !important;
+    border-top-style: solid !important;
+  }
+  .quote-doc .total-rule.bg-foreground { border-top-width: 2px !important; border-top-color: #0f172a !important; }
+  .quote-doc .total-rule.bg-blue-600   { border-top-width: 2px !important; border-top-color: #2563eb !important; }
 
   /* 한 페이지에 맞도록 압축 */
   .quote-doc {

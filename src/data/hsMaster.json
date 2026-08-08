@@ -82,7 +82,7 @@
   {
     "hs": "40118011",
     "category": "ind",
-    "label": "Industrial/Pneumatic",
+    "label": "Industrial/PNEU",
     "label_en": "8429/8430 machinery/forklift/industrial, rim ≤61cm",
     "uraian": "Ban baru — mesin 8429/8430, forklift & industri, velg ≤61cm",
     "lartas": "na"
@@ -123,7 +123,7 @@
     "hs": "40119000",
     "category": "other",
     "label": "Other New",
-    "label_en": "other new pneumatic (BTKI 세분 가능)",
+    "label_en": "other new PNEU (BTKI 세분 가능)",
     "uraian": "Ban pneumatik baru lainnya",
     "lartas": "na"
   },
@@ -132,7 +132,7 @@
     "category": "retread",
     "label": "Retreaded PC",
     "label_en": "retreaded, motor cars (참고용)",
-    "uraian": "Ban vulkanisir — mobil penumpang",
+    "uraian": "Ban VUL — mobil penumpang",
     "lartas": "na"
   },
   {
@@ -140,7 +140,7 @@
     "category": "retread",
     "label": "Retreaded Bus/Lorry",
     "label_en": "retreaded, buses/lorries (참고용)",
-    "uraian": "Ban vulkanisir — bus/lori",
+    "uraian": "Ban VUL — bus/lori",
     "lartas": "na"
   },
   {
@@ -148,14 +148,14 @@
     "category": "retread",
     "label": "Retreaded Other",
     "label_en": "retreaded, other (참고용)",
-    "uraian": "Ban vulkanisir — lain-lain",
+    "uraian": "Ban VUL — lain-lain",
     "lartas": "na"
   },
   {
     "hs": "40122000",
     "category": "used",
-    "label": "Used Pneumatic",
-    "label_en": "used pneumatic — 인니 중고 수입규제(lartas)",
+    "label": "Used PNEU",
+    "label_en": "used PNEU — 인니 중고 수입규제(lartas)",
     "uraian": "Ban pneumatik bekas",
     "lartas": "ban"
   },

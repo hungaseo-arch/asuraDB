@@ -53,6 +53,16 @@ function extractDate(meta: Record<string, unknown>): string {
 
 async function handleSearch() {
   if (!query.value.trim() || loading.value) return;
+
+  // 호스트 PC 가 아니면 localhost 요청을 만들지 않고 곧바로 안내만 보여준다
+  // (HTTPS 배포본에서 http://localhost 호출은 mixed content 로 차단된다)
+  if (!IS_HOST) {
+    answer.value  = 'AI 지식 Q&A와 로컬 검색은 데이터가 있는 호스트 PC에서만 동작합니다(원격 미지원). 다른 컴퓨터에서는 KPI·마진·지점·수입·DB·견적 등 나머지 기능을 이용하세요.';
+    sources.value = [];
+    done.value    = true;
+    return;
+  }
+
   loading.value = true;
   done.value    = false;
   answer.value  = '';

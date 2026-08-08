@@ -14,7 +14,7 @@ import Separator from '@/components/ui/Separator.vue';
 import SourceIcon from '@/components/icons/SourceIcon.vue';
 import type { SearchResult } from '@/data';
 import { cn, previewContent } from '@/lib/utils';
-import { API_BASE, IS_HOST } from '@/lib/api';
+import { API_BASE, IS_HOST, ensureApiRunning } from '@/lib/api';
 import { SOURCE_COLOR as sourceColor, SOURCE_LABEL as sourceLabel } from '@/lib/sources';
 import { useSortMode } from '@/composables/useSortMode';
 
@@ -44,24 +44,29 @@ const results = ref<SearchResult[]>([]);
 const searching = ref(false);
 const searched = ref(false);
 const offline = ref(false);   // 검색 API(8000) 연결 실패 여부
-const inputRef = ref<HTMLInputElement | null>(null);
+const starting = ref(false);  // 자동 기동 재시도 중
+// 개발예정 소스는 기본으로 접어 둔다(상시 공간 차지 방지)
+const showPlanned = ref(false);
+const visibleFilters = computed(() => sourceFilters.filter(f => !f.planned || showPlanned.value));
+const plannedCount = sourceFilters.filter(f => f.planned).length;
+const inputRef = ref<{ focus: () => void } | null>(null);
 
 const expandedMap = ref<Record<string, boolean>>({});
 function toggleExpand(id: string) {
   expandedMap.value[id] = !expandedMap.value[id];
 }
 
-async function handleSearch() {
-  if (!query.value.trim()) return;
-  searching.value = true;
-  searched.value = false;
-  offline.value = false;
+/** 검색 1회 실행. 성공하면 true, 연결·응답 실패면 false(결과는 비운다). */
+async function runQuery(): Promise<boolean> {
+  // 호스트 PC 가 아니면 요청 자체를 만들지 않는다(HTTPS→http://localhost = mixed content).
+  // offline 안내는 아래 템플릿의 non-host 분기가 그대로 보여준다.
+  if (!IS_HOST) return false;
 
   try {
     const params = new URLSearchParams({ q: query.value.trim(), limit: '50' });
     if (activeSource.value !== 'all') params.set('source', activeSource.value);
 
-    const res  = await fetch(`${API_BASE}/search?${params}`);
+    const res  = await fetch(`${API_BASE}/search?${params}`, { signal: AbortSignal.timeout(20000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
@@ -80,11 +85,28 @@ async function handleSearch() {
       rrfScore:    Number(r.rrf_score    ?? 0),
       chunkType:   String(r.chunk_type   ?? 'section') as 'section' | 'paragraph',
     }));
+    return true;
   } catch {
     results.value = [];
-    offline.value = true;   // 연결/응답 실패 → 오프라인 안내
+    return false;
+  }
+}
+
+// 실패 시 사용자가 인프라를 만지지 않아도 되도록, 앱이 직접 API 를 깨우고 1회 자동 재시도한다.
+async function handleSearch() {
+  if (!query.value.trim()) return;
+  searching.value = true;
+  searched.value = false;
+  offline.value = false;
+
+  let ok = await runQuery();
+  if (!ok && IS_HOST) {
+    starting.value = true;
+    if (await ensureApiRunning()) ok = await runQuery();   // 런처가 유휴 종료시킨 경우 여기서 살아난다
+    starting.value = false;
   }
 
+  offline.value   = !ok;
   searching.value = false;
   searched.value  = true;
 }
@@ -148,7 +170,7 @@ const pageNumbers = computed<(number | '...')[]>(() => {
   >
     <!-- Header -->
     <div>
-      <h1 class="text-xl font-bold">로컬 검색</h1>
+      <h2 class="text-xl font-bold">로컬 검색</h2>
       <p class="text-sm text-muted-foreground mt-0.5">
         FTS + Vector (RRF) · Notion · UpNote · Gmail · Google Drive
       </p>
@@ -161,7 +183,9 @@ const pageNumbers = computed<(number | '...')[]>(() => {
           :size="16"
           class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
         />
+        <label for="local-search" class="sr-only">검색어</label>
         <Input
+          id="local-search"
           ref="inputRef"
           v-model="query"
           placeholder="질문을 입력하세요… 예: AGR 4월 마진 분석, 인도네시아 세관 규정"
@@ -189,7 +213,7 @@ const pageNumbers = computed<(number | '...')[]>(() => {
       <div class="flex items-center gap-2 flex-wrap">
         <SlidersHorizontal :size="13" class="text-muted-foreground shrink-0" />
         <button
-          v-for="sf in sourceFilters"
+          v-for="sf in visibleFilters"
           :key="sf.id"
           :disabled="sf.planned"
           :title="sf.planned ? '개발예정 — 수집기 연동 준비 중' : ''"
@@ -205,6 +229,15 @@ const pageNumbers = computed<(number | '...')[]>(() => {
           @click="!sf.planned && (activeSource = sf.id)"
         >
           {{ sf.label }}{{ sf.planned ? ' (개발예정)' : '' }}
+        </button>
+        <!-- 개발예정 소스는 접어 두고 필요할 때만 펼친다 -->
+        <button
+          v-if="plannedCount"
+          class="text-[11px] px-2 py-1 rounded-full border border-dashed border-border/50 text-muted-foreground/70 hover:text-foreground hover:border-border transition-colors"
+          :aria-expanded="showPlanned"
+          @click="showPlanned = !showPlanned"
+        >
+          {{ showPlanned ? '개발예정 접기' : `개발예정 ${plannedCount}` }}
         </button>
       </div>
     </div>
@@ -246,8 +279,14 @@ const pageNumbers = computed<(number | '...')[]>(() => {
     <div v-if="searched && !searching && offline"
       class="mt-4 rounded-xl border border-amber-300 bg-amber-50/60 p-5 text-sm text-amber-800">
       <template v-if="IS_HOST">
-        검색 백엔드(API)에 연결하지 못했습니다. 잠시 후 자동 기동되니 <b>다시 검색</b>해 주세요.
-        계속 실패하면 상단의 <b>시스템 상태</b> 버튼을 눌러 API를 기동하세요.
+        <p>검색 백엔드(API)에 연결하지 못했습니다. 자동 기동을 시도했지만 응답이 없습니다.</p>
+        <button
+          :disabled="searching"
+          class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-400/60 bg-amber-100/60 hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          @click="handleSearch"
+        >
+          {{ starting ? '기동 중…' : '다시 시도' }}
+        </button>
       </template>
       <template v-else>
         <b>로컬 검색·AI 지식 Q&A</b>는 데이터가 있는 <b>호스트 PC에서만</b> 동작합니다(원격 미지원).

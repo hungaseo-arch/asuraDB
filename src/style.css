@@ -11,13 +11,18 @@
 변경 사항:
   · React ↔ Vue 차이 무관 — 모든 CSS 변수/테마 토큰은 1:1 유지
   · `body` 폰트 feature-settings도 그대로 보존
-  · 라이트/다크 모드 토큰 동일 (디자인 일관성)
+  · 앱 표준 = 라이트 모드(2026-07-29 확정). 활성 테마는 `:root`(라이트) 토큰이며
+    `.dark` 클래스는 앱 어디에서도 적용하지 않는다(다크 블록은 참고용 잔존).
+    `color-scheme: light` 로 네이티브 컨트롤(입력·스크롤바)도 OS 다크와 무관히 라이트 고정.
 ==========================================================================
 */
 
 :root {
+  color-scheme: light;
+
   /* Typography */
-  --font-sans: Pretendard, 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  /* 한글 본문 웹폰트는 Pretendard 하나만 로드한다(index.html). 이후는 시스템 폰트 폴백. */
+  --font-sans: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
 
   /* Radius */

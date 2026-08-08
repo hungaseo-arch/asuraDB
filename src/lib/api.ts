@@ -16,6 +16,10 @@ export const IS_HOST = /^(localhost|127\.0\.0\.1)$/.test(
  * 런처 자체가 없으면(호스트 아님·미실행) false 를 반환한다.
  */
 export async function ensureApiRunning(): Promise<boolean> {
+  // 호스트 PC 가 아니면 localhost 로 나갈 요청을 아예 만들지 않는다.
+  // (HTTPS 배포본에서 http://localhost 호출은 mixed content 로 차단되며 콘솔 에러만 쌓인다)
+  if (!IS_HOST) return false;
+
   try {
     const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(2000) });
     if (res.ok) return true;

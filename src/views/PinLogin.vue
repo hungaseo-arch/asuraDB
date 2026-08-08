@@ -4,14 +4,16 @@ import { useRouter } from 'vue-router';
 import AsuraLogo from '@/components/icons/AsuraLogo.vue';
 import { Loader2 } from 'lucide-vue-next';
 import { signIn, type Role } from '@/lib/auth';
-import { LAUNCHER_BASE } from '@/lib/api';
+import { LAUNCHER_BASE, IS_HOST } from '@/lib/api';
 
 const router = useRouter();
 
 // 로그인 성공 즉시 검색/AI 백엔드(8000)를 런처(8001) 경유로 예열한다.
 // 첫 기동은 임베딩 모델 로딩으로 ~20s 걸리므로, 앱 진입 전에 미리 시작해 대기를 줄인다.
 // 런처(LaunchAgent, 상시)가 죽어 있어도 조용히 무시 — Layout onMounted 가 한 번 더 시도한다.
+// 호스트 PC 가 아니면(배포본) 예열 대상이 없으므로 요청을 만들지 않는다 — mixed content 방지.
 function warmUpApi() {
+  if (!IS_HOST) return;
   fetch(`${LAUNCHER_BASE}/start`, { method: 'POST', keepalive: true }).catch(() => {});
 }
 

@@ -18,7 +18,9 @@ const emit = defineEmits<{
 
 const classes = computed(() =>
   cn(
-    'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors',
+    // bg-card(흰색) 고정 — 셸 바탕이 #F0F0F0 이라 bg-transparent 로는
+    // 카드 밖에 놓인 입력칸이 배경에 묻혀 '입력할 수 있는 곳'으로 안 읽힌다.
+    'flex h-9 w-full rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors',
     'file:border-0 file:bg-transparent file:text-sm file:font-medium',
     'placeholder:text-muted-foreground',
     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',

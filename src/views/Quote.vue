@@ -597,7 +597,8 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
         <Button v-if="canSaveImport" variant="outline" size="sm" class="gap-1.5 text-xs print:hidden" @click="openLoadModal">
           <FolderOpen :size="13" />Import
         </Button>
-        <Button v-if="canSaveImport" size="sm" class="gap-1.5 text-xs print:hidden" :disabled="isSaving" @click="saveQuote()">
+        <!-- 이 화면의 주요 CTA — solid 는 화면당 1개(가이드 2항) -->
+        <Button v-if="canSaveImport" variant="solid" size="sm" class="gap-1.5 text-xs print:hidden" :disabled="isSaving" @click="saveQuote()">
           <Loader2 v-if="savingMode === 'update'" :size="13" class="animate-spin" />
           <Save v-else :size="13" />
           {{ savingMode === 'update' ? 'Saving…' : (currentQuoteId ? '수정 저장' : 'SAVE') }}

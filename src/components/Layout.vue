@@ -334,8 +334,8 @@ const pageTitle = computed(() =>
             :class="cn(
               'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
               groupActive(g)
-                ? 'bg-primary/15 text-primary font-semibold'
-                : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground',
+                ? 'bg-primary-soft text-primary font-semibold'
+                : 'text-foreground/80 hover:bg-secondary hover:text-foreground',
             )"
             @click="closeGroups"
           >
@@ -348,8 +348,8 @@ const pageTitle = computed(() =>
             :class="cn(
               'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
               groupActive(g) || openGroup === g.key
-                ? 'bg-primary/15 text-primary font-semibold'
-                : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground',
+                ? 'bg-primary-soft text-primary font-semibold'
+                : 'text-foreground/80 hover:bg-secondary hover:text-foreground',
             )"
             @click="toggleGroup(g.key)"
           >
@@ -364,8 +364,8 @@ const pageTitle = computed(() =>
                 :class="cn(
                   'flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm whitespace-nowrap transition-colors',
                   isActive(item.to!, item.exact)
-                    ? 'bg-primary/15 text-primary font-semibold'
-                    : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground',
+                    ? 'bg-primary-soft text-primary font-semibold'
+                    : 'text-foreground/80 hover:bg-secondary hover:text-foreground',
                 )"
                 @click="closeGroups"
               >
@@ -383,8 +383,8 @@ const pageTitle = computed(() =>
           :class="cn(
             'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
             isActive(item.to!, item.exact)
-              ? 'bg-primary/15 text-primary font-semibold'
-              : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground',
+              ? 'bg-primary-soft text-primary font-semibold'
+              : 'text-foreground/80 hover:bg-secondary hover:text-foreground',
           )"
         >
           <component :is="item.icon" :size="15" class="shrink-0" />
@@ -398,10 +398,10 @@ const pageTitle = computed(() =>
             :disabled="isRefreshing"
             class="inline-flex items-center gap-1.5 text-xs px-2 sm:px-2.5 py-1 rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             :class="statusTone === 'down'
-              ? 'border-red-500/30 text-red-600 hover:bg-red-400/10'
+              ? 'border-destructive-border text-destructive hover:bg-destructive-soft'
               : statusTone === 'partial'
-                ? 'border-amber-500/40 text-amber-600 hover:bg-amber-400/10'
-                : 'border-green-500/30 text-green-600 hover:bg-green-500/10'"
+                ? 'border-warning-border text-warning hover:bg-warning-soft'
+                : 'border-success-border text-success hover:bg-success-soft'"
             :title="statusTitle"
             :aria-label="statusTitle"
             @click="refreshAll"
@@ -409,7 +409,7 @@ const pageTitle = computed(() =>
             <RefreshCw :size="11" :class="isRefreshing && 'animate-spin'" />
             <span class="hidden sm:inline">{{ statusLabel }}</span>
           </button>
-          <div class="h-7 px-2.5 rounded-full bg-primary/20 hidden sm:flex items-center justify-center text-xs font-bold text-primary whitespace-nowrap">
+          <div class="h-7 px-2.5 rounded-full border border-border bg-primary-soft hidden sm:flex items-center justify-center text-xs font-bold text-primary-soft-foreground whitespace-nowrap">
             {{ roleLabel }}
           </div>
           <button
@@ -446,8 +446,8 @@ const pageTitle = computed(() =>
               :class="cn(
                 'flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-colors',
                 isActive(item.to!, item.exact)
-                  ? 'bg-primary/15 text-primary font-semibold'
-                  : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground',
+                  ? 'bg-primary-soft text-primary font-semibold'
+                  : 'text-foreground/80 hover:bg-secondary hover:text-foreground',
               )"
               @click="closeGroups"
             >

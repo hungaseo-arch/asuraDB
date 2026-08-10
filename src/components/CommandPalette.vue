@@ -105,15 +105,18 @@ onUnmounted(() => {
               <Clock v-if="c.group === '최근'" :size="10" />{{ c.group }}
             </li>
           <li>
+            <!-- 선택 행은 '강조(10% 녹색)'가 아니라 '주요 요소(30% 파랑)'다.
+                 hover 는 secondary — accent 가 primary-soft 와 같은 값이라
+                 hover 와 선택 상태가 구분되지 않는다. -->
             <button
               type="button"
               class="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-              :class="i === active ? 'bg-teal-500/10 text-teal-700' : 'text-foreground hover:bg-muted/50'"
+              :class="i === active ? 'bg-primary-soft text-primary-soft-foreground' : 'text-foreground hover:bg-secondary'"
               @mouseenter="active = i"
               @click="c.run()"
             >
               <component :is="c.kind === 'search' ? Search : c.icon" :size="16" class="shrink-0"
-                :class="i === active ? 'text-teal-600' : 'text-muted-foreground'" />
+                :class="i === active ? 'text-primary' : 'text-muted-foreground'" />
               <span class="flex-1 text-sm truncate">{{ c.label }}</span>
               <CornerDownLeft v-if="i === active" :size="13" class="text-muted-foreground shrink-0" />
               <ArrowRight v-else-if="c.kind === 'search'" :size="13" class="text-muted-foreground/50 shrink-0" />

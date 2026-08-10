@@ -188,7 +188,9 @@ function clearAll() {
         :disabled="loading"
         @keydown="onKeyDown"
       />
+      <!-- 이 화면의 주요 CTA — solid 는 화면당 1개(가이드 2항) -->
       <Button
+        variant="solid"
         :disabled="!query.trim() || loading"
         size="sm"
         class="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 px-3 text-xs gap-1.5"

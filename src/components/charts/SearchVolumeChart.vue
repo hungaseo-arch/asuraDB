@@ -2,18 +2,20 @@
 import { computed } from 'vue';
 import { Line } from 'vue-chartjs';
 import type { ChartData, ChartOptions } from 'chart.js';
-import '@/components/charts/chartSetup';
+import { chartColor } from '@/components/charts/chartSetup';
 import { searchVolumeData } from '@/data';
 
 // React equivalent: recharts <AreaChart> with 4 stacked Areas + linearGradient defs.
 // Here we use vue-chartjs <Line> with `fill: true` + per-dataset gradients (via colors).
 type SourceKey = 'notion' | 'upnote' | 'gmail' | 'drive';
 
+// chart-N 매핑은 SourceDistributionChart(src/data sourceDistribution)와 동일한
+// 순서(Notion/UpNote/Gmail/Drive)로 맞춰 두 차트에서 같은 소스가 같은 색을 쓴다.
 const sourceMeta: Record<SourceKey, { label: string; color: string }> = {
-  notion: { label: 'Notion',       color: '#818cf8' },
-  upnote: { label: 'UpNote',       color: '#4ade80' },
-  gmail:  { label: 'Gmail',        color: '#f87171' },
-  drive:  { label: 'Google Drive', color: '#60a5fa' },
+  notion: { label: 'Notion',       color: chartColor(1) },
+  upnote: { label: 'UpNote',       color: chartColor(2) },
+  gmail:  { label: 'Gmail',        color: chartColor(3) },
+  drive:  { label: 'Google Drive', color: chartColor(4) },
 };
 
 const chartData = computed<ChartData<'line'>>(() => ({

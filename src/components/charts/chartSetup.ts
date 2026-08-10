@@ -28,3 +28,11 @@ ChartJS.register(
 );
 
 export { ChartJS };
+
+/** CSS 변수에서 차트 색을 읽어온다 — 팔레트 변경 시 style.css 만 고치면 된다 */
+export function chartColor(n: 1 | 2 | 3 | 4 | 5): string {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(`--chart-${n}`).trim();
+}
+export const CHART_SERIES = [1, 2, 3, 4, 5].map((n) => chartColor(n as 1));
+export const chartAlpha = (hex: string, a = 0.15) => `${hex}${Math.round(a * 255).toString(16).padStart(2, '0')}`;

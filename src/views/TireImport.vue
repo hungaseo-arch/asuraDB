@@ -7,6 +7,7 @@ import { API_BASE, IS_HOST, ensureApiRunning } from '@/lib/api';
 import PageHeader from '@/components/PageHeader.vue';
 import { exportCsv } from '@/lib/csv';
 import { niceCeil, deltaClass, deltaText } from '@/lib/format';
+import { cssVar, chartColor, chartSeriesPalette } from '@/components/charts/chartSetup';
 import hsMasterJson from '@/data/hsMaster.json';
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -38,29 +39,11 @@ interface HsRow { hs: string; category: string; label: string; label_en: string;
 const HS_MASTER = hsMasterJson as HsRow[];
 
 // Lartas(수입규제) 상태 메타. 근거: SNI Wajib Ban(Permenperin) + Permendag 8/2024(PI/LS) + 중고 수입금지.
+// 색은 규제 심각도를 나타내는 상태색 — style.css 토큰(warning/destructive/muted-foreground)에서 읽어온다.
 const LARTAS_META: Record<string, { label: string; color: string; desc: string }> = {
-  sni: { label: 'SNI Wajib',  color: '#ff9900', desc: 'SNI 강제인증 대상 · 수입 시 SPPT-SNI + Pertek + PI 필요 (INSW 적색 Lartas)' },
-  ban: { label: '수입금지',    color: '#b91c1c', desc: 'Barang dilarang impor — 수입 금지 품목 (중고 타이어)' },
-  na:  { label: 'SNI 비대상',  color: '#64748b', desc: 'SNI Wajib Ban 비해당. PI/LS 등 기타 Lartas 여부는 INSW(insw.go.id)에서 개별 확인' },
-};
-
-const CATEGORY_COLOR: Record<string, string> = {
-  pc:           '#ec407a',
-  lt:           '#42a5f5',
-  tb:           '#1e88e5',
-  mc:           '#26c6da',
-  bc:           '#66bb6a',
-  agr:          '#9ccc65',
-  ind:          '#ffa726',
-  mining_truck: '#ef5350',
-  otr:          '#ab47bc',
-  aircraft:     '#78909c',
-  other:        '#78909c',
-  retread:      '#8d6e63',
-  used:         '#a1887f',
-  solid:        '#26a69a',
-  tube:         '#90a4ae',
-  flap:         '#607d8b',
+  sni: { label: 'SNI Wajib',  color: cssVar('--warning'),          desc: 'SNI 강제인증 대상 · 수입 시 SPPT-SNI + Pertek + PI 필요 (INSW 적색 Lartas)' },
+  ban: { label: '수입금지',    color: cssVar('--destructive'),      desc: 'Barang dilarang impor — 수입 금지 품목 (중고 타이어)' },
+  na:  { label: 'SNI 비대상',  color: cssVar('--muted-foreground'), desc: 'SNI Wajib Ban 비해당. PI/LS 등 기타 Lartas 여부는 INSW(insw.go.id)에서 개별 확인' },
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -81,6 +64,15 @@ const CATEGORY_LABEL: Record<string, string> = {
   tube:         'Inner Tube',
   flap:         'Flap',
 };
+
+// 카테고리 16종 색상 — chart-1~5 를 명도 3단계로 늘린 15색 팔레트에서 순서대로 배정.
+// tube·flap 은 코드 주석대로 "부자재"로 함께 묶이는 계열이라 마지막 한 색을 공유한다
+// (16종 > 팔레트 15색 상한 — §8.2 "실용적 색상 구분 한계"에 따른 예외 처리).
+const CATEGORY_COLOR: Record<string, string> = (() => {
+  const palette = chartSeriesPalette(15);
+  const keys = Object.keys(CATEGORY_LABEL);
+  return Object.fromEntries(keys.map((k, i) => [k, palette[Math.min(i, palette.length - 1)]]));
+})();
 
 // KPI·차트·표 집계 대상 (신품 타이어 본계열). aircraft·retread·used 는 참고용,
 // tube·flap 은 부자재라 기존과 동일하게 집계 제외.
@@ -296,6 +288,15 @@ const CHART_PAD_R  = 16;
 const CHART_PAD_T  = 40;   // 막대 위 YoY/PEAK 라벨 공간
 const BAR_GAP      = 40;
 
+// 차트 주석 색 — style.css 토큰에서 읽어온다. peak/partial 은 상태 토큰에 대응 개념이
+// 없어 chart-1(기본)·chart-4(따뜻한 톤, 코랄과 가장 가까운 계열)를 그대로 쓴다.
+const CHART_FG        = cssVar('--foreground');
+const CHART_PARTIAL   = chartColor(4);
+const CHART_PEAK      = cssVar('--warning');
+const CHART_NEG       = cssVar('--destructive');
+const CHART_POS       = cssVar('--success');
+const CHART_SELECTED  = cssVar('--border');
+
 const yearBars = computed(() => {
   const data = yearlyTrend.value;
   if (!data.length) return [];
@@ -311,10 +312,10 @@ const yearBars = computed(() => {
     const y = CHART_PAD_T + (CHART_H - h);
     const isPeak     = peakYr === d.year;
     const isNegYoy   = d.yoy !== null && d.yoy < 0 && !d.isPartial;
-    let fill = '#1a1a1a';                              // 기본 검정
-    if (d.isPartial)        fill = '#e89c8a';          // 진행 중 = 연한 코랄
-    else if (isPeak)        fill = '#c9a049';          // 피크 = 금색
-    else if (isNegYoy)      fill = '#d44a2a';          // YoY 음수 = 빨강
+    let fill = CHART_FG;                                // 기본
+    if (d.isPartial)        fill = CHART_PARTIAL;        // 진행 중
+    else if (isPeak)        fill = CHART_PEAK;           // 피크
+    else if (isNegYoy)      fill = CHART_NEG;             // YoY 음수
     const isSelected = d.year === selectedYear.value;
     return { x, y, w: barW, h, d, hasData, isPeak, isNegYoy, fill, isSelected };
   });
@@ -771,7 +772,7 @@ onMounted(loadData);
                   :width="bar.w"
                   :height="bar.h"
                   :fill="bar.fill"
-                  :stroke="bar.isSelected ? '#e2e8f0' : 'none'"
+                  :stroke="bar.isSelected ? CHART_SELECTED : 'none'"
                   :stroke-width="bar.isSelected ? 2 : 0"
                 />
                 <!-- 선택 연도 표시 점 (데이터 없는 연도 포함) -->
@@ -780,7 +781,7 @@ onMounted(loadData);
                   :cx="bar.x + bar.w / 2"
                   :cy="CHART_PAD_T + CHART_H + 30"
                   r="2.5"
-                  fill="#e2e8f0"
+                  :fill="CHART_SELECTED"
                 />
                 <line
                   v-else
@@ -802,7 +803,7 @@ onMounted(loadData);
                   :x="bar.x + bar.w / 2"
                   :y="bar.y - 10"
                   text-anchor="middle"
-                  fill="#c9a049"
+                  :fill="CHART_PEAK"
                   style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em"
                 >
                   PEAK · {{ fmtUsdCompact(bar.d.total_usd) }}
@@ -812,7 +813,7 @@ onMounted(loadData);
                   :x="bar.x + bar.w / 2"
                   :y="bar.y - 10"
                   text-anchor="middle"
-                  :fill="bar.d.yoy > 0 ? '#10b981' : '#ef4444'"
+                  :fill="bar.d.yoy > 0 ? CHART_POS : CHART_NEG"
                   style="font-size: 11px; font-weight: 600"
                 >
                   {{ bar.d.yoy > 0 ? '+' : '' }}{{ bar.d.yoy.toFixed(1) }}%
@@ -910,17 +911,17 @@ onMounted(loadData);
               </g>
 
               <!-- Area + line -->
-              <path :d="ttmChart.area" fill="#1a1a1a" fill-opacity="0.06" />
-              <path :d="ttmChart.line" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round" />
+              <path :d="ttmChart.area" :fill="CHART_FG" fill-opacity="0.06" />
+              <path :d="ttmChart.line" fill="none" :stroke="CHART_FG" stroke-width="2" stroke-linejoin="round" />
 
               <!-- Peak marker -->
               <g v-if="ttmChart.peak.i !== ttmChart.last.i">
-                <circle :cx="ttmChart.peak.cx" :cy="ttmChart.peak.cy" r="3.5" fill="#c9a049" />
+                <circle :cx="ttmChart.peak.cx" :cy="ttmChart.peak.cy" r="3.5" :fill="CHART_PEAK" />
                 <text
                   :x="ttmChart.peak.cx"
                   :y="ttmChart.peak.cy - 12"
                   text-anchor="middle"
-                  fill="#c9a049"
+                  :fill="CHART_PEAK"
                   style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em"
                 >
                   PEAK · {{ fmtUsdCompact(ttmChart.peak.p.ttm) }}
@@ -932,7 +933,7 @@ onMounted(loadData);
                 :cx="ttmChart.last.cx"
                 :cy="ttmChart.last.cy"
                 r="4"
-                :fill="ttmChart.last.p.yoy !== null && ttmChart.last.p.yoy < 0 ? '#d44a2a' : '#1a1a1a'"
+                :fill="ttmChart.last.p.yoy !== null && ttmChart.last.p.yoy < 0 ? CHART_NEG : CHART_FG"
               />
               <text
                 :x="ttmChart.last.cx"
@@ -948,7 +949,7 @@ onMounted(loadData);
                 :x="ttmChart.last.cx"
                 :y="ttmChart.last.cy - 9"
                 text-anchor="end"
-                :fill="ttmChart.last.p.yoy > 0 ? '#10b981' : '#ef4444'"
+                :fill="ttmChart.last.p.yoy > 0 ? CHART_POS : CHART_NEG"
                 style="font-size: 11px; font-weight: 600"
               >
                 {{ ttmChart.last.p.yoy > 0 ? '+' : '' }}{{ ttmChart.last.p.yoy.toFixed(1) }}%
@@ -1079,7 +1080,7 @@ onMounted(loadData);
                   </div>
                   <div class="h-1 rounded-full bg-muted overflow-hidden">
                     <div
-                      class="h-full rounded-full bg-blue-500/70 transition-all duration-500"
+                      class="h-full rounded-full bg-chart-2/70 transition-all duration-500"
                       :style="{ width: `${item.pct}%` }"
                     />
                   </div>
@@ -1116,9 +1117,9 @@ onMounted(loadData);
     <!-- Error state -->
     <div
       v-if="!loading && loadError"
-      class="rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center space-y-3"
+      class="rounded-xl border border-destructive-border bg-destructive-soft p-6 text-center space-y-3"
     >
-      <p class="text-sm font-semibold text-red-600">데이터 로드 실패</p>
+      <p class="text-sm font-semibold text-destructive">데이터 로드 실패</p>
       <code class="block text-[11px] bg-muted rounded-lg px-4 py-2 text-left text-muted-foreground break-all">
         {{ loadError }}
       </code>
@@ -1216,7 +1217,7 @@ onMounted(loadData);
               <a href="https://insw.go.id/intr" target="_blank" class="text-primary hover:underline">INSW INTR</a>
               에서 HS별 적색 깃발로 최종 확인 필요.
             </p>
-            <p class="text-[11px] text-yellow-400/90 pt-1 border-t border-yellow-500/20">
+            <p class="text-[11px] text-warning pt-1 border-t border-warning-border">
               ⚠ OTR 이너튜브: 40139011/19 → 굴삭기·로더 등 건설기계(8429/8430),
               40139031/39 → 광산 덤프트럭·도로차량(Ch.87)
             </p>
@@ -1258,7 +1259,7 @@ onMounted(loadData);
               placeholder="엑셀에서 복사한 데이터를 여기에 붙여넣으세요..."
               class="w-full bg-muted border border-border rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary resize-none"
             />
-            <p v-if="csvError" class="text-xs text-red-600">{{ csvError }}</p>
+            <p v-if="csvError" class="text-xs text-destructive">{{ csvError }}</p>
           </div>
 
           <div class="flex gap-2 justify-end">

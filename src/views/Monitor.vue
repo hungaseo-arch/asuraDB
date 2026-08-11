@@ -6,6 +6,7 @@ import KpiEntryModal from '@/components/KpiEntryModal.vue';
 import KpiTrendModal, { type TrendSeries } from '@/components/KpiTrendModal.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { exportXlsx } from '@/lib/xlsx';
+import { cssVar } from '@/components/charts/chartSetup';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -163,20 +164,17 @@ const CATEGORY_ICONS: Record<string, string> = {
   macro:     '🏛',
 };
 
-// 카드 카테고리별 연한 배경/테두리 (light 테마). financial·market=사업 KPI, 나머지=산업지표
-const CAT_CARD_BG: Record<string, string> = {
-  financial: 'border-blue-200/70 bg-blue-50/40 hover:bg-blue-100/50',
-  market:    'border-emerald-200/70 bg-emerald-50/40 hover:bg-emerald-100/50',
-  commodity: 'border-amber-200/70 bg-amber-50/40 hover:bg-amber-100/50',
-  fx:        'border-violet-200/70 bg-violet-50/40 hover:bg-violet-100/50',
-  // 물류+정책을 한 그룹으로 통합 → 동일 배경(rose)
-  freight:   'border-rose-200/70 bg-rose-50/40 hover:bg-rose-100/50',
-  policy:    'border-rose-200/70 bg-rose-50/40 hover:bg-rose-100/50',
-};
+// 카드 배경 — 카테고리별 배경색 구분은 쓰지 않는다(§6.2). 모든 카드는 동일한
+// 중립 배경이고, 카테고리 구분은 그룹 헤더의 아이콘·라벨로만 한다.
+const CARD_BG = 'border-border bg-card hover:bg-accent';
 
-// 스파크라인 색 (누적 달성률 100% 이상=파랑, 미만=주황)
+// 산업 지표 스파크라인 색 (상승=원가 상승=destructive, 하락=success)
+const SPARK_UP   = cssVar('--destructive');
+const SPARK_DOWN = cssVar('--success');
+
+// 스파크라인 색 (누적 달성률 100% 이상=success, 미만=warning)
 function sparkStroke(achv: number | null | undefined): string {
-  return (achv ?? 0) >= 100 ? '#3b82f6' : '#f59e0b';
+  return (achv ?? 0) >= 100 ? cssVar('--success') : cssVar('--warning');
 }
 
 const ALERT_LABELS: Record<string, string> = {
@@ -222,7 +220,7 @@ function formatValue(val: number | null, unit: string | null, id?: string): stri
 }
 
 function alertDot(level: string): string {
-  return level === 'daily' ? 'bg-red-500' : level === 'weekly' ? 'bg-yellow-400' : 'bg-green-400';
+  return level === 'daily' ? 'bg-destructive' : level === 'weekly' ? 'bg-warning' : 'bg-success';
 }
 
 function latestDate(history: { date: string; value: number }[]): string {
@@ -238,8 +236,8 @@ function formatRecordedDate(card: CardData): string {
 
 function changeBadgeClass(pct: number | null): string {
   if (pct === null) return 'text-muted-foreground';
-  if (pct > 0) return 'text-red-600';
-  if (pct < 0) return 'text-green-400';
+  if (pct > 0) return 'text-destructive';
+  if (pct < 0) return 'text-success';
   return 'text-muted-foreground';
 }
 
@@ -263,7 +261,7 @@ function fmtCompact(v: number | null, unit: string): string {
 
 function achvClass(achv: number | null): string {
   if (achv === null) return 'bg-muted text-muted-foreground';
-  return achv >= 100 ? 'bg-blue-500/15 text-blue-400' : 'bg-amber-500/15 text-amber-600';
+  return achv >= 100 ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning';
 }
 
 // 데이터가 존재하는 연도 목록 (오름차순)
@@ -663,7 +661,7 @@ onMounted(async () => {
           <button
             v-for="fc in financialCards"
             :key="fc.series.metric.id"
-            :class="['text-left relative rounded-xl border p-3.5 flex flex-col gap-2 transition-all duration-150 cursor-pointer hover:border-primary/40', CAT_CARD_BG.financial]"
+            :class="['text-left relative rounded-xl border p-3.5 flex flex-col gap-2 transition-all duration-150 cursor-pointer hover:border-primary/40', CARD_BG]"
             @click="openFinancialTrend(fc.series)"
           >
             <div class="flex items-center justify-between">
@@ -712,7 +710,7 @@ onMounted(async () => {
           <button
             v-for="pc in productCards"
             :key="pc.product"
-            :class="['text-left relative rounded-xl border p-3.5 flex flex-col gap-2.5 transition-all duration-150 cursor-pointer hover:border-primary/40', CAT_CARD_BG.market]"
+            :class="['text-left relative rounded-xl border p-3.5 flex flex-col gap-2.5 transition-all duration-150 cursor-pointer hover:border-primary/40', CARD_BG]"
             @click="openProductTrend(pc)"
           >
             <div class="flex items-center justify-between">
@@ -762,9 +760,9 @@ onMounted(async () => {
     <!-- KPI 데이터 없음 안내 -->
     <div
       v-else-if="!loading && !hasKpi && kpiError"
-      class="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-center space-y-1"
+      class="rounded-xl border border-warning-border bg-warning-soft p-4 text-center space-y-1"
     >
-      <p class="text-sm font-semibold text-yellow-400">사업 KPI 데이터 없음</p>
+      <p class="text-sm font-semibold text-warning">사업 KPI 데이터 없음</p>
       <p class="text-xs text-muted-foreground">
         Supabase에서 <span class="font-mono text-foreground/70">supabase/migrations/add_business_kpi.sql</span> 을 실행하세요.
       </p>
@@ -836,7 +834,7 @@ onMounted(async () => {
             :key="card.indicator.id"
             :class="[
               'relative rounded-xl border p-3.5 flex flex-col gap-2 transition-all duration-150',
-              CAT_CARD_BG[card.indicator.category] ?? 'border-border bg-card',
+              CARD_BG,
               (card.history.length || card.indicator.source === 'manual')
                 ? 'cursor-pointer hover:border-primary/40'
                 : 'cursor-default',
@@ -891,7 +889,7 @@ onMounted(async () => {
               <path
                 :d="sparkPath(card.history)"
                 fill="none"
-                :stroke="card.changePct !== null && card.changePct < 0 ? '#4ade80' : '#f87171'"
+                :stroke="card.changePct !== null && card.changePct < 0 ? SPARK_DOWN : SPARK_UP"
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -915,9 +913,9 @@ onMounted(async () => {
     <!-- Error state -->
     <div
       v-if="!loading && loadError"
-      class="rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center space-y-3"
+      class="rounded-xl border border-destructive-border bg-destructive-soft p-6 text-center space-y-3"
     >
-      <p class="text-sm font-semibold text-red-600">데이터 로드 실패</p>
+      <p class="text-sm font-semibold text-destructive">데이터 로드 실패</p>
       <p class="text-xs text-muted-foreground">
         Supabase 마이그레이션이 적용되지 않았거나 테이블 접근 권한이 없습니다.
       </p>

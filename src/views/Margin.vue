@@ -6,6 +6,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import DataState from '@/components/ui/DataState.vue';
 import { errMsg } from '@/lib/utils';
 import { exportXlsx, exportXlsxSheets } from '@/lib/xlsx';
+import { chartSeriesPalette, cssVar } from '@/components/charts/chartSetup';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -39,14 +40,12 @@ interface MonthDetail {
   items:     ItemRow[];
 }
 
-const BRAND_COLOR: Record<string, string> = {
-  ASCENDO:  '#3b82f6',
-  TECHKING: '#f59e0b',
-  DIAMOND:  '#06b6d4',
-  TIRON:    '#a78bfa',
-  STARKUS:  '#10b981',
-  GIS:      '#6b7280',
-};
+// 브랜드 6종 색 — chart-1~5 를 명도 3단계로 늘린 팔레트에서 순서대로 배정
+// (기본 5색을 넘는 카테고리 수라 §8.2와 동일한 방식으로 확장).
+const BRAND_ORDER = ['ASCENDO', 'TECHKING', 'DIAMOND', 'TIRON', 'STARKUS', 'GIS'];
+const BRAND_COLOR: Record<string, string> = Object.fromEntries(
+  BRAND_ORDER.map((b, i) => [b, chartSeriesPalette(6)[i]]),
+);
 
 // ── Supabase state ──────────────────────────────────────────────────────────
 
@@ -587,7 +586,7 @@ const brandRows = computed<DisplayRow[]>(() =>
       marginPct:   b.sales > 0 ? (b.margin / b.sales) * 100 : 0,
       salesRatio:  viewTotals.value.sales  > 0 ? (b.sales  / viewTotals.value.sales)  * 100 : 0,
       marginRatio: viewTotals.value.margin > 0 ? (b.margin / viewTotals.value.margin) * 100 : 0,
-      color:       BRAND_COLOR[b.brand] ?? '#94a3b8',
+      color:       BRAND_COLOR[b.brand] ?? cssVar('--muted-foreground'),
     })),
 );
 
@@ -1027,16 +1026,16 @@ function fmtMoM(v: number | null): string {
 
 function momClass(v: number | null): string {
   if (v === null) return 'text-muted-foreground';
-  return v > 0 ? 'text-emerald-600' : v < 0 ? 'text-red-600' : 'text-muted-foreground';
+  return v > 0 ? 'text-success' : v < 0 ? 'text-destructive' : 'text-muted-foreground';
 }
 
 // 마진율 색상 — Mar 2026 전체 평균 12.0% 기준
 function marginPctClass(v: number): string {
-  if (v >= 20) return 'text-emerald-600';
-  if (v >= 12) return 'text-emerald-600';
+  if (v >= 20) return 'text-success';
+  if (v >= 12) return 'text-success';
   if (v >= 8)  return 'text-foreground';
-  if (v >= 5)  return 'text-amber-600';
-  return 'text-red-600';
+  if (v >= 5)  return 'text-warning';
+  return 'text-destructive';
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -1074,13 +1073,13 @@ const TAB_LABEL: Record<Tab, string> = {
         <p class="text-xs text-muted-foreground mt-1 flex items-center flex-wrap gap-2">
           <span
             v-if="loadingMonths || loadingDetail"
-            class="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20"
+            class="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md bg-info-soft text-info border border-info-border"
           >
             <Loader2 :size="10" class="animate-spin" /> 로딩 중
           </span>
           <span
             v-else
-            class="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+            class="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md bg-success-soft text-success border border-success-border"
           >
             <Database :size="10" /> Supabase · {{ MONTH_KEYS.length }}개월
           </span>
@@ -1088,8 +1087,8 @@ const TAB_LABEL: Record<Tab, string> = {
           <span
             v-if="sapMatch != null"
             :class="['inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md border',
-              sapMatchOk ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                         : 'bg-amber-500/10 text-amber-600 border-amber-500/20']"
+              sapMatchOk ? 'bg-success-soft text-success border-success-border'
+                         : 'bg-warning-soft text-warning border-warning-border']"
             :title="sapMatchOk ? 'SAP 판매이력과 ±1% 이내 일치' : 'SAP 판매이력과 1% 넘게 차이 — 원본 대조 필요'"
           >SAP 대사 {{ sapMatch.toFixed(1) }}%</span>
         </p>
@@ -1110,7 +1109,7 @@ const TAB_LABEL: Record<Tab, string> = {
               type="text"
               placeholder="연월 검색"
               class="text-xs px-2 py-1.5 rounded-md border border-border bg-card hover:bg-accent transition-colors focus:outline-none focus:ring-1 focus:ring-primary tabular-nums w-24"
-              :class="isSumKey ? 'text-amber-600 font-semibold' : 'text-foreground'"
+              :class="isSumKey ? 'text-warning font-semibold' : 'text-foreground'"
               @focus="openPeriod"
               @blur="closePeriod"
             />
@@ -1125,7 +1124,7 @@ const TAB_LABEL: Record<Tab, string> = {
                 class="block w-full text-left text-xs px-2 py-1.5 hover:bg-accent transition-colors tabular-nums whitespace-nowrap"
                 :class="[
                   o.key === selectedMonth ? 'bg-primary/10 text-primary' : '',
-                  o.isSum ? 'font-semibold text-amber-600' : '',
+                  o.isSum ? 'font-semibold text-warning' : '',
                 ]"
                 @mousedown.prevent="selectPeriod(o)"
               >
@@ -1232,15 +1231,15 @@ const TAB_LABEL: Record<Tab, string> = {
     <!-- Error state -->
     <div
       v-if="loadError"
-      class="rounded-xl border border-red-500/30 bg-red-500/10 p-3 flex items-start gap-2 text-sm text-red-600"
+      class="rounded-xl border border-destructive-border bg-destructive-soft p-3 flex items-start gap-2 text-sm text-destructive"
     >
       <AlertCircle :size="14" class="mt-0.5 shrink-0" />
       <div class="min-w-0">
         <p class="font-semibold">데이터 로드 실패</p>
-        <p class="text-xs mt-0.5 text-red-600/80 break-all">{{ loadError }}</p>
+        <p class="text-xs mt-0.5 text-destructive/80 break-all">{{ loadError }}</p>
         <button
           type="button"
-          class="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+          class="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-destructive-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
           @click="initLoad"
         >
           <RotateCw :size="13" /> 다시 시도
@@ -1310,7 +1309,7 @@ const TAB_LABEL: Record<Tab, string> = {
     <div class="rounded-xl border border-border bg-card p-5 space-y-3">
       <div class="flex items-baseline justify-between">
         <p class="text-xs font-semibold tracking-[0.2em] uppercase">
-          <span class="text-red-600">§ 01</span>
+          <span class="text-destructive">§ 01</span>
           <span class="text-muted-foreground"> · </span>
           <span>Monthly Trend</span>
           <span v-if="anyFilter" class="text-primary normal-case tracking-normal"> · {{ activeFilterLabel }}</span>
@@ -1318,13 +1317,13 @@ const TAB_LABEL: Record<Tab, string> = {
         <div class="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
           <span class="flex items-center gap-1.5">
             <svg width="16" height="6" class="shrink-0">
-              <line x1="0" y1="3" x2="16" y2="3" stroke="#cbd5e1" stroke-width="1.5" />
-              <circle cx="8" cy="3" r="2" fill="#cbd5e1" />
+              <line x1="0" y1="3" x2="16" y2="3" class="stroke-border" stroke-width="1.5" />
+              <circle cx="8" cy="3" r="2" class="fill-border" />
             </svg>
             매출
           </span>
-          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm bg-blue-500" />마진</span>
-          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm bg-amber-500" />평균</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm bg-chart-2" />마진</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm bg-warning" />평균</span>
         </div>
       </div>
 
@@ -1369,14 +1368,14 @@ const TAB_LABEL: Record<Tab, string> = {
             <rect
               :x="bar.xMargin" :y="bar.yMargin" :width="bar.barW" :height="bar.hMargin"
               :fill="bar.t.isAverage
-                ? (bar.isCurrent ? '#d97706' : '#f59e0b')
-                : (bar.isCurrent ? '#3b82f6' : '#60a5fa')"
+                ? (bar.isCurrent ? 'var(--warning)' : 'var(--warning)')
+                : (bar.isCurrent ? 'var(--chart-2)' : 'var(--chart-2)')"
               :opacity="bar.t.isAverage ? 0.85 : (bar.isCurrent ? 1 : 0.7)"
             />
             <text
               :x="bar.xMargin + bar.barW / 2" :y="bar.yMargin - 4"
               text-anchor="middle"
-              :fill="bar.t.isAverage ? '#f59e0b' : '#3b82f6'"
+              :fill="bar.t.isAverage ? 'var(--warning)' : 'var(--chart-2)'"
               style="font-size: 7px; font-weight: 600"
             >
               {{ fmtPct(bar.t.marginPct, 1) }}
@@ -1387,7 +1386,7 @@ const TAB_LABEL: Record<Tab, string> = {
           <path
             :d="salesLinePath"
             fill="none"
-            stroke="#cbd5e1"
+            class="stroke-border"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -1397,14 +1396,14 @@ const TAB_LABEL: Record<Tab, string> = {
               :cx="bar.xCenter"
               :cy="bar.ySales"
               :r="bar.isCurrent ? 5 : 3.5"
-              :fill="bar.t.isAverage ? '#fbbf24' : (bar.isCurrent ? '#f1f5f9' : '#cbd5e1')"
-              stroke="#0f172a"
+              :fill="bar.t.isAverage ? 'var(--warning)' : (bar.isCurrent ? 'var(--muted)' : 'var(--border)')"
+              class="stroke-foreground"
               stroke-width="1.5"
             />
             <text
               :x="bar.xCenter" :y="bar.ySales - 8"
               text-anchor="middle"
-              :class="bar.t.isAverage ? 'fill-amber-400' : 'fill-foreground'"
+              :class="bar.t.isAverage ? 'fill-warning' : 'fill-foreground'"
               :style="bar.isCurrent
                 ? 'font-size: 7px; font-weight: 700; letter-spacing: 0.02em'
                 : 'font-size: 7px; font-weight: 500; letter-spacing: 0.02em'"
@@ -1418,7 +1417,7 @@ const TAB_LABEL: Record<Tab, string> = {
             v-for="bar in trendBars" :key="`xl-${bar.t.key}`"
             :x="bar.xCenter" :y="CHART_PAD_T + CHART_H + 14"
             text-anchor="middle"
-            :class="bar.t.isAverage ? 'fill-amber-400' : 'fill-muted-foreground'"
+            :class="bar.t.isAverage ? 'fill-warning' : 'fill-muted-foreground'"
             :style="bar.t.isAverage
               ? 'font-size: 7px; font-family: monospace; font-weight: 600'
               : 'font-size: 7px; font-family: monospace'"
@@ -1532,7 +1531,7 @@ const TAB_LABEL: Record<Tab, string> = {
                 <div class="flex items-center gap-2 justify-end">
                   <span class="text-xs text-muted-foreground tabular-nums shrink-0 w-10 text-right">{{ fmtPct(row.salesRatio, 1) }}</span>
                   <div class="h-1.5 w-16 rounded-full bg-muted overflow-hidden shrink-0">
-                    <div class="h-full bg-slate-400/70 rounded-full" :style="{ width: `${Math.min(100, row.salesRatio)}%` }" />
+                    <div class="h-full bg-chart-1/70 rounded-full" :style="{ width: `${Math.min(100, row.salesRatio)}%` }" />
                   </div>
                 </div>
               </td>
@@ -1540,7 +1539,7 @@ const TAB_LABEL: Record<Tab, string> = {
                 <div class="flex items-center gap-2 justify-end">
                   <span class="text-xs text-foreground tabular-nums shrink-0 w-10 text-right font-semibold">{{ fmtPct(row.marginRatio, 1) }}</span>
                   <div class="h-1.5 w-16 rounded-full bg-muted overflow-hidden shrink-0">
-                    <div class="h-full bg-blue-500/80 rounded-full" :style="{ width: `${Math.min(100, row.marginRatio)}%` }" />
+                    <div class="h-full bg-chart-2/80 rounded-full" :style="{ width: `${Math.min(100, row.marginRatio)}%` }" />
                   </div>
                 </div>
               </td>
@@ -1608,7 +1607,7 @@ const TAB_LABEL: Record<Tab, string> = {
         <span class="text-[11px] text-muted-foreground">두 조건 동시 적용 · 원가·마진 포함</span>
         <span
           v-if="crossOpen && crossState === 'mismatch'"
-          class="text-[11px] px-1.5 py-0.5 rounded-md border bg-amber-500/10 text-amber-600 border-amber-500/20"
+          class="text-[11px] px-1.5 py-0.5 rounded-md border bg-warning-soft text-warning border-warning-border"
           title="이 달의 명세 엑셀이 요약본보다 이전 판이라 합계가 다릅니다"
         >명세 구버전</span>
         <span
@@ -1681,7 +1680,7 @@ const TAB_LABEL: Record<Tab, string> = {
                 <td class="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{{ r.qty.toLocaleString('en-US') }}</td>
                 <td class="px-4 py-2.5 text-right tabular-nums">{{ fmtIdr(r.sales) }}</td>
                 <td class="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmtIdr(r.cost) }}</td>
-                <td class="px-4 py-2.5 text-right tabular-nums font-medium" :class="r.margin < 0 && 'text-red-600'">{{ fmtIdr(r.margin) }}</td>
+                <td class="px-4 py-2.5 text-right tabular-nums font-medium" :class="r.margin < 0 && 'text-destructive'">{{ fmtIdr(r.margin) }}</td>
                 <td class="px-4 py-2.5 text-right tabular-nums">{{ r.sales ? fmtPct(r.margin / r.sales * 100) : '—' }}</td>
               </tr>
               <tr v-if="!crossRows.length">

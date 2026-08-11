@@ -693,7 +693,7 @@ function venStatusOf(v: VendorRow): VenStatus {
   return m <= 6 ? '활성' : m <= 12 ? '관찰' : m <= 24 ? '휴면' : '거래중단';
 }
 const VEN_STATUS_CLASS: Record<VenStatus, string> = {
-  활성: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  활성: 'bg-success-soft text-success border-success-border',
   관찰: 'bg-muted text-foreground/70 border-border',
   휴면: 'bg-muted text-muted-foreground border-border',
   거래중단: 'bg-muted text-muted-foreground/70 border-border',
@@ -1240,7 +1240,7 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
           <p class="text-[11px] text-muted-foreground">
             총 {{ filtered.length.toLocaleString() }}개<span v-if="query || category !== '전체'"> / 전체 {{ rows.length.toLocaleString() }}개</span>
             · FOB/중량(kg)는 확장 컬럼(미입력 시 —) · 입고가·대리점가는 <b>{{ vatLabel }}</b> 기준 표기(PPN 11%)
-            <span v-if="reviewCount"> · <span class="rounded border border-rose-300 bg-rose-50 px-1 py-px text-[10px] font-medium text-rose-700">확인</span> {{ reviewCount }}건 — 출처 상충·급변 값(뱃지에 마우스를 올리면 사유)</span>
+            <span v-if="reviewCount"> · <span class="rounded border border-destructive-border bg-destructive-soft px-1 py-px text-[10px] font-medium text-destructive">확인</span> {{ reviewCount }}건 — 출처 상충·급변 값(뱃지에 마우스를 올리면 사유)</span>
           </p>
           <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:ml-auto">
             <div class="relative flex-1 min-w-40 sm:flex-none">
@@ -1331,20 +1331,20 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
                   </td>
                   <td class="px-3 py-2.5 text-right tabular-nums">
                     <span class="inline-flex items-center justify-end gap-1.5">
-                      <span v-if="needsReview(p, 'fob')" :title="p.review_note ?? ''" class="rounded border border-rose-300 bg-rose-50 px-1 py-px text-[10px] font-medium leading-none text-rose-700 cursor-help">확인</span>
+                      <span v-if="needsReview(p, 'fob')" :title="p.review_note ?? ''" class="rounded border border-destructive-border bg-destructive-soft px-1 py-px text-[10px] font-medium leading-none text-destructive cursor-help">확인</span>
                       {{ fmtFob(p.fob) }}
                     </span>
                   </td>
                   <td class="px-3 py-2.5 text-right tabular-nums">
                     <span class="inline-flex items-center justify-end gap-1.5">
                       <!-- 출처(제원표/가격표) 값이 상충하는 중량은 「확인」 뱃지로 표기 -->
-                      <span v-if="needsReview(p, 'weight_kg')" :title="p.review_note ?? ''" class="rounded border border-rose-300 bg-rose-50 px-1 py-px text-[10px] font-medium leading-none text-rose-700 cursor-help">확인</span>
+                      <span v-if="needsReview(p, 'weight_kg')" :title="p.review_note ?? ''" class="rounded border border-destructive-border bg-destructive-soft px-1 py-px text-[10px] font-medium leading-none text-destructive cursor-help">확인</span>
                       {{ fmtWeight(p.weight_kg) }}
                     </span>
                   </td>
                   <td class="px-3 py-2.5 text-right tabular-nums">
                     <span class="inline-flex items-center justify-end gap-1.5">
-                      <span v-if="needsReview(p, 'qty_40ft')" :title="p.review_note ?? ''" class="rounded border border-rose-300 bg-rose-50 px-1 py-px text-[10px] font-medium leading-none text-rose-700 cursor-help">확인</span>
+                      <span v-if="needsReview(p, 'qty_40ft')" :title="p.review_note ?? ''" class="rounded border border-destructive-border bg-destructive-soft px-1 py-px text-[10px] font-medium leading-none text-destructive cursor-help">확인</span>
                       {{ fmt(p.qty_40ft) }}
                     </span>
                   </td>
@@ -1352,14 +1352,14 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
                     <span class="inline-flex items-center justify-end gap-1.5">
                       <!-- 입고가 기준은 API-P. API-U 로 채운 품목만 뱃지로 구분 표기 -->
                       <span v-if="p.wh_price_basis === 'API-U'"
-                            class="rounded border border-amber-300 bg-amber-50 px-1 py-px text-[10px] font-medium leading-none text-amber-700">API-U</span>
-                      <span v-if="needsReview(p, 'wh_price_pcs')" :title="p.review_note ?? ''" class="rounded border border-rose-300 bg-rose-50 px-1 py-px text-[10px] font-medium leading-none text-rose-700 cursor-help">확인</span>
+                            class="rounded border border-warning-border bg-warning-soft px-1 py-px text-[10px] font-medium leading-none text-warning">API-U</span>
+                      <span v-if="needsReview(p, 'wh_price_pcs')" :title="p.review_note ?? ''" class="rounded border border-destructive-border bg-destructive-soft px-1 py-px text-[10px] font-medium leading-none text-destructive cursor-help">확인</span>
                       {{ fmt(vat(p.wh_price_pcs, 'excl')) }}
                     </span>
                   </td>
                   <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">
                     <span class="inline-flex items-center justify-end gap-1.5">
-                      <span v-if="needsReview(p, 'wh_price_set')" :title="p.review_note ?? ''" class="rounded border border-rose-300 bg-rose-50 px-1 py-px text-[10px] font-medium leading-none text-rose-700 cursor-help">확인</span>
+                      <span v-if="needsReview(p, 'wh_price_set')" :title="p.review_note ?? ''" class="rounded border border-destructive-border bg-destructive-soft px-1 py-px text-[10px] font-medium leading-none text-destructive cursor-help">확인</span>
                       {{ fmt(vat(p.wh_price_set, 'excl')) }}
                     </span>
                   </td>
@@ -1444,7 +1444,7 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
                       <!-- 가격 탭과 동일 기준의 「확인」 뱃지(예: 제원표↔가격표 중량 상충) -->
                       <span v-if="needsReview({ review_field: r._reviewField as string | null, review_note: r._reviewNote as string | null }, c.key)"
                             :title="(r._reviewNote as string | null) ?? ''"
-                            class="rounded border border-rose-300 bg-rose-50 px-1 py-px text-[10px] font-medium leading-none text-rose-700 cursor-help">확인</span>
+                            class="rounded border border-destructive-border bg-destructive-soft px-1 py-px text-[10px] font-medium leading-none text-destructive cursor-help">확인</span>
                       {{ fmtSpec(c, r[c.key]) }}
                     </span>
                   </td>
@@ -1453,9 +1453,9 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
               </tbody>
             </table>
           </div>
-          <div class="px-3 py-2 border-t text-[11px] flex items-center gap-2 flex-wrap" :style="{ borderColor: '#ECEFF1', color: '#546E7A' }">
+          <div class="px-3 py-2 border-t text-[11px] flex items-center gap-2 flex-wrap" :style="{ borderColor: 'var(--secondary)', color: 'var(--muted-foreground)' }">
             <!-- SAGE GREEN 강조 뱃지 — 제품 수(가격 탭과 동일) -->
-            <span class="inline-flex items-center px-2 py-0.5 rounded font-semibold" :style="{ background: '#E8F5E9', color: '#546E7A' }">
+            <span class="inline-flex items-center px-2 py-0.5 rounded font-semibold" :style="{ background: 'var(--success-soft)', color: 'var(--muted-foreground)' }">
               제품 {{ specFiltered.length.toLocaleString() }}건
             </span>
             <span v-if="specDef.specTable">· 제원 매칭 {{ specMatched.toLocaleString() }}건</span>
@@ -1535,7 +1535,7 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
               <div class="text-muted-foreground mb-0.5">입고가 (pcs) <span class="opacity-70">{{ vatLabel }}</span></div>
               <div class="tabular-nums font-medium">
                 {{ fmt(vat(priceModal.wh_price_pcs, 'excl')) }}
-                <span v-if="priceModal.wh_price_basis === 'API-U'" class="ml-1 rounded border border-amber-300 bg-amber-50 px-1 py-px text-[10px] font-medium leading-none text-amber-700">API-U</span>
+                <span v-if="priceModal.wh_price_basis === 'API-U'" class="ml-1 rounded border border-warning-border bg-warning-soft px-1 py-px text-[10px] font-medium leading-none text-warning">API-U</span>
               </div>
             </div>
             <div><div class="text-muted-foreground mb-0.5">입고가 (set) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums">{{ fmt(vat(priceModal.wh_price_set, 'excl')) }}</div></div>
@@ -1543,7 +1543,7 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
             <div><div class="text-muted-foreground mb-0.5">대리점가 (set) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums">{{ fmt(vat(priceModal.dist_price_set, 'incl')) }}</div></div>
           </div>
           <p class="text-[11px] text-muted-foreground">
-            <span v-if="priceModal.review_note" class="text-rose-700">확인 필요 — {{ priceModal.review_note }}</span>
+            <span v-if="priceModal.review_note" class="text-destructive">확인 필요 — {{ priceModal.review_note }}</span>
             <span v-else-if="priceModal.sap_last_sold">최근 판매 {{ priceModal.sap_last_sold }}</span>
             <span v-else>가격 단위 IDR · 미입력은 —.</span>
           </p>
@@ -1599,7 +1599,7 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
                 <td class="px-3 py-2">{{ txt(c.assist1_name) }}</td>
                 <td class="px-3 py-2">{{ txt(c.assist2_name) }}</td>
                 <td class="px-3 py-2 text-center">
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="c.is_active ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'">{{ c.is_active ? '활성' : '비활성' }}</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="c.is_active ? 'bg-success-soft text-success' : 'bg-muted text-muted-foreground'">{{ c.is_active ? '활성' : '비활성' }}</span>
                 </td>
                 <!-- SAP A/R 누적 매출(할인 후·취소 반영). 청구 건수와 최근 청구일은 tooltip -->
                 <td class="px-3 py-2 text-right tabular-nums"
@@ -1723,7 +1723,7 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
                 </td>
                 <td v-if="tradeDocCntMeaningful" class="px-3 py-2 text-right tabular-nums text-muted-foreground">{{ fmt(r.docCnt) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ fmt(r.qty) }}</td>
-                <td class="px-3 py-2 text-right tabular-nums font-medium" :class="r.idr < 0 && 'text-red-600'">{{ fmtIdr(r.idr) }}</td>
+                <td class="px-3 py-2 text-right tabular-nums font-medium" :class="r.idr < 0 && 'text-destructive'">{{ fmtIdr(r.idr) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums text-muted-foreground">{{ r.usd ? fmt(r.usd) : '—' }}</td>
                 <td class="px-3 py-2 text-right tabular-nums text-muted-foreground">
                   {{ tradeTotal.idr ? `${(r.idr / tradeTotal.idr * 100).toFixed(1)}%` : '—' }}
@@ -1803,10 +1803,10 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
                   <tr v-for="d in tradeDetailRows" :key="d.ym" class="border-t border-border/50 hover:bg-accent/40">
                     <td class="px-3 py-1.5 tabular-nums font-medium border-r border-border/60">{{ d.ym }}</td>
                     <td class="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{{ d.buyQty ? fmt(d.buyQty) : '—' }}</td>
-                    <td class="px-3 py-1.5 text-right tabular-nums" :class="d.buyIdr < 0 && 'text-red-600'">{{ fmtIdr(d.buyIdr) }}</td>
+                    <td class="px-3 py-1.5 text-right tabular-nums" :class="d.buyIdr < 0 && 'text-destructive'">{{ fmtIdr(d.buyIdr) }}</td>
                     <td class="px-3 py-1.5 text-right tabular-nums text-muted-foreground border-r border-border/60">{{ fmtIdr(unitIdr(d.buyIdr, d.buyQty)) }}</td>
                     <td class="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{{ d.sellQty ? fmt(d.sellQty) : '—' }}</td>
-                    <td class="px-3 py-1.5 text-right tabular-nums" :class="d.sellIdr < 0 && 'text-red-600'">{{ fmtIdr(d.sellIdr) }}</td>
+                    <td class="px-3 py-1.5 text-right tabular-nums" :class="d.sellIdr < 0 && 'text-destructive'">{{ fmtIdr(d.sellIdr) }}</td>
                     <td class="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{{ fmtIdr(unitIdr(d.sellIdr, d.sellQty)) }}</td>
                   </tr>
                   <tr v-if="!tradeDetailRows.length">
@@ -1818,7 +1818,7 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
 
             <p class="px-5 py-3 text-[11px] text-muted-foreground border-t border-border">
               전체 기간 · 최근월 순 · 금액은 할인 후 순액(취소·반품 음수 반영) · VAT 별도 · 화면 상단 기간 필터와 무관
-              <span v-if="tradeDetailError" class="text-red-600"> · 반대편(구매/판매) 이력을 불러오지 못했습니다</span>
+              <span v-if="tradeDetailError" class="text-destructive"> · 반대편(구매/판매) 이력을 불러오지 못했습니다</span>
             </p>
           </template>
         </div>
@@ -1884,21 +1884,21 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
                 <td class="px-3 py-2 font-medium">{{ v.vendor_name }}</td>
                 <td class="px-3 py-2 text-center">
                   <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border"
-                    :class="v.sourcing === 'LOCAL' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-muted text-foreground/70 border-border'">
+                    :class="v.sourcing === 'LOCAL' ? 'bg-success-soft text-success border-success-border' : 'bg-muted text-foreground/70 border-border'">
                     {{ venSourcingLabel(v.sourcing) }}
                   </span>
                 </td>
                 <!-- 국가 미확인(NULL)은 추정으로 채우지 않고 뱃지로 드러낸다 -->
                 <td class="px-3 py-2">
                   <span v-if="v.country">{{ v.country }}</span>
-                  <span v-else class="rounded border border-amber-300 bg-amber-50 px-1 py-px text-[10px] font-medium leading-none text-amber-700">미확인</span>
+                  <span v-else class="rounded border border-warning-border bg-warning-soft px-1 py-px text-[10px] font-medium leading-none text-warning">미확인</span>
                 </td>
                 <td class="px-3 py-2 text-center">
                   <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border" :class="VEN_STATUS_CLASS[venStatusOf(v)]">{{ venStatusOf(v) }}</span>
                 </td>
                 <td class="px-3 py-2 text-center">
                   <span class="text-[10px] font-bold px-1.5 py-0.5 rounded border"
-                    :class="venGradeOf(v) === 'A' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'">{{ venGradeOf(v) }}</span>
+                    :class="venGradeOf(v) === 'A' ? 'bg-success-soft text-success border-success-border' : 'bg-muted text-muted-foreground border-border'">{{ venGradeOf(v) }}</span>
                 </td>
                 <td class="px-3 py-2">{{ txt(v.top_brand) }}</td>
                 <td class="px-3 py-2">{{ txt(v.top_category) }}</td>

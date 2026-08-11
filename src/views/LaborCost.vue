@@ -5,7 +5,7 @@ import { ref, computed } from 'vue';
 import { Users, Wallet, Coins, CalendarRange, Download } from 'lucide-vue-next';
 import { Bar } from 'vue-chartjs';
 import type { ChartData, ChartDataset, ChartOptions } from 'chart.js';
-import '@/components/charts/chartSetup'; // Chart.js 1회 등록(Line/Bar/Point 포함)
+import { cssVar, chartColor, chartAlpha } from '@/components/charts/chartSetup'; // Chart.js 1회 등록(Line/Bar/Point 포함) + 색 헬퍼
 import PageHeader from '@/components/PageHeader.vue';
 import { exportXlsx } from '@/lib/xlsx';
 import { PAYROLL_TABS, PAYROLL_MONTHS_2026, PAYROLL_UPDATED } from '@/data/payrollMonthly';
@@ -70,7 +70,7 @@ const fmt = (n: number, d = 1) =>
   Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 const pct = (c: number, base: number) => (base ? ((c - base) / base) * 100 : null);
 const deltaClass = (v: number | null) =>
-  v == null ? 'text-muted-foreground' : v > 0 ? 'text-emerald-600' : v < 0 ? 'text-red-500' : 'text-muted-foreground';
+  v == null ? 'text-muted-foreground' : v > 0 ? 'text-success' : v < 0 ? 'text-destructive' : 'text-muted-foreground';
 const deltaText = (v: number | null) =>
   v == null ? '—' : `${v > 0 ? '▲' : v < 0 ? '▼' : '■'} ${Math.abs(v).toFixed(1)}%`;
 
@@ -90,22 +90,19 @@ const kpis = computed(() => {
   ];
 });
 
-// `var(--foo)` → 런타임 실제 색(라이트 테마). Chart.js canvas 는 CSS 변수를 못 읽어 직접 해석.
-function cssVar(name: string, fallback: string): string {
-  if (typeof document === 'undefined') return fallback;
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
-}
-const axisColor = cssVar('--muted-foreground', '#64748b');
-const gridColor = 'rgba(15,23,42,.08)';   // 라이트 테마용 옅은 그리드
-const BAR_BLUE = '#3b82f6';                // 마진 뷰 ASCENDO 색과 통일
-const LINE_GREEN = '#10b981';
+// CSS 변수 → 런타임 실제 색(라이트 테마). Chart.js canvas 는 CSS 변수를 못 읽어 직접 해석.
+// cssVar/chartColor/chartAlpha 는 chartSetup 공용 헬퍼(§6.2 컨벤션).
+const axisColor = cssVar('--muted-foreground');
+const gridColor = chartAlpha(cssVar('--foreground'), 0.08);   // 라이트 테마용 옅은 그리드
+const BAR_BLUE = chartColor(1);            // 마진 뷰 ASCENDO 색과 통일(chart-1)
+const LINE_GREEN = chartColor(3);          // 인원(headcount) 선 — 차트 팔레트 3번(그린 계열)
 
 // 월별 추이 차트 (인건비 막대 + 인원 선, 이중 축)
 const chartData = computed<ChartData<'bar'>>(() => ({
   labels: PAYROLL_MONTHS_2026,
   datasets: [
     { label: '인건비 (백만IDR)', data: tab.value.salary.m2026,
-      backgroundColor: 'rgba(59,130,246,.5)', borderColor: BAR_BLUE, borderWidth: 1, yAxisID: 'y', order: 2 },
+      backgroundColor: chartAlpha(BAR_BLUE, 0.5), borderColor: BAR_BLUE, borderWidth: 1, yAxisID: 'y', order: 2 },
     // 혼합 차트: 인원 선(line) 데이터셋을 bar 차트에 얹음 (vue-chartjs 타입 한계로 캐스팅)
     ({ type: 'line', label: '인원 (명)', data: tab.value.total.m2026,
       borderColor: LINE_GREEN, backgroundColor: LINE_GREEN, tension: 0.3, pointRadius: 3, yAxisID: 'y1', order: 1
@@ -244,7 +241,7 @@ const notes = computed(() => {
             </tr>
 
             <!-- 총인건비 = 4개 합계(파생값) · SAGE GREEN 강조(§7) -->
-            <tr class="font-bold" :style="{ background: '#E8F5E9', color: '#546E7A' }">
+            <tr class="font-bold bg-success-soft text-primary">
               <td class="text-left px-2 py-2">총인건비 (백만IDR)</td>
               <td class="text-center px-2 py-2">{{ totalCost.avg2025 != null ? fmt(totalCost.avg2025, 1) : '-' }}</td>
               <td v-for="(v, i) in totalCost.m2026" :key="i" class="text-center px-2 py-2">{{ fmt(v, 1) }}</td>

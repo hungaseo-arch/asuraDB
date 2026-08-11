@@ -53,7 +53,7 @@ async function submit() {
     >
       <!-- Logo -->
       <div class="flex flex-col items-center gap-3">
-        <AsuraLogo :size="56" style="filter: drop-shadow(0 0 16px rgba(38,126,255,0.5));" />
+        <AsuraLogo :size="56" style="filter: drop-shadow(0 0 16px color-mix(in srgb, var(--primary) 50%, transparent));" />
         <div class="text-center">
           <div class="font-bold text-lg tracking-tight">AsuraDB</div>
           <div class="text-xs text-muted-foreground mt-0.5">이메일로 로그인</div>
@@ -92,7 +92,7 @@ async function submit() {
         v-if="errorMsg"
         data-testid="login-error"
         role="alert"
-        class="text-xs text-red-600 text-center -mt-2 max-w-full wrap-break-word"
+        class="text-xs text-destructive text-center -mt-2 max-w-full wrap-break-word"
       >{{ errorMsg }}</p>
 
       <!-- Submit -->

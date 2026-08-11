@@ -263,7 +263,7 @@ function diff(c: Company) {
   const pct = d / selfFinal.value * 100;
   return { d, pct, cheaper: d > 0, label: d > 0 ? '자사 저렴' : d < 0 ? '자사 비쌈' : '동일' };
 }
-function marginClass(m: number) { return m >= 15 ? 'text-emerald-500' : m >= 5 ? 'text-amber-500' : 'text-red-500'; }
+function marginClass(m: number) { return m >= 15 ? 'text-success' : m >= 5 ? 'text-warning' : 'text-destructive'; }
 
 // ── 열 이름 ─────────────────────────────────────────────────────────────────
 // 경쟁사 열 이름은 빈칸 + 추천값(placeholder) 방식. 첫 경쟁사는 상단 고객명을 추천,
@@ -629,7 +629,7 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
             <th scope="col"
               v-for="(c, i) in companies" :key="i"
               class="border border-border px-3 py-2 text-center"
-              :class="c.self ? 'bg-emerald-500/10' : 'bg-primary/5'"
+              :class="c.self ? 'bg-success-soft' : 'bg-primary/5'"
             >
               <!-- 회사명 + 삭제 1행. 경쟁사는 빈칸이면 추천값(상단 고객명 / 경쟁사 X)을 placeholder로 노출 -->
               <div class="flex items-center justify-center gap-1.5 print:hidden">
@@ -638,7 +638,7 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
                   :title="c.self ? undefined : '경쟁사명 직접 입력 · 빈칸이면 추천값 사용'"
                   class="min-w-0 bg-transparent text-center text-sm font-bold focus:outline-none placeholder:font-bold placeholder:text-foreground/70"
                 />
-                <button v-if="!c.self" class="shrink-0 text-muted-foreground hover:text-red-500" title="열 삭제" @click="delCompany(i)"><X :size="12" /></button>
+                <button v-if="!c.self" class="shrink-0 text-muted-foreground hover:text-destructive" title="열 삭제" @click="delCompany(i)"><X :size="12" /></button>
               </div>
               <div class="hidden print:block text-sm font-bold">{{ colName(c, i) }}</div>
             </th>
@@ -650,7 +650,7 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
             <td class="sticky left-0 z-10 bg-muted border border-border px-3 py-2 text-left text-xs font-semibold whitespace-nowrap">
               <div class="flex items-center justify-between gap-2">
                 <span>{{ r.label }}</span>
-                <button class="print:hidden text-muted-foreground hover:text-red-500" title="품목 삭제" @click="delRow(r.key)"><X :size="12" /></button>
+                <button class="print:hidden text-muted-foreground hover:text-destructive" title="품목 삭제" @click="delRow(r.key)"><X :size="12" /></button>
               </div>
             </td>
             <td v-for="(c, i) in companies" :key="i" class="border border-border px-3 py-2">
@@ -701,7 +701,7 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
                 <!-- 자사 마진 배지 (내부용) -->
                 <span
                   v-if="c.self && isPrivileged && marginPct(c[r.key]) != null" class="print:hidden text-[10px] whitespace-nowrap"
-                  :class="marginPct(c[r.key])! < 0 ? 'text-red-600 font-semibold' : 'text-muted-foreground'"
+                  :class="marginPct(c[r.key])! < 0 ? 'text-destructive font-semibold' : 'text-muted-foreground'"
                 >
                   마진 {{ marginPct(c[r.key])!.toFixed(1) }}%
                 </span>
@@ -718,7 +718,7 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
               {{ fmt(sub(c)) }}
               <span
                 v-if="c.self && isPrivileged && setMarginR(c) != null" class="print:hidden ml-1 text-[10px] font-normal"
-                :class="setMarginR(c)! < 0 ? 'text-red-600 font-semibold' : 'text-muted-foreground'"
+                :class="setMarginR(c)! < 0 ? 'text-destructive font-semibold' : 'text-muted-foreground'"
               >마진 {{ setMarginR(c)!.toFixed(1) }}%</span>
             </td>
           </tr>
@@ -753,29 +753,29 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
                   />
                   <span
                     v-if="p.auto" class="print:hidden text-[10px] font-semibold whitespace-nowrap"
-                    :class="pRate(p) < 0 ? 'text-red-600' : 'text-primary'"
+                    :class="pRate(p) < 0 ? 'text-destructive' : 'text-primary'"
                     :title="pRate(p) < 0 ? '목표가가 계산가보다 높아 가격 인상분으로 반영' : '최종 판매가 목표값에 맞춰 자동 계산'"
                   >{{ pRate(p) < 0 ? '자동 · 인상' : '자동' }}</span>
                   <!-- 금액: 할인(−) / 인상(+) 부호 표시 -->
                   <span
                     class="w-24 text-right text-xs tabular-nums shrink-0"
-                    :class="pRate(p) < 0 ? 'text-red-600' : 'text-amber-600 dark:text-amber-500'"
+                    :class="pRate(p) < 0 ? 'text-destructive' : 'text-warning'"
                   >{{ pRate(p) === 0 ? '-' : (pRate(p) > 0 ? '- ' : '+ ') + fmt(Math.abs(promoAmts(c)[pi])) }}</span>
                   <!-- 자동 프로모션: 최종 판매가 입력값에서 역산되므로 직접 수정 대신 목표가를 조정 -->
-                  <span v-if="p.auto" class="w-14 text-right text-xs tabular-nums px-1.5 py-1 shrink-0 font-semibold" :class="pRate(p) < 0 ? 'text-red-600' : ''">{{ pRate(p).toFixed(1) }}</span>
+                  <span v-if="p.auto" class="w-14 text-right text-xs tabular-nums px-1.5 py-1 shrink-0 font-semibold" :class="pRate(p) < 0 ? 'text-destructive' : ''">{{ pRate(p).toFixed(1) }}</span>
                   <input
                     v-else
                     v-model.number="p.rate" type="number" min="0" max="100" step="0.5"
                     :title="p.max != null ? `권고 최대 ${p.max}% (초과 입력 가능)` : undefined"
                     class="w-14 text-right text-xs bg-card border rounded px-1.5 py-1 tabular-nums focus:outline-none focus:ring-1"
-                    :class="pOver(p) ? 'border-red-500 text-red-600 focus:ring-red-500' : 'border-border focus:ring-primary'"
+                    :class="pOver(p) ? 'border-destructive text-destructive focus:ring-destructive' : 'border-border focus:ring-primary'"
                     @blur="clampPromo(p)"
                   />
-                  <span class="text-[10px] whitespace-nowrap" :class="pOver(p) ? 'text-red-600 font-semibold' : 'text-muted-foreground'">
+                  <span class="text-[10px] whitespace-nowrap" :class="pOver(p) ? 'text-destructive font-semibold' : 'text-muted-foreground'">
                     % <template v-if="p.max != null">/ {{ p.max }}</template>
                   </span>
                   <button
-                    class="print:hidden text-[10px] text-muted-foreground hover:text-red-500 shrink-0"
+                    class="print:hidden text-[10px] text-muted-foreground hover:text-destructive shrink-0"
                     :title="p.auto ? '삭제 (최종 판매가 목표값 해제)' : '삭제'" @click="delPromo(i, pi)"
                   >✕</button>
                 </div>
@@ -785,11 +785,11 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
           </tr>
           <!-- 총 할인 (음수 = 목표가 역산 결과가 가격 인상) -->
           <tr>
-            <td class="sticky left-0 z-10 bg-muted border border-border px-3 py-2 text-xs font-semibold text-amber-600 dark:text-amber-500">총 할인</td>
+            <td class="sticky left-0 z-10 bg-muted border border-border px-3 py-2 text-xs font-semibold text-warning">총 할인</td>
             <td
               v-for="(c, i) in companies" :key="i"
               class="border border-border px-3 py-2 text-right tabular-nums font-semibold"
-              :class="discAmt(c) < 0 ? 'text-red-600' : 'text-amber-600 dark:text-amber-500'"
+              :class="discAmt(c) < 0 ? 'text-destructive' : 'text-warning'"
             >
               {{ hasDisc(c) ? `${discAmt(c) >= 0 ? '- ' : '+ '}${fmt(Math.abs(discAmt(c)))} (${Math.abs(effRate(c)).toFixed(1)}%)` : '-' }}
             </td>
@@ -819,7 +819,7 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
           </tr>
 
           <!-- 최종 판매가 + 차액 -->
-          <tr class="bg-emerald-500/10">
+          <tr class="bg-success-soft">
             <td class="sticky left-0 z-10 bg-primary text-primary-foreground border border-border px-3 py-2 text-xs font-bold">최종 판매가</td>
             <td v-for="(c, i) in companies" :key="i" class="border border-border px-3 py-2 text-right">
               <!-- 목표 최종가 직접입력. 자사=추가 할인 역산으로 가격 맞추기 / 경쟁사=총액 견적. 빈칸 = 자동계산 -->
@@ -830,17 +830,17 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
                   type="text" inputmode="numeric" :placeholder="idFmt(calcFinal(c)) || '0'"
                   title="최종 판매가 직접 입력 가능 — 입력하면 「가격 조정 할인」이 자동 추가되어 그 가격에 맞춰짐 · 빈칸 = 자동계산"
                   class="w-32 bg-card text-right text-base font-bold tabular-nums border rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary placeholder:font-bold placeholder:text-foreground"
-                  :class="ovMiss(c) ? 'border-red-500' : hasOv(c) ? 'border-primary' : 'border-border'"
+                  :class="ovMiss(c) ? 'border-destructive' : hasOv(c) ? 'border-primary' : 'border-border'"
                 />
                 <button
-                  v-if="hasOv(c)" class="text-[10px] text-muted-foreground hover:text-red-500 shrink-0"
+                  v-if="hasOv(c)" class="text-[10px] text-muted-foreground hover:text-destructive shrink-0"
                   title="목표값 해제 (자동계산으로 되돌리기)" @click="c.finalOv = ''"
                 >✕</button>
               </div>
               <div class="hidden print:block tabular-nums font-bold text-base">{{ fmt(finalP(c)) }}</div>
               <!-- 할인율 0~100% 로 맞출 수 없는 목표가 → 실제 적용값 안내 -->
-              <div v-if="ovMiss(c)" class="print:hidden text-[10px] font-semibold text-red-600 mt-0.5">목표가 도달 불가 · 실제 {{ fmt(calcFinal(c)) }}</div>
-              <div v-if="diff(c)" class="text-[11px] font-semibold mt-0.5" :class="diff(c)!.cheaper ? 'text-emerald-500' : 'text-amber-600'">
+              <div v-if="ovMiss(c)" class="print:hidden text-[10px] font-semibold text-destructive mt-0.5">목표가 도달 불가 · 실제 {{ fmt(calcFinal(c)) }}</div>
+              <div v-if="diff(c)" class="text-[11px] font-semibold mt-0.5" :class="diff(c)!.cheaper ? 'text-success' : 'text-warning'">
                 {{ diff(c)!.d >= 0 ? '+' : '' }}{{ fmt(Math.abs(diff(c)!.d)).replace('Rp ', diff(c)!.d >= 0 ? 'Rp ' : '-Rp ') }}
                 ({{ diff(c)!.d >= 0 ? '+' : '' }}{{ diff(c)!.pct.toFixed(1) }}% · {{ diff(c)!.label }})
               </div>
@@ -876,15 +876,15 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
     <!-- 안내 -->
     <div class="rounded-xl border border-border bg-muted/20 p-4 text-[11px] text-muted-foreground space-y-1.5">
       <div class="flex flex-wrap gap-4">
-        <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500/40 border border-emerald-500" /> 자사 (PT ASCENDO)</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-success-soft border border-success-border" /> 자사 (PT ASCENDO)</span>
         <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-primary/20 border border-primary/40" /> 경쟁사</span>
-        <span v-if="isPrivileged" class="inline-flex items-center gap-1.5"><span class="text-emerald-500 font-semibold">초록 차액</span> = 자사가 더 저렴</span>
+        <span v-if="isPrivileged" class="inline-flex items-center gap-1.5"><span class="text-success font-semibold">초록 차액</span> = 자사가 더 저렴</span>
       </div>
       <p>· 자사 품목은 <b>제품 검색</b>으로 선택하면 판매가가 자동 입력된다 — <b>DB 대리점가(pcs) 기준</b>, 고객등급 한 단계당 5%p 가감.</p>
       <p>· <b>VAT 별도/포함 토글</b>은 단가의 표기 기준만 바꾼다(자동 환산) — 최종 판매가는 같다.</p>
       <p>· <b>최종 판매가 칸에 목표가를 직접 입력</b>하면 「가격 조정 할인」이 자동으로 그 가격에 맞춰준다. ✕ 로 해제(자동계산 복귀).</p>
       <p>· 경쟁사는 품목단가 없이 <b>최종가만 입력해도</b> 비교된다.</p>
-      <p>· 프로모션의 「% / 10」은 <b>권고 최대 할인율</b> — 초과하면 <span class="text-red-600 font-semibold">빨간 표시</span>되지만 입력값대로 계산된다.</p>
+      <p>· 프로모션의 「% / 10」은 <b>권고 최대 할인율</b> — 초과하면 <span class="text-destructive font-semibold">빨간 표시</span>되지만 입력값대로 계산된다.</p>
       <p v-if="isPrivileged">· 원가·마진 행은 관리자 전용(비권한 사용자 미노출).</p>
     </div>
 
@@ -915,7 +915,7 @@ watch(() => form.value.grade, recomputeSelf);   // 고객등급 변경 → 자�
                 <p class="text-sm font-medium truncate">{{ r.customer_name || '(고객명 없음)' }}</p>
                 <p class="text-xs text-muted-foreground font-mono">{{ r.compare_no }} · {{ r.created_date }}</p>
               </div>
-              <span class="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 shrink-0" title="삭제" @click.stop="removeCompare(r.id)"><Trash2 :size="14" /></span>
+              <span class="p-1.5 rounded hover:bg-destructive-soft text-muted-foreground hover:text-destructive shrink-0" title="삭제" @click.stop="removeCompare(r.id)"><Trash2 :size="14" /></span>
             </button>
           </div>
         </div>

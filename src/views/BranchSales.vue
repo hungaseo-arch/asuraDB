@@ -375,7 +375,7 @@ const kpi = computed(() => {
 
 // 증감(델타) 표시 헬퍼 — 색상/화살표/텍스트 (null=데이터 없음)
 function deltaClass(v: number | null | undefined): string {
-  return v === null || v === undefined ? 'text-muted-foreground' : v >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold';
+  return v === null || v === undefined ? 'text-muted-foreground' : v >= 0 ? 'text-success font-semibold' : 'text-destructive font-semibold';
 }
 function deltaText(v: number | null | undefined): string {
   return v === null || v === undefined ? '–' : `${v >= 0 ? '▲' : '▼'} ${Math.abs(v).toFixed(1)}%`;
@@ -862,11 +862,11 @@ async function onUpload(e: Event) {
 
     <!-- 로드/업로드 상태 -->
     <p v-if="loading" class="text-xs text-muted-foreground">DB에서 불러오는 중…</p>
-    <p v-if="loadError" class="text-xs text-amber-700 bg-amber-50/60 border border-amber-200 rounded-lg px-3 py-2 flex items-center justify-between gap-2 flex-wrap">
+    <p v-if="loadError" class="text-xs text-warning bg-warning-soft border border-warning-border rounded-lg px-3 py-2 flex items-center justify-between gap-2 flex-wrap">
       <span>{{ loadError }}</span>
       <button
         type="button"
-        class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-card px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-accent transition-colors shrink-0"
+        class="inline-flex items-center gap-1.5 rounded-lg border border-warning-border bg-card px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-accent transition-colors shrink-0"
         @click="loadData"
       >
         <RotateCw :size="12" /> 다시 시도
@@ -875,7 +875,7 @@ async function onUpload(e: Event) {
     <p
       v-if="uploadMsg"
       class="text-xs rounded-lg px-3 py-2 border"
-      :class="uploadMsg.startsWith('업로드 실패') ? 'text-red-700 bg-red-50/60 border-red-200' : 'text-emerald-700 bg-emerald-50/60 border-emerald-200'"
+      :class="uploadMsg.startsWith('업로드 실패') ? 'text-destructive bg-destructive-soft border-destructive-border' : 'text-success bg-success-soft border-success-border'"
     >
       {{ uploadMsg }}
     </p>
@@ -889,7 +889,7 @@ async function onUpload(e: Event) {
         <div class="text-[11px] mt-1 text-muted-foreground">
           전월 대비
           <span v-if="kpi.mom === null">–</span>
-          <span v-else :class="kpi.mom >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'">
+          <span v-else :class="kpi.mom >= 0 ? 'text-success font-semibold' : 'text-destructive font-semibold'">
             {{ kpi.mom >= 0 ? '▲' : '▼' }} {{ Math.abs(kpi.mom).toFixed(1) }}%
           </span>
         </div>
@@ -991,8 +991,8 @@ async function onUpload(e: Event) {
     <div v-if="mainTab === 'pnl'" class="space-y-4">
 
       <!-- 데이터 준비중 안내 (값 미보유 지점) -->
-      <div v-if="!hasPnl" class="rounded-lg border border-dashed border-amber-500/30 bg-amber-500/5 px-4 py-2.5">
-        <p class="text-xs text-amber-700/90">
+      <div v-if="!hasPnl" class="rounded-lg border border-dashed border-warning-border bg-warning-soft px-4 py-2.5">
+        <p class="text-xs text-warning">
           <b>{{ bn }}</b> 손익 데이터는 준비중입니다. 아래는 입력 대기 양식(–)이며 추후 보고서 수신 시 채워집니다.
         </p>
       </div>
@@ -1016,9 +1016,9 @@ async function onUpload(e: Event) {
         </div>
         <div class="rounded-xl border border-border bg-card p-4">
           <div class="text-[11.5px] text-muted-foreground font-semibold">영업이익 · 이익률</div>
-          <div class="text-2xl font-extrabold mt-1.5 tabular-nums" :class="(pnlKpi.opprofit ?? 0) >= 0 ? 'text-foreground' : 'text-red-600'">{{ pnlFmt(pnlKpi.opprofit, 'amt') }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
+          <div class="text-2xl font-extrabold mt-1.5 tabular-nums" :class="(pnlKpi.opprofit ?? 0) >= 0 ? 'text-foreground' : 'text-destructive'">{{ pnlFmt(pnlKpi.opprofit, 'amt') }}<span class="text-xs font-medium text-muted-foreground ml-1">M.IDR</span></div>
           <div class="text-[11px] mt-1 text-muted-foreground">
-            <span class="font-semibold" :class="(pnlKpi.opprofitPct ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'">{{ pnlFmt(pnlKpi.opprofitPct, 'pct') }}</span>
+            <span class="font-semibold" :class="(pnlKpi.opprofitPct ?? 0) >= 0 ? 'text-success' : 'text-destructive'">{{ pnlFmt(pnlKpi.opprofitPct, 'pct') }}</span>
             · 전월 대비 <span :class="deltaClass(pnlKpi.opprofitMom)">{{ deltaText(pnlKpi.opprofitMom) }}</span>
           </div>
         </div>
@@ -1088,13 +1088,13 @@ async function onUpload(e: Event) {
       <!-- ② 내용1 -->
       <ul class="m-0 p-0 list-none self-center">
         <li v-for="(d, i) in branch.excluded.slice(0, exclHalf)" :key="i" class="text-xs py-0.5 text-foreground/80">
-          {{ i + 1 }}. <b v-if="branchKey === 'semarang' && i === 2" class="text-red-600">{{ d }}</b><template v-else>{{ d }}</template>
+          {{ i + 1 }}. <b v-if="branchKey === 'semarang' && i === 2" class="text-destructive">{{ d }}</b><template v-else>{{ d }}</template>
         </li>
       </ul>
       <!-- ③ 내용2 -->
       <ul class="m-0 p-0 list-none self-center">
         <li v-for="(d, i) in branch.excluded.slice(exclHalf)" :key="i" class="text-xs py-0.5 text-foreground/80">
-          {{ exclHalf + i + 1 }}. <b v-if="branchKey === 'semarang' && exclHalf + i === 2" class="text-red-600">{{ d }}</b><template v-else>{{ d }}</template>
+          {{ exclHalf + i + 1 }}. <b v-if="branchKey === 'semarang' && exclHalf + i === 2" class="text-destructive">{{ d }}</b><template v-else>{{ d }}</template>
         </li>
       </ul>
     </div>

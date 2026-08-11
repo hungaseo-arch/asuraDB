@@ -289,7 +289,7 @@ function lineMarginNum(l: LineItem): string {
 function marginColor(l: LineItem): string {
   if (!l.whPrice || !l.unitPrice) return '';
   const m = rawMargin(l);
-  return m >= 0.05 ? 'text-green-400' : m >= 0 ? 'text-yellow-400' : 'text-destructive';
+  return m >= 0.05 ? 'text-success' : m >= 0 ? 'text-warning' : 'text-destructive';
 }
 function onMarginChange(line: LineItem, val: string) {
   const m = parseFloat(val);
@@ -586,10 +586,10 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
         <span v-else-if="products.length" class="text-xs text-muted-foreground/60">
           {{ products.length }}개 제품
         </span>
-        <span v-if="currentQuoteNumber" class="text-xs px-2 py-0.5 bg-amber-500/15 text-amber-600 rounded-full font-mono print:hidden">
+        <span v-if="currentQuoteNumber" class="text-xs px-2 py-0.5 bg-warning-soft text-warning rounded-full font-mono print:hidden">
           수정 중 · {{ currentQuoteNumber }}
         </span>
-        <span v-if="saveSuccess" class="text-xs text-green-400 print:hidden">✓ Saved</span>
+        <span v-if="saveSuccess" class="text-xs text-success print:hidden">✓ Saved</span>
         <span v-if="saveError" class="text-xs text-destructive print:hidden max-w-xs truncate" :title="saveError">저장 실패: {{ saveError }}</span>
         <Button variant="ghost" size="sm" class="gap-1.5 text-xs print:hidden" @click="resetForm">
           <FilePlus :size="13" />New
@@ -929,7 +929,7 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
             </tr>
             <!-- Total 하단 강조선 -->
             <tr class="hidden md:table-row">
-              <td colspan="12" class="total-rule h-0.5 bg-blue-600 p-0" />
+              <td colspan="12" class="total-rule h-0.5 bg-primary p-0" />
             </tr>
           </tfoot>
         </table>
@@ -1170,8 +1170,8 @@ input[type="number"] {
     height: 0 !important;
     border-top-style: solid !important;
   }
-  .quote-doc .total-rule.bg-foreground { border-top-width: 2px !important; border-top-color: #0f172a !important; }
-  .quote-doc .total-rule.bg-blue-600   { border-top-width: 2px !important; border-top-color: #2563eb !important; }
+  .quote-doc .total-rule.bg-foreground { border-top-width: 2px !important; border-top-color: var(--foreground) !important; }
+  .quote-doc .total-rule.bg-primary    { border-top-width: 2px !important; border-top-color: var(--primary) !important; }
 
   /* 한 페이지에 맞도록 압축 */
   .quote-doc {

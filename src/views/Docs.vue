@@ -171,7 +171,7 @@ watch(scope, () => {
         </div>
         <iframe
           :src="docSrc(selected)"
-          class="w-full bg-white block"
+          class="w-full bg-card block"
           style="height: calc(100vh - 220px)"
           title="문서 미리보기"
         />

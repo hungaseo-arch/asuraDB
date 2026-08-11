@@ -17,6 +17,7 @@ import { cn, previewContent } from '@/lib/utils';
 import { API_BASE, IS_HOST, ensureApiRunning } from '@/lib/api';
 import { SOURCE_COLOR as sourceColor, SOURCE_LABEL as sourceLabel } from '@/lib/sources';
 import { useSortMode } from '@/composables/useSortMode';
+import { cssVar } from '@/components/charts/chartSetup';
 
 type SourceType = 'notion' | 'upnote' | 'gmail' | 'drive' | 'calendar' | 'obsidian' | 'band';
 
@@ -28,7 +29,7 @@ interface SourceFilter {
 }
 
 const sourceFilters: SourceFilter[] = [
-  { id: 'all',      label: '전체',            color: '#818cf8' },
+  { id: 'all',      label: '전체',            color: cssVar('--primary') },
   { id: 'notion',   label: 'Notion',          color: sourceColor.notion },
   { id: 'upnote',   label: 'UpNote',          color: sourceColor.upnote },
   { id: 'gmail',    label: 'Gmail',           color: sourceColor.gmail },
@@ -248,9 +249,9 @@ const pageNumbers = computed<(number | '...')[]>(() => {
     <div v-if="!searched && !searching" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
       <div
         v-for="card in [
-          { icon: AlignLeft, label: 'FTS',     desc: '전문 텍스트 검색\n키워드 정확도 기반', color: '#4ade80' },
-          { icon: Zap,       label: 'Vector',  desc: '의미론적 벡터 검색\n문맥/개념 유사도 기반', color: '#818cf8' },
-          { icon: SearchIcon,label: 'RRF 결합', desc: 'Reciprocal Rank Fusion\n두 점수 통합 순위화', color: '#60a5fa' },
+          { icon: AlignLeft, label: 'FTS',     desc: '전문 텍스트 검색\n키워드 정확도 기반', color: cssVar('--chart-3') },
+          { icon: Zap,       label: 'Vector',  desc: '의미론적 벡터 검색\n문맥/개념 유사도 기반', color: cssVar('--chart-5') },
+          { icon: SearchIcon,label: 'RRF 결합', desc: 'Reciprocal Rank Fusion\n두 점수 통합 순위화', color: cssVar('--chart-2') },
         ]"
         :key="card.label"
         class="p-3 rounded-lg bg-muted/20 border border-border/40 text-center"
@@ -279,12 +280,12 @@ const pageNumbers = computed<(number | '...')[]>(() => {
 
     <!-- 검색 API 오프라인 안내 (0개 결과로 위장되지 않도록) -->
     <div v-if="searched && !searching && offline"
-      class="mt-4 rounded-xl border border-amber-300 bg-amber-50/60 p-5 text-sm text-amber-800">
+      class="mt-4 rounded-xl border border-warning-border bg-warning-soft p-5 text-sm text-warning">
       <template v-if="IS_HOST">
         <p>검색 백엔드(API)에 연결하지 못했습니다. 자동 기동을 시도했지만 응답이 없습니다.</p>
         <button
           :disabled="searching"
-          class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-400/60 bg-amber-100/60 hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-warning-border bg-warning-soft hover:bg-warning-soft/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           @click="handleSearch"
         >
           {{ starting ? '기동 중…' : '다시 시도' }}
@@ -311,8 +312,8 @@ const pageNumbers = computed<(number | '...')[]>(() => {
           </div>
           <div v-if="results.length > 0" class="flex items-center gap-2">
             <div class="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-              <span class="w-2 h-2 rounded-full bg-violet-400/70" /> Vector
-              <span class="w-2 h-2 rounded-full bg-green-400/70 ml-1" /> FTS
+              <span class="w-2 h-2 rounded-full bg-chart-2/70" /> Vector
+              <span class="w-2 h-2 rounded-full bg-chart-3/70 ml-1" /> FTS
             </div>
             <button
               :class="cn(
@@ -406,7 +407,7 @@ const pageNumbers = computed<(number | '...')[]>(() => {
                     <div class="h-1 rounded-full bg-muted/50 overflow-hidden w-16">
                       <div
                         class="h-full rounded-full transition-all"
-                        :style="{ width: (r.rrfScore * 100) + '%', background: '#818cf8' }"
+                        :style="{ width: (r.rrfScore * 100) + '%', background: cssVar('--chart-5') }"
                       />
                     </div>
                     <span class="font-mono text-primary/80">{{ r.rrfScore.toFixed(2) }}</span>
@@ -416,7 +417,7 @@ const pageNumbers = computed<(number | '...')[]>(() => {
                     <div class="h-1 rounded-full bg-muted/50 overflow-hidden w-16">
                       <div
                         class="h-full rounded-full transition-all"
-                        :style="{ width: (r.vectorScore * 100) + '%', background: '#60a5fa' }"
+                        :style="{ width: (r.vectorScore * 100) + '%', background: cssVar('--chart-2') }"
                       />
                     </div>
                     <span class="font-mono">{{ r.vectorScore.toFixed(2) }}</span>
@@ -426,7 +427,7 @@ const pageNumbers = computed<(number | '...')[]>(() => {
                     <div class="h-1 rounded-full bg-muted/50 overflow-hidden w-16">
                       <div
                         class="h-full rounded-full transition-all"
-                        :style="{ width: (r.ftsScore * 100) + '%', background: '#4ade80' }"
+                        :style="{ width: (r.ftsScore * 100) + '%', background: cssVar('--chart-3') }"
                       />
                     </div>
                     <span class="font-mono">{{ r.ftsScore.toFixed(2) }}</span>

@@ -67,7 +67,7 @@ function relTime(iso: string | null): string {
 }
 
 const STATUS_DOT: Record<Src['status'], string> = {
-  synced: 'bg-emerald-500', stale: 'bg-red-500', none: 'bg-red-500', planned: 'bg-muted-foreground/40',
+  synced: 'bg-success', stale: 'bg-destructive', none: 'bg-destructive', planned: 'bg-muted-foreground/40',
 };
 const STATUS_LABEL: Record<Src['status'], string> = {
   synced: '최신', stale: '지연', none: '미수집', planned: '예정',
@@ -193,7 +193,7 @@ onUnmounted(() => window.removeEventListener('asura:refresh', onRefresh));
             <span class="text-sm text-foreground flex-1 truncate">{{ s.label }}</span>
             <span class="text-[11px] text-muted-foreground tabular-nums">{{ relTime(s.last) }}</span>
             <span class="inline-flex items-center gap-1.5 text-[11px] font-medium w-12 justify-end"
-                  :class="s.status === 'synced' ? 'text-emerald-600' : s.status === 'planned' ? 'text-muted-foreground' : 'text-red-600'">
+                  :class="s.status === 'synced' ? 'text-success' : s.status === 'planned' ? 'text-muted-foreground' : 'text-destructive'">
               <span class="h-2 w-2 rounded-full" :class="STATUS_DOT[s.status]" />
               {{ STATUS_LABEL[s.status] }}
             </span>

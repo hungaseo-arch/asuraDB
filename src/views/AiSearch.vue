@@ -17,6 +17,12 @@ import { cn, previewContent } from '@/lib/utils';
 import { API_BASE, IS_HOST } from '@/lib/api';
 import { SOURCE_COLOR as sourceColor, SOURCE_LABEL as sourceLabel } from '@/lib/sources';
 import { useSortMode } from '@/composables/useSortMode';
+import { cssVar } from '@/components/charts/chartSetup';
+
+// 점수 막대 색 — RRF(종합)=chart-5(indigo), Vector=chart-2(blue), FTS=chart-3(green)
+const RRF_COLOR    = cssVar('--chart-5');
+const VECTOR_COLOR = cssVar('--chart-2');
+const FTS_COLOR    = cssVar('--chart-3');
 
 interface AiSource {
   id:           string;
@@ -252,8 +258,8 @@ function clearAll() {
           </div>
           <div class="flex items-center gap-2">
             <div class="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-              <span class="w-2 h-2 rounded-full bg-violet-400/70" /> Vector
-              <span class="w-2 h-2 rounded-full bg-green-400/70 ml-1" /> FTS
+              <span class="w-2 h-2 rounded-full bg-chart-2/70" /> Vector
+              <span class="w-2 h-2 rounded-full bg-chart-3/70 ml-1" /> FTS
             </div>
             <button
               :class="cn(
@@ -343,7 +349,7 @@ function clearAll() {
                     <div class="h-1 rounded-full bg-muted/50 overflow-hidden w-16">
                       <div
                         class="h-full rounded-full transition-all"
-                        :style="{ width: (r.rrf_score * 100) + '%', background: '#818cf8' }"
+                        :style="{ width: (r.rrf_score * 100) + '%', background: RRF_COLOR }"
                       />
                     </div>
                     <span class="font-mono text-primary/80">{{ r.rrf_score.toFixed(2) }}</span>
@@ -353,7 +359,7 @@ function clearAll() {
                     <div class="h-1 rounded-full bg-muted/50 overflow-hidden w-16">
                       <div
                         class="h-full rounded-full transition-all"
-                        :style="{ width: (r.vector_score * 100) + '%', background: '#60a5fa' }"
+                        :style="{ width: (r.vector_score * 100) + '%', background: VECTOR_COLOR }"
                       />
                     </div>
                     <span class="font-mono">{{ r.vector_score.toFixed(2) }}</span>
@@ -363,7 +369,7 @@ function clearAll() {
                     <div class="h-1 rounded-full bg-muted/50 overflow-hidden w-16">
                       <div
                         class="h-full rounded-full transition-all"
-                        :style="{ width: (r.fts_score * 100) + '%', background: '#4ade80' }"
+                        :style="{ width: (r.fts_score * 100) + '%', background: FTS_COLOR }"
                       />
                     </div>
                     <span class="font-mono">{{ r.fts_score.toFixed(2) }}</span>

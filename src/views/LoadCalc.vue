@@ -3,6 +3,7 @@
 // 데이터(타이어 제원·차량 프리셋·LI→kg)는 뷰 내장. DB 이관은 작업지시서(적재하중계산_DB추가구성) 별도 단계.
 import { ref, reactive } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { cssVar } from '@/components/charts/chartSetup';
 
 /* ── LI → kg 변환표 (TRA 표준 · 데이터북 p.66) ─────────────────────────────── */
 const LI2KG: Record<number, number> = {
@@ -261,9 +262,9 @@ let truckName = '';
 const fmt = (n: number) => Math.round(n).toLocaleString('en-US');
 type Cls = 'pass' | 'warn' | 'over';
 const STATUS_CLS: Record<Cls, string> = {
-  pass: 'text-emerald-500 bg-emerald-500/10', warn: 'text-amber-500 bg-amber-500/10', over: 'text-red-500 bg-red-500/10',
+  pass: 'text-success bg-success-soft', warn: 'text-warning bg-warning-soft', over: 'text-destructive bg-destructive-soft',
 };
-const BAR = { pass: '#10b981', warn: '#f59e0b', over: '#ef4444' } as const;
+const BAR = { pass: cssVar('--success'), warn: cssVar('--warning'), over: cssVar('--destructive') } as const;
 
 function verdict(load: number, cap: number): { pct: number; cls: Cls; label: string } {
   if (!cap) return { pct: 0, cls: 'over', label: '해당없음' };
@@ -314,7 +315,7 @@ function tireRow(name: string, sub: string, cap: number, capLabel: string, load:
   const badge = pick
     ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${pick.on ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}">${pick.on ? '● 선택됨' : '선택'}</span>`
     : '';
-  return `<div${attrs} class="rounded-xl border ${v.cls === 'pass' ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-border bg-card'} p-3 mb-2${sel}">
+  return `<div${attrs} class="rounded-xl border ${v.cls === 'pass' ? 'border-success-border bg-success-soft' : 'border-border bg-card'} p-3 mb-2${sel}">
     <div class="flex justify-between items-baseline gap-2">
       <div class="text-sm font-bold">${name} <span class="text-xs font-medium text-muted-foreground ml-1">${sub}</span></div>
       <div class="flex items-center gap-1.5 shrink-0">${badge}<span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${STATUS_CLS[v.cls]}">${v.label}</span></div>
@@ -327,7 +328,7 @@ function tireRow(name: string, sub: string, cap: number, capLabel: string, load:
 }
 function renderTires(title: string, rows: string) {
   return `<h3 class="text-xs font-semibold mt-4 mb-2 flex items-center gap-2"><span class="w-3 h-3 rounded bg-primary/30 border border-primary/50"></span>${title}</h3>${rows ||
-    '<div class="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-500">해당 조건을 충족하는 사이즈가 카탈로그에 없습니다. 입력값을 확인하거나 사이즈 확장을 검토하세요.</div>'}`;
+    '<div class="rounded-xl border border-warning-border bg-warning-soft p-3 text-xs text-warning">해당 조건을 충족하는 사이즈가 카탈로그에 없습니다. 입력값을 확인하거나 사이즈 확장을 검토하세요.</div>'}`;
 }
 function reqBox(k: string, val: number, formula: string, metrics: [string, string][]) {
   const m = metrics.map(x => `<div class="flex-1 min-w-28 rounded-lg border border-border bg-card p-2.5"><div class="text-[11px] text-muted-foreground">${x[0]}</div><div class="text-base font-bold tabular-nums">${x[1]}</div></div>`).join('');
@@ -343,7 +344,7 @@ function tkphBox(avgLoadT: number, speed: number, rated: number, note: string) {
   let verd = '';
   if (rated > 0) {
     const ok = tkph <= rated, m = (rated - tkph) / rated * 100;
-    verd = `<div class="mt-2 px-3 py-2 rounded-lg text-xs font-bold ${ok ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}">
+    verd = `<div class="mt-2 px-3 py-2 rounded-lg text-xs font-bold ${ok ? 'bg-success-soft text-success' : 'bg-destructive-soft text-destructive'}">
       ${ok ? '✔ 적합 (열적 여유 확보)' : '✘ 부적합 (정격 초과 → 발열 위험)'} · 정격 <span class="tabular-nums">${fmt(rated)}</span> vs 운행 <span class="tabular-nums">${tkph.toFixed(0)}</span> · 여유 <span class="tabular-nums">${m.toFixed(0)}%</span></div>`;
   }
   return `<div class="rounded-xl border border-primary/30 bg-primary/5 p-4 mb-4">
@@ -357,13 +358,13 @@ function cpkBox(p: { cur: string; price: number; life: number; retread: boolean;
   let cpkTire = base, tl = p.life, save = '';
   if (p.retread && p.rCount > 0 && p.rLife > 0) {
     const tc = p.price + p.rCount * p.rCost; tl = p.life + p.rCount * p.rLife; cpkTire = tc / tl;
-    save = `<div class="mt-2 px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-500 font-bold text-xs">
+    save = `<div class="mt-2 px-3 py-2 rounded-lg bg-success-soft text-success font-bold text-xs">
       ♻ 재생 ${p.rCount}회 적용 → 타이어 CPK <span class="tabular-nums">${((base - cpkTire) / base * 100).toFixed(0)}%</span> 절감 · 총수명 ${fmt(tl)} km</div>`;
   }
   const cpkFuel = p.econ > 0 ? p.fuelP / p.econ : 0;
   const total = cpkTire + cpkFuel;
   const c = (v: number) => p.cur + ' ' + Math.round(v).toLocaleString('en-US');
-  return `<div class="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 mb-4">
+  return `<div class="rounded-xl border border-success-border bg-success-soft p-4 mb-4">
     <div class="text-xs font-bold">CPK · 주행거리당 비용 (Cost per Kilometer)</div>
     <div class="text-2xl font-extrabold tabular-nums">${c(total)} <span class="text-sm font-semibold text-muted-foreground">/ km</span></div>
     <div class="flex gap-2 flex-wrap mt-3">
@@ -410,7 +411,7 @@ function truckSVG(axles: { group: GroupKey; x: number; util: number; cls: Cls; d
     wheels += `<circle cx="${a.x}" cy="${gy}" r="15" fill="currentColor" opacity=".75"/><circle cx="${a.x}" cy="${gy}" r="6" fill="currentColor" opacity=".35"/>`;
     if (a.dual) wheels += `<circle cx="${a.x}" cy="${gy}" r="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="2 3" opacity=".6"/>`;
     wheels += `<rect x="${a.x - 16}" y="${gy + 19}" width="32" height="15" rx="3" fill="${BAR[a.cls]}"/>
-      <text x="${a.x}" y="${gy + 30}" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">${a.util.toFixed(0)}%</text>
+      <text x="${a.x}" y="${gy + 30}" font-size="10" font-weight="700" fill="${cssVar('--primary-foreground')}" text-anchor="middle">${a.util.toFixed(0)}%</text>
       <text x="${a.x}" y="${gy - 19}" font-size="9" fill="currentColor" opacity=".7" text-anchor="middle">${gname[a.group]}</text>`;
   });
   return `<svg viewBox="0 0 ${W} 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
@@ -470,7 +471,7 @@ function calcTruck() {
     <td class="px-2 py-1.5 text-right tabular-nums">${g.tires}본</td>
     <td class="px-2 py-1.5 text-right tabular-nums">${fmt(g.perTire)}</td>
     <td class="px-2 py-1.5 text-right tabular-nums">${g.cap ? fmt(g.cap) : '-'}</td>
-    <td class="px-2 py-1.5 text-right tabular-nums font-bold ${g.cls === 'pass' ? 'text-emerald-500' : g.cls === 'warn' ? 'text-amber-500' : 'text-red-500'}">${g.u ? g.u.toFixed(0) + '%' : '-'}</td></tr>`).join('');
+    <td class="px-2 py-1.5 text-right tabular-nums font-bold ${g.cls === 'pass' ? 'text-success' : g.cls === 'warn' ? 'text-warning' : 'text-destructive'}">${g.u ? g.u.toFixed(0) + '%' : '-'}</td></tr>`).join('');
   const oCls: Cls = gData.some(g => g.cls === 'over') ? 'over' : gData.some(g => g.cls === 'warn') ? 'warn' : 'pass';
   const oTxt = oCls === 'over' ? '✘ 하중 초과 → 더 큰 규격 필요' : oCls === 'warn' ? '⚠ 여유 부족 (90% 초과)' : '✔ 적합';
 

@@ -393,7 +393,7 @@ const num = (n: number) => n.toLocaleString("en-US");
         <div class="flex flex-wrap gap-1.5">
           <span class="text-[11px] px-2 py-0.5 rounded-full border border-border bg-muted text-muted-foreground">{{ SOURCE_LABEL[result.source] ?? result.source }}</span>
           <span v-if="result.source_year" class="text-[11px] px-2 py-0.5 rounded-full border border-border bg-muted text-muted-foreground">{{ result.source_year }} 기준</span>
-          <span v-if="hasConflict" class="text-[11px] px-2 py-0.5 rounded-full border border-amber-300 bg-amber-50 font-semibold text-amber-700">소스 간 상이</span>
+          <span v-if="hasConflict" class="text-[11px] px-2 py-0.5 rounded-full border border-warning-border bg-warning-soft font-semibold text-warning">소스 간 상이</span>
         </div>
       </div>
 
@@ -414,7 +414,7 @@ const num = (n: number) => n.toLocaleString("en-US");
         </div>
       </dl>
 
-      <p v-if="production?.future" class="rounded-lg border border-amber-300 border-l-[3px] border-l-amber-500 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 mt-3">
+      <p v-if="production?.future" class="rounded-lg border border-warning-border border-l-[3px] border-l-warning bg-warning-soft px-3 py-2.5 text-sm text-warning mt-3">
         생산일이 미래로 계산됩니다. 뒤 4자리를 다시 확인하세요. 2000년 이전 생산분은 3자리 날짜코드를 사용합니다.
       </p>
 
@@ -470,7 +470,7 @@ const num = (n: number) => n.toLocaleString("en-US");
           <label class="block text-xs font-semibold text-muted-foreground">비고
             <input v-model="logForm.remark" class="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" type="text" /></label>
 
-          <p v-if="matched === true" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">PO상 공장과 일치합니다.</p>
+          <p v-if="matched === true" class="rounded-lg border border-success-border bg-success-soft px-3 py-2 text-sm font-semibold text-success">PO상 공장과 일치합니다.</p>
           <p v-if="matched === false" class="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm font-semibold text-destructive">
             PO상 공장과 일치하지 않습니다. 저장 후 클레임 근거로 사용할 수 있습니다.
           </p>
@@ -483,7 +483,7 @@ const num = (n: number) => n.toLocaleString("en-US");
             >
               {{ logSaving ? "저장 중" : "검수 기록 저장" }}
             </button>
-            <span v-if="logSaved" class="text-xs rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5">저장했습니다.</span>
+            <span v-if="logSaved" class="text-xs rounded-full bg-success-soft text-success px-2 py-0.5">저장했습니다.</span>
           </div>
         </div>
       </div>

@@ -54,7 +54,7 @@ export function niceCeil(v: number): number {
 /** 증감률 색상 클래스 (표준 컨벤션: 양수=초록, 음수=빨강, null=muted). */
 export function deltaClass(v: number | null | undefined): string {
   if (v === null || v === undefined) return 'text-muted-foreground';
-  return v > 0 ? 'text-emerald-600' : v < 0 ? 'text-red-600' : 'text-muted-foreground';
+  return v > 0 ? 'text-success' : v < 0 ? 'text-destructive' : 'text-muted-foreground';
 }
 
 /** 증감률 텍스트. 기본 "+14.5%" / "-3.2%" / "—". arrow=true 면 "▲ 14.5%" / "▼ 3.2%" / "─ 0.0%". */

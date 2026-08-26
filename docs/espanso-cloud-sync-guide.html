@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>espanso 클라우드 동기화 구축 가이드 | AsuraDB</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* ============================================================
+   AsuraDB Design Guide — 60-30-10  (src/style.css 토큰과 1:1)
+   60% LIGHT GREY   #F0F0F0  배경        --background
+   30% SOFT BLUE    #E3F2FD  주요 요소   --primary-soft / --accent
+        PASTEL BLUE-GREY #ECEFF1        --muted / --secondary
+   10% SAGE GREEN   #E8F5E9  강조        --success-soft
+        TEXT & LINE #546E7A             --primary / --muted-foreground
+   본 문서는 앱 표준(라이트 모드 고정)을 따른다. 팔레트 외 색을 새로 만들지 않는다.
+   ============================================================ */
+html, body { margin: 0; background: #F0F0F0; }
+.asura-doc {
+  color-scheme: light;
+  --bg:            #F0F0F0;
+  --surface:       #FFFFFF;
+  --blue:          #E3F2FD;
+  --blue-grey:     #ECEFF1;
+  --green:         #E8F5E9;
+  --ink:           #546E7A;
+  --ink-strong:    #37474F;
+  --ink-soft:      #78909C;
+  --line:          #CFD8DC;
+  --line-blue:     #90CAF9;
+  --line-green:    #A5D6A7;
+  --red:           #FDECEA;
+  --line-red:      #EF9A9A;
+  --radius:        12px;   /* 앱 --radius 0.75rem = rounded-xl */
+  --radius-sm:     8px;    /* rounded-lg */
+  --mono: "SFMono-Regular", "JetBrains Mono", Consolas, "D2Coding", "Courier New", monospace;
+
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Pretendard", "Pretendard Variable", -apple-system, BlinkMacSystemFont,
+               "Noto Sans KR", "Malgun Gothic", sans-serif;
+  font-size: 15px;
+  line-height: 1.75;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  padding: 32px 20px 80px;
+}
+.asura-doc *, .asura-doc *::before, .asura-doc *::after { box-sizing: border-box; }
+.asura-doc .wrap { max-width: 980px; margin: 0 auto; }
+
+/* ---------- Header ---------- */
+.asura-doc .doc-head {
+  background: var(--blue);
+  border: 1px solid var(--line-blue);
+  border-radius: var(--radius);
+  padding: 32px 34px;
+  margin-bottom: 28px;
+}
+.asura-doc .doc-eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-soft); margin-bottom: 10px;
+}
+.asura-doc .doc-head h1 {
+  margin: 0 0 14px; font-size: 28px; font-weight: 800;
+  color: var(--ink-strong); letter-spacing: -0.03em; line-height: 1.35;
+}
+.asura-doc .doc-meta {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;
+}
+.asura-doc .chip {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; padding: 4px 13px; font-size: 12.5px; color: var(--ink);
+}
+.asura-doc .chip b { color: var(--ink-strong); font-weight: 700; }
+.asura-doc .lead {
+  margin: 0; font-size: 15.5px; color: var(--ink); max-width: 68ch;
+}
+
+/* ---------- TOC ---------- */
+.asura-doc .toc {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 20px 24px; margin-bottom: 32px;
+}
+.asura-doc .toc h2 {
+  margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--ink-soft); text-transform: uppercase;
+}
+.asura-doc .toc ol {
+  margin: 0; padding: 0; list-style: none;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 4px 20px;
+  counter-reset: toc;
+}
+.asura-doc .toc li { counter-increment: toc; }
+.asura-doc .toc a {
+  display: block; padding: 6px 8px; border-radius: var(--radius-sm);
+  color: var(--ink); text-decoration: none; font-size: 14px;
+  transition: background .15s ease, color .15s ease;
+}
+.asura-doc .toc a::before {
+  content: counter(toc) ". "; color: var(--ink-soft); font-variant-numeric: tabular-nums;
+}
+.asura-doc .toc a:hover { background: var(--blue); color: var(--ink-strong); }
+
+/* ---------- Sections ---------- */
+.asura-doc section {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 28px 30px; margin-bottom: 20px;
+}
+.asura-doc h2.sec {
+  margin: 0 0 20px; padding-bottom: 12px; border-bottom: 2px solid var(--blue-grey);
+  font-size: 20px; font-weight: 800; color: var(--ink-strong); letter-spacing: -0.02em;
+  display: flex; align-items: baseline; gap: 10px;
+}
+.asura-doc h2.sec .num {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 27px; height: 27px; padding: 0 6px;
+  background: var(--blue); border: 1px solid var(--line-blue); border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 700; color: var(--ink-strong); flex: none;
+  transform: translateY(-1px);
+}
+.asura-doc h3 {
+  margin: 28px 0 10px; font-size: 16px; font-weight: 700; color: var(--ink-strong);
+  letter-spacing: -0.02em;
+}
+.asura-doc h3:first-of-type { margin-top: 4px; }
+.asura-doc h4 {
+  margin: 20px 0 8px; font-size: 14.5px; font-weight: 700; color: var(--ink-strong);
+}
+.asura-doc p { margin: 0 0 12px; }
+.asura-doc p:last-child { margin-bottom: 0; }
+.asura-doc strong { color: var(--ink-strong); font-weight: 700; }
+.asura-doc a { color: #1565C0; text-decoration: none; border-bottom: 1px solid var(--line-blue); }
+.asura-doc a:hover { background: var(--blue); }
+.asura-doc ul, .asura-doc ol { margin: 0 0 12px; padding-left: 22px; }
+.asura-doc li { margin-bottom: 5px; }
+.asura-doc li::marker { color: var(--ink-soft); }
+
+/* ---------- Inline code ---------- */
+.asura-doc code {
+  font-family: var(--mono); font-size: 0.875em;
+  background: var(--blue-grey); border: 1px solid var(--line);
+  border-radius: 4px; padding: 1px 5px; color: var(--ink-strong);
+  word-break: break-word;
+}
+
+/* ---------- Code block ---------- */
+.asura-doc .code {
+  position: relative; margin: 0 0 16px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--blue-grey); overflow: hidden;
+}
+.asura-doc .code-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 12px; background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.asura-doc .code-lang {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink-soft); font-weight: 700;
+}
+.asura-doc .copy-btn {
+  font-family: inherit; font-size: 12px; font-weight: 600; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 5px; padding: 3px 11px; cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.asura-doc .copy-btn:hover { background: var(--blue); border-color: var(--line-blue); color: var(--ink-strong); }
+.asura-doc .copy-btn.done { background: var(--green); border-color: var(--line-green); color: #2E7D32; }
+.asura-doc .code pre {
+  margin: 0; padding: 14px 16px; overflow-x: auto;
+  font-family: var(--mono); font-size: 13px; line-height: 1.7;
+  color: var(--ink-strong); white-space: pre;
+}
+.asura-doc .code pre .cm { color: var(--ink-soft); }
+
+/* ---------- Callouts ---------- */
+.asura-doc .note {
+  border-radius: var(--radius-sm); padding: 14px 18px; margin: 0 0 16px;
+  border: 1px solid var(--line-blue); border-left-width: 4px; background: var(--blue);
+}
+.asura-doc .note.ok    { border-color: var(--line-green); background: var(--green); }
+.asura-doc .note.warn  { border-color: var(--ink); background: var(--blue-grey); }
+.asura-doc .note-title {
+  font-weight: 700; color: var(--ink-strong); font-size: 13.5px;
+  display: flex; align-items: center; gap: 7px; margin-bottom: 6px;
+  letter-spacing: 0.01em;
+}
+.asura-doc .note p:last-child { margin-bottom: 0; }
+.asura-doc .note ul { margin-bottom: 0; }
+
+/* ---------- Principle cards ---------- */
+.asura-doc .principles { display: grid; gap: 14px; margin-bottom: 4px; }
+.asura-doc .principle {
+  border: 1px solid var(--line); border-left: 4px solid var(--line-blue);
+  border-radius: var(--radius-sm); padding: 16px 20px; background: var(--bg);
+}
+.asura-doc .principle.key { border-left-color: var(--line-green); background: var(--green); }
+.asura-doc .principle h4 {
+  margin: 0 0 8px; font-size: 15px; display: flex; align-items: center; gap: 9px;
+}
+.asura-doc .principle h4 .tag {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; padding: 2px 9px; color: var(--ink-soft); flex: none;
+}
+.asura-doc .principle p:last-child { margin-bottom: 0; }
+
+/* ---------- Table ---------- */
+.asura-doc .table-wrap { overflow-x: auto; margin: 0 0 16px; border-radius: var(--radius-sm); border: 1px solid var(--line); }
+.asura-doc table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 480px; background: var(--surface); }
+.asura-doc thead th {
+  background: var(--blue); color: var(--ink-strong); font-weight: 700;
+  text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line-blue);
+  white-space: nowrap;
+}
+.asura-doc tbody td { padding: 11px 14px; border-bottom: 1px solid var(--blue-grey); vertical-align: top; }
+.asura-doc tbody tr:last-child td { border-bottom: none; }
+.asura-doc tbody tr:nth-child(even) { background: var(--bg); }
+.asura-doc tbody tr:hover { background: var(--blue-grey); }
+.asura-doc td code { font-size: 12px; }
+
+/* ---------- Tree ---------- */
+.asura-doc .tree {
+  font-family: var(--mono); font-size: 13px; line-height: 1.85;
+  background: var(--blue-grey); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 16px 18px; margin: 0 0 16px;
+  overflow-x: auto; color: var(--ink-strong); white-space: pre;
+}
+.asura-doc .tree .cm { color: var(--ink-soft); }
+
+/* ---------- Steps ---------- */
+.asura-doc .step {
+  display: flex; gap: 13px; align-items: baseline;
+  margin: 24px 0 10px;
+}
+.asura-doc .step .n {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--ink); color: #fff; font-size: 12px; font-weight: 700;
+  transform: translateY(3px);
+}
+.asura-doc .step .t { font-size: 15.5px; font-weight: 700; color: var(--ink-strong); letter-spacing: -0.02em; }
+.asura-doc .step + .code, .asura-doc .step + p, .asura-doc .step + ol, .asura-doc .step + .note { margin-top: 0; }
+
+/* ---------- Verdict rows ---------- */
+.asura-doc .verdict { display: grid; gap: 8px; margin: 0 0 16px; }
+.asura-doc .vrow {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 13px;
+  padding: 11px 15px; border-radius: var(--radius-sm); border: 1px solid var(--line);
+}
+.asura-doc .vrow.good { background: var(--green); border-color: var(--line-green); }
+.asura-doc .vrow.bad  { background: var(--red); border-color: var(--line-red); }
+.asura-doc .vrow .badge {
+  font-family: inherit; font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+  padding: 2px 9px; border-radius: 999px; flex: none;
+}
+.asura-doc .vrow.good .badge { background: #2E7D32; color: #fff; }
+.asura-doc .vrow.bad  .badge { background: #C62828; color: #fff; }
+
+/* ---------- Inline helpers ---------- */
+.asura-doc .en { color: var(--ink-soft); }
+
+/* ---------- Footer ---------- */
+.asura-doc .doc-foot {
+  margin-top: 28px; padding: 22px 26px;
+  background: var(--blue-grey); border: 1px solid var(--line);
+  border-radius: var(--radius); font-size: 13px; color: var(--ink-soft);
+}
+.asura-doc .doc-foot ul { list-style: none; padding: 0; margin: 10px 0 0; }
+.asura-doc .doc-foot li { margin-bottom: 6px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 640px) {
+  .asura-doc { padding: 18px 12px 60px; font-size: 14.5px; }
+  .asura-doc .doc-head { padding: 24px 20px; }
+  .asura-doc .doc-head h1 { font-size: 22px; }
+  .asura-doc section { padding: 22px 18px; }
+  .asura-doc h2.sec { font-size: 18px; }
+  .asura-doc .toc ol { grid-template-columns: 1fr; }
+}
+
+/* ---------- Print ---------- */
+@media print {
+  .asura-doc { background: #fff; padding: 0; font-size: 10.5pt; }
+  .asura-doc .toc, .asura-doc .copy-btn { display: none; }
+  .asura-doc section { break-inside: auto; page-break-inside: auto; border-color: #CCC; margin-bottom: 12px; }
+  .asura-doc h2.sec { break-after: avoid; page-break-after: avoid; }
+  .asura-doc .code, .asura-doc .note, .asura-doc table { break-inside: avoid; page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="asura-doc">
+<div class="wrap">
+
+  <!-- ============ HEADER ============ -->
+  <header class="doc-head">
+    <div class="doc-eyebrow">AsuraDB · SEO DOCS · 업무 환경 구축</div>
+    <h1>espanso 클라우드 동기화 구축 가이드</h1>
+    <p class="lead">
+      텍스트 대치(text expander) 설정을 클라우드 한 곳에 두고,
+      Windows PC와 Mac이 동일한 대치 규칙을 공유하도록 구성하는 절차서.
+      실제 구축 과정에서 확인된 실패 원인과 해결책을 포함한다.
+    </p>
+    <div class="doc-meta">
+      <span class="chip">작성일 <b>2026-08-26</b></span>
+      <span class="chip">검증 환경 <b>Windows 11 + macOS</b></span>
+      <span class="chip">동기화 <b>Google Drive 스트리밍</b></span>
+      <span class="chip">상태 <b>구축 완료</b></span>
+    </div>
+  </header>
+
+  <!-- ============ TOC ============ -->
+  <nav class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#s1">개요</a></li>
+      <li><a href="#s2">최종 구조</a></li>
+      <li><a href="#s3">공통 원칙 3가지</a></li>
+      <li><a href="#s4">Windows 설정 절차</a></li>
+      <li><a href="#s5">macOS 설정 절차</a></li>
+      <li><a href="#s6">트러블슈팅</a></li>
+      <li><a href="#s7">운영 수칙</a></li>
+      <li><a href="#s8">부록 · 기본 사용법</a></li>
+      <li><a href="#s9">참고 자료</a></li>
+    </ol>
+  </nav>
+
+  <!-- ============ 1. 개요 ============ -->
+  <section id="s1">
+    <h2 class="sec"><span class="num">1</span>개요</h2>
+    <p>
+      espanso(에스판소)는 오픈소스 텍스트 대치 프로그램이다. <code>:asc</code> 같은 짧은 키워드를 입력하면
+      미리 정한 문장으로 자동 치환된다. 설정이 YAML 텍스트 파일이므로,
+      <strong>설정 폴더 원본을 클라우드에 두고 각 OS의 기본 경로를 심볼릭 링크(symlink)로 대체</strong>하면
+      Windows와 Mac이 하나의 규칙을 공유한다.
+    </p>
+  </section>
+
+  <!-- ============ 2. 최종 구조 ============ -->
+  <section id="s2">
+    <h2 class="sec"><span class="num">2</span>최종 구조</h2>
+
+    <h3>2.1 클라우드 원본 — 단일 진실 소스</h3>
+    <div class="tree">G:\내 드라이브\04-ETC\espanso\                                   <span class="cm">← Windows에서 본 경로</span>
+~/Library/CloudStorage/GoogleDrive-&lt;계정&gt;/내 드라이브/04-ETC/espanso/   <span class="cm">← Mac에서 본 경로</span>
+├── config/
+│   └── default.yml     <span class="cm">프로그램 동작 설정</span>
+└── match/
+    ├── base.yml        <span class="cm">실제 대치 규칙 (주 편집 대상)</span>
+    └── packages/       <span class="cm">허브에서 설치한 패키지</span></div>
+
+    <div class="note warn">
+      <div class="note-title">⚠ 필수 조건</div>
+      <p>
+        <code>config</code>와 <code>match</code> 두 하위 폴더가 반드시 존재해야 한다.
+        <code>base.yml</code> 파일 하나만 두면 <code>missing config directory</code> 오류가 발생한다.
+      </p>
+    </div>
+
+    <h3>2.2 각 OS의 링크 위치</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>OS</th><th>espanso 기본 설정 경로</th><th>처리</th></tr></thead>
+        <tbody>
+          <tr><td>Windows</td><td><code>C:\Users\&lt;계정&gt;\AppData\Roaming\espanso</code></td><td>폴더 → 심볼릭 링크로 대체</td></tr>
+          <tr><td>macOS</td><td><code>~/Library/Application Support/espanso</code></td><td>폴더 → 심볼릭 링크로 대체</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>경로 확인 명령: <code>espanso path</code></p>
+  </section>
+
+  <!-- ============ 3. 원칙 ============ -->
+  <section id="s3">
+    <h2 class="sec"><span class="num">3</span>공통 원칙 3가지</h2>
+    <p>이 세 가지를 지키지 않으면 반드시 실패한다. 실제 시행착오에서 확인된 항목이다.</p>
+
+    <div class="principles">
+      <div class="principle key">
+        <h4><span class="tag">원칙 1</span>espanso 프로세스를 완전히 죽인 뒤 작업한다</h4>
+        <p>
+          <strong>가장 중요하다.</strong> espanso는 백그라운드 서비스로 동작하며,
+          설정 폴더가 사라지면 <strong>즉시 기본 폴더를 재생성</strong>한다.
+          삭제 직후 폴더가 되살아나 링크 생성이 실패하거나, 링크가 엉뚱한 위치에 만들어진다.
+        </p>
+        <ul>
+          <li>서비스 등록 해제까지 해야 완전히 멈춘다 — <code>espanso service unregister</code></li>
+          <li>프로세스 강제 종료를 병행한다 — <code>pkill -9 -i espanso</code> / <code>taskkill /F /IM espanso.exe /T</code></li>
+        </ul>
+      </div>
+
+      <div class="principle">
+        <h4><span class="tag">원칙 2</span>삭제와 링크 생성을 한 줄로 연결한다</h4>
+        <p>두 명령 사이의 시간차에 폴더가 재생성될 수 있으므로 <code>;</code> 또는 <code>&amp;&amp;</code>로 연결해 한 번에 실행한다.</p>
+      </div>
+
+      <div class="principle">
+        <h4><span class="tag">원칙 3</span>링크 이름 자리에 폴더가 남아 있으면 안 된다</h4>
+        <p>
+          <code>ln -s 대상 링크이름</code> 에서 <strong>링크이름이 이미 존재하는 폴더면, 링크가 그 폴더 "안에" 생성된다.</strong>
+          결과적으로 <code>espanso/espanso -&gt; ...</code> 같은 중첩 구조가 되어 오류가 난다.
+        </p>
+      </div>
+    </div>
+
+    <h3>검증 방법 — 목록의 첫 글자</h3>
+    <div class="verdict">
+      <div class="vrow good">
+        <span class="badge">정상</span>
+        <span><strong>l</strong>rwxr-xr-x &nbsp;… espanso -&gt; /Users/…/04-ETC/espanso</span>
+      </div>
+      <div class="vrow bad">
+        <span class="badge">실패</span>
+        <span><strong>d</strong>rwxr-xr-x &nbsp;… espanso</span>
+      </div>
+    </div>
+    <p><code>l</code>이면 심볼릭 링크, <code>d</code>면 실제 폴더다. <code>d</code>가 나오면 원칙 1·2로 돌아간다.</p>
+  </section>
+
+  <!-- ============ 4. Windows ============ -->
+  <section id="s4">
+    <h2 class="sec"><span class="num">4</span>Windows 설정 절차</h2>
+
+    <div class="step"><span class="n">1</span><span class="t">설치</span></div>
+    <div class="code"><div class="code-bar"><span class="code-lang">cmd</span><button class="copy-btn" type="button">복사</button></div><pre>winget install Espanso.Espanso</pre></div>
+    <p>또는 espanso.org에서 설치 파일을 내려받아 설치한다.</p>
+
+    <div class="step"><span class="n">2</span><span class="t">클라우드에 원본 폴더 준비 (최초 1회)</span></div>
+    <ol>
+      <li><code>espanso stop</code> 실행</li>
+      <li>탐색기 주소창에 <code>%APPDATA%</code> 입력 → <code>espanso</code> 폴더를 잘라내기</li>
+      <li><code>G:\내 드라이브\04-ETC\</code> 에 붙여넣기</li>
+      <li><code>config</code>와 <code>match</code> 하위 폴더가 있는지 확인</li>
+    </ol>
+
+    <div class="step"><span class="n">3</span><span class="t">링크 생성 — 관리자 권한 명령 프롬프트</span></div>
+    <div class="code"><div class="code-bar"><span class="code-lang">cmd · 관리자</span><button class="copy-btn" type="button">복사</button></div><pre>espanso service unregister
+taskkill /F /IM espanso.exe /T
+
+rmdir "%APPDATA%\espanso"
+mklink /D "%APPDATA%\espanso" "G:\내 드라이브\04-ETC\espanso"
+
+espanso service register
+espanso start</pre></div>
+
+    <div class="step"><span class="n">4</span><span class="t">검증</span></div>
+    <div class="code"><div class="code-bar"><span class="code-lang">cmd</span><button class="copy-btn" type="button">복사</button></div><pre>dir /a "%APPDATA%"
+espanso status
+espanso path</pre></div>
+    <p><code>espanso</code> 항목이 <code>&lt;SYMLINKD&gt;</code>로 표시되면 정상이다.</p>
+
+    <div class="note warn">
+      <div class="note-title">⚠ Windows 주의사항</div>
+      <ul>
+        <li><code>mklink</code>는 <strong>반드시 관리자 권한</strong>이 필요하다.</li>
+        <li>경로에 <code>&lt;계정&gt;</code> 같은 자리표시자를 그대로 넣으면 <code>&lt;</code>, <code>&gt;</code>가 금지 문자라 구문 오류가 난다. 위처럼 <code>%APPDATA%</code>를 쓰면 계정명을 적을 일이 없다(계정명 확인은 <code>echo %USERNAME%</code>).</li>
+        <li><code>/D</code>는 <strong>폴더</strong> 링크, 옵션 없음은 <strong>파일</strong> 링크다. 대상 유형과 맞춰야 한다.</li>
+        <li><code>rmdir</code>은 심볼릭 링크일 경우 링크만 제거하므로 원본은 안전하다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 5. macOS ============ -->
+  <section id="s5">
+    <h2 class="sec"><span class="num">5</span>macOS 설정 절차</h2>
+
+    <div class="step"><span class="n">1</span><span class="t">설치</span></div>
+    <div class="code"><div class="code-bar"><span class="code-lang">zsh</span><button class="copy-btn" type="button">복사</button></div><pre>brew install espanso</pre></div>
+    <p>CLI가 인식되지 않으면 (<code>command not found: espanso</code>):</p>
+    <div class="code"><div class="code-bar"><span class="code-lang">zsh</span><button class="copy-btn" type="button">복사</button></div><pre>sudo ln -s /Applications/Espanso.app/Contents/MacOS/espanso /usr/local/bin/espanso</pre></div>
+
+    <div class="step"><span class="n">2</span><span class="t">권한 부여 (필수)</span></div>
+    <p>시스템 설정 → 개인정보 보호 및 보안에서 아래를 모두 설정한다.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>권한 항목</th><th>대상</th><th>목적</th></tr></thead>
+        <tbody>
+          <tr><td>손쉬운 사용 <span class="en">(Accessibility)</span></td><td>Espanso</td><td>텍스트 대치 동작</td></tr>
+          <tr><td>입력 모니터링 <span class="en">(Input Monitoring)</span></td><td>Espanso</td><td>키 입력 감지</td></tr>
+          <tr><td>전체 디스크 접근 권한 <span class="en">(Full Disk Access)</span></td><td>Espanso, 터미널</td><td><code>~/Library/CloudStorage</code> 접근</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note warn">
+      <div class="note-title">⚠ 적용 방법</div>
+      <p>
+        전체 디스크 접근 권한 없이는 터미널에서 Google Drive 경로 조회 시 <code>Operation not permitted</code> 오류가 발생한다.
+        권한 부여 후 터미널을 <strong>⌘Q로 완전히 종료한 뒤 재실행</strong>해야 적용된다.
+      </p>
+    </div>
+
+    <div class="step"><span class="n">3</span><span class="t">Drive 경로 확인</span></div>
+    <div class="note">
+      <div class="note-title">폴더명이 로케일에 따라 다르다</div>
+      <p>
+        한국어 계정은 <code>My Drive</code>가 아니라 <strong><code>내 드라이브</code></strong>이다.
+        이 차이가 링크 실패의 흔한 원인이므로 반드시 실제 값을 확인한다.
+      </p>
+    </div>
+    <div class="code"><div class="code-bar"><span class="code-lang">zsh</span><button class="copy-btn" type="button">복사</button></div><pre>ls -la ~/Library/CloudStorage/
+ls -la ~/Library/CloudStorage/GoogleDrive-&lt;계정&gt;@gmail.com/</pre></div>
+
+    <div class="step"><span class="n">4</span><span class="t">링크 생성</span></div>
+    <div class="code"><div class="code-bar"><span class="code-lang">zsh</span><button class="copy-btn" type="button">복사</button></div><pre>DRIVE="$HOME/Library/CloudStorage/GoogleDrive-&lt;계정&gt;@gmail.com/내 드라이브/04-ETC"
+LOCAL="$HOME/Library/Application Support/espanso"
+
+<span class="cm"># 프로세스 완전 종료</span>
+espanso service unregister
+pkill -9 -i espanso
+sleep 2
+pgrep -il espanso          <span class="cm"># 출력이 없어야 함</span>
+
+<span class="cm"># 삭제와 링크 생성을 한 줄로</span>
+rm -f "$LOCAL/espanso"; rm -rf "$LOCAL" &amp;&amp; ln -s "$DRIVE/espanso" "$LOCAL"
+
+<span class="cm"># 검증 — 반드시 'l'로 시작해야 함</span>
+ls -la "$HOME/Library/Application Support/" | grep espanso
+ls "$LOCAL/"               <span class="cm"># config  match 두 개가 나와야 함</span>
+
+<span class="cm"># 기동</span>
+espanso service register
+espanso start
+espanso status
+espanso path</pre></div>
+
+    <div class="step"><span class="n">5</span><span class="t">동작 확인</span></div>
+    <p>아무 입력창에 <code>:espanso</code>를 입력해 <code>Hi there!</code>로 바뀌면 완료다.</p>
+
+    <div class="step"><span class="n">6</span><span class="t">오프라인 사용 설정 (권장)</span></div>
+    <p>
+      Finder에서 <code>04-ETC</code> 폴더 <strong>우클릭 → 「오프라인 사용 가능」</strong> 체크.
+      스트리밍 모드에서 파일이 로컬에 없으면 espanso가 읽지 못할 수 있다.
+    </p>
+  </section>
+
+  <!-- ============ 6. 트러블슈팅 ============ -->
+  <section id="s6">
+    <h2 class="sec"><span class="num">6</span>트러블슈팅</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:26%">증상</th><th style="width:37%">원인</th><th>조치</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>missing config directory</code></td>
+            <td>링크 대상에 <code>config</code> 폴더가 없음 / 링크가 끊어짐 / 링크가 폴더 안에 중첩 생성됨</td>
+            <td>대상 경로에 <code>config</code>+<code>match</code> 존재 확인, 링크 첫 글자 <code>l</code> 확인</td>
+          </tr>
+          <tr>
+            <td>파일이 이미 있으므로 만들 수 없습니다</td>
+            <td>링크 위치에 실제 파일·폴더가 남아 있음</td>
+            <td>프로세스 종료 후 삭제, 삭제와 <code>mklink</code>를 <code>&amp;&amp;</code>로 연결</td>
+          </tr>
+          <tr>
+            <td>파일 이름, 디렉터리 이름 또는 볼륨 레이블 구문이 잘못되었습니다</td>
+            <td>경로에 <code>&lt;</code>, <code>&gt;</code> 등 금지 문자 포함</td>
+            <td><code>echo %USERNAME%</code>로 실제 계정명 확인 후 대입</td>
+          </tr>
+          <tr>
+            <td><code>unable to start service: timed out</code></td>
+            <td>기존 espanso 프로세스 잔존</td>
+            <td><code>service unregister</code> + 강제 종료 후 재시도</td>
+          </tr>
+          <tr>
+            <td><code>Operation not permitted</code> <span class="en">(Mac)</span></td>
+            <td>터미널에 전체 디스크 접근 권한 없음</td>
+            <td>권한 부여 후 터미널 ⌘Q 재실행</td>
+          </tr>
+          <tr>
+            <td>링크했는데 <code>d</code>로 표시됨</td>
+            <td>프로세스가 폴더를 재생성함</td>
+            <td>원칙 1·2 재확인</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 7. 운영 수칙 ============ -->
+  <section id="s7">
+    <h2 class="sec"><span class="num">7</span>운영 수칙</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:24%">항목</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td>설정 수정 후</td><td><strong><code>espanso restart</code></strong> 실행 — 스트리밍 마운트는 파일 변경을 자동 감지하지 못한다</td></tr>
+          <tr><td>기기 전환 시</td><td>Drive 동기화 완료 확인(메뉴바·트레이 아이콘) 후 <code>espanso restart</code></td></tr>
+          <tr><td>편집 원칙</td><td><strong>한 번에 한 기기에서만</strong> 수정. 동시 편집 시 Drive가 충돌 사본 생성</td></tr>
+          <tr><td>트리거 충돌</td><td>Windows에서 AutoHotkey 등 다른 텍스트 확장 도구와 키워드가 겹치지 않는지 점검</td></tr>
+          <tr><td>문제 발생 시 순서</td><td><code>service unregister</code> → 강제 종료 → 링크 확인 → 재등록 → <code>start</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 8. 부록 ============ -->
+  <section id="s8">
+    <h2 class="sec"><span class="num">8</span>부록 · 기본 사용법</h2>
+
+    <h3>8.1 대치 규칙 작성 — <code>match/base.yml</code></h3>
+    <div class="code"><div class="code-bar"><span class="code-lang">yaml</span><button class="copy-btn" type="button">복사</button></div><pre>matches:
+  <span class="cm"># 단순 치환</span>
+  - trigger: ":asc"
+    replace: "PT Ascendo Internasional"
+
+  <span class="cm"># 여러 줄 (이메일 서명)</span>
+  - trigger: ":sig"
+    replace: |
+      Best regards,
+      Seo / General Manager
+      PT Ascendo Internasional
+
+  <span class="cm"># 오늘 날짜 자동 입력</span>
+  - trigger: ":date"
+    replace: "{{today}}"
+    vars:
+      - name: today
+        type: date
+        params:
+          format: "%Y-%m-%d"
+
+  <span class="cm"># 입력 폼 (빈칸 채우기)</span>
+  - trigger: ":quote"
+    replace: "Dear {{name}}, please find attached our quotation for {{item}}."
+    vars:
+      - name: form1
+        type: form
+        params:
+          layout: "Name: [[name]]  Item: [[item]]"
+      - name: name
+        type: echo
+        params: { echo: "{{form1.name}}" }
+      - name: item
+        type: echo
+        params: { echo: "{{form1.item}}" }</pre></div>
+
+    <h3>8.2 주요 명령어</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:38%">명령</th><th>기능</th></tr></thead>
+        <tbody>
+          <tr><td><code>espanso status</code></td><td>실행 상태 확인</td></tr>
+          <tr><td><code>espanso path</code></td><td>설정·패키지·캐시 경로 출력</td></tr>
+          <tr><td><code>espanso restart</code></td><td>재시작 (설정 반영)</td></tr>
+          <tr><td><code>espanso service register</code> / <code>unregister</code></td><td>자동 시작 서비스 등록·해제</td></tr>
+          <tr><td><code>espanso install &lt;패키지&gt;</code></td><td>hub.espanso.org 패키지 설치</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.3 단축키</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:38%">단축키</th><th>기능</th></tr></thead>
+        <tbody>
+          <tr><td><code>Alt + Space</code></td><td>검색창 — 전체 트리거 검색 후 선택 입력</td></tr>
+          <tr><td><code>Alt + Shift + E</code></td><td>일시 정지 / 재개 토글</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.4 트리거 작명 규칙</h3>
+    <ul>
+      <li>반드시 <code>:</code> 또는 <code>;</code> 등 접두 기호를 붙인다. <code>pt</code> 같은 일반 단어를 트리거로 쓰면 평소 타이핑 중 오작동한다.</li>
+      <li>한국어·인도네시아어 등 유니코드 치환은 정상 동작한다.</li>
+      <li>OS별로 달라야 하는 항목(<code>type: shell</code> 등)은 <code>match/win.yml</code>, <code>match/mac.yml</code>로 분리하고 공용 항목만 <code>base.yml</code>에 둔다.</li>
+    </ul>
+  </section>
+
+  <!-- ============ 9. 참고 ============ -->
+  <section id="s9">
+    <h2 class="sec"><span class="num">9</span>참고 자료</h2>
+    <ul>
+      <li><a href="https://espanso.org/docs/sync/" target="_blank" rel="noopener">Synchronization — espanso 공식 문서</a></li>
+      <li><a href="https://espanso.org/docs/configuration/basics/" target="_blank" rel="noopener">Configuration Basics — espanso 공식 문서</a></li>
+      <li><a href="https://espanso.org/docs/install/mac/" target="_blank" rel="noopener">Install on macOS — espanso 공식 문서</a></li>
+      <li><a href="https://hub.espanso.org/" target="_blank" rel="noopener">Package Hub — espanso 패키지 허브</a></li>
+      <li><a href="https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/mklink" target="_blank" rel="noopener">mklink — Microsoft Learn</a></li>
+    </ul>
+  </section>
+
+  <footer class="doc-foot">
+    <strong style="color:var(--ink-strong)">PT ASCENDO INTERNASIONAL · AsuraDB SEO DOCS</strong>
+    <ul>
+      <li>검증 환경: Windows 11 + macOS · Google Drive 스트리밍 모드 · 설정 원본 <code>04-ETC/espanso</code></li>
+      <li>본 문서는 실제 구축 과정에서 발생한 오류와 해결 과정을 기준으로 작성되었다.</li>
+    </ul>
+  </footer>
+
+</div>
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('.asura-doc .copy-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var block = btn.closest('.code');
+      if (!block) return;
+      var pre = block.querySelector('pre');
+      if (!pre) return;
+      var text = pre.innerText;
+
+      var done = function () {
+        var original = btn.textContent;
+        btn.textContent = '복사됨';
+        btn.classList.add('done');
+        setTimeout(function () {
+          btn.textContent = original;
+          btn.classList.remove('done');
+        }, 1600);
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () { fallback(text, done); });
+      } else {
+        fallback(text, done);
+      }
+    });
+  });
+
+  function fallback(text, cb) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); cb(); } catch (e) { /* noop */ }
+    document.body.removeChild(ta);
+  }
+})();
+</script>
+</body>
+</html>

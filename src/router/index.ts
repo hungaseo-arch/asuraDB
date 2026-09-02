@@ -86,6 +86,24 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '인건비', desc: '월별 인건비·인원 현황과 급여 상세' },
       },
       {
+        path: 'attendance',
+        name: 'attendance',
+        component: () => import('@/views/Attendance.vue'),
+        meta: { title: '출퇴근', desc: '직원 출퇴근 현황과 지오펜싱 근무지 관리' },
+      },
+      {
+        path: 'leave-management',
+        name: 'leave-management',
+        component: () => import('@/views/LeaveManagement.vue'),
+        meta: { title: '휴가·초과근무', desc: '휴가·연차·초과근무 신청 승인 관리' },
+      },
+      {
+        path: 'attendance-report',
+        name: 'attendance-report',
+        component: () => import('@/views/AttendanceReport.vue'),
+        meta: { title: '근태 보고서', desc: '일자별 직원 근태 집계 보고서' },
+      },
+      {
         path: 'docs',
         name: 'docs',
         component: () => import('@/views/Docs.vue'),

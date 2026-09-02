@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import {
   Home, Search, BrainCircuit, ClipboardList, BarChart3, Ship, Percent, Store,
   FolderOpen, Package, RefreshCw, LogOut, Scale, Gauge, BookMarked, Wallet, ScanSearch, Menu,
+  MapPin, Clock, FileText,
 } from 'lucide-vue-next';
 import { signOut } from '@/lib/auth';
 import AsuraLogo from '@/components/icons/AsuraLogo.vue';
@@ -49,6 +50,14 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/margin',       icon: Percent,   label: '마진 — 마진분석',    short: '마진', badge: null },
       { to: '/branch-sales', icon: Store,     label: '지점 — 지점실적',    short: '지점', badge: null },
       { to: '/labor-cost',   icon: Wallet,    label: '인건비 — 인건비현황', short: '인건비', badge: null },
+    ],
+  },
+  {
+    key: 'hr', label: '근태',
+    items: [
+      { to: '/attendance',        icon: MapPin,   label: '출퇴근 — 근태현황',   short: '출퇴근', badge: null },
+      { to: '/leave-management',  icon: Clock,    label: '휴가 — 휴가·초과근무', short: '휴가', badge: null },
+      { to: '/attendance-report', icon: FileText, label: '보고서 — 근태집계',   short: '근태보고', badge: null },
     ],
   },
   {

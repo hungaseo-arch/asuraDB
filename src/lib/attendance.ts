@@ -139,7 +139,7 @@ export async function checkOut(employeeId: string, lat: number, lon: number, dev
 
 // ── 휴가/연차 ──
 export async function fetchLeaveRequests(status?: string): Promise<LeaveRequest[]> {
-  let path = 'leave_requests?select=*,employee:employees(name,department),approver:employees!leave_requests_approved_by_fkey(name)&order=created_at.desc';
+  let path = 'leave_requests?select=*,employee:employees!leave_requests_employee_id_fkey(name,department),approver:employees!leave_requests_approved_by_fkey(name)&order=created_at.desc';
   if (status) path += `&status=eq.${status}`;
   return sbGetAll<LeaveRequest>(path);
 }
@@ -158,7 +158,7 @@ export async function updateLeaveStatus(id: string, status: string, approverId: 
 
 // ── 초과근무 ──
 export async function fetchOvertimeRecords(status?: string): Promise<OvertimeRecord[]> {
-  let path = 'overtime?select=*,employee:employees(name,department),approver:employees!overtime_approved_by_fkey(name)&order=created_at.desc';
+  let path = 'overtime?select=*,employee:employees!overtime_employee_id_fkey(name,department),approver:employees!overtime_approved_by_fkey(name)&order=created_at.desc';
   if (status) path += `&status=eq.${status}`;
   return sbGetAll<OvertimeRecord>(path);
 }

@@ -4,13 +4,14 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import {
   Home, Search, BrainCircuit, ClipboardList, BarChart3, Ship, Percent, Store,
   FolderOpen, Package, RefreshCw, LogOut, Scale, Gauge, BookMarked, Wallet, ScanSearch, Menu,
-  MapPin, Clock, FileText,
+  MapPin, Clock, FileText, History, KeyRound,
 } from 'lucide-vue-next';
 import { signOut } from '@/lib/auth';
 import AsuraLogo from '@/components/icons/AsuraLogo.vue';
 import { cn } from '@/lib/utils';
 import { API_BASE, LAUNCHER_BASE, IS_HOST } from '@/lib/api';
-import { SB_URL, sbHeaders } from '@/lib/supabase';
+import { SB_URL, sbHeaders, supabase } from '@/lib/supabase';
+import Button from '@/components/ui/Button.vue';
 
 interface NavItem {
   to?: string;
@@ -38,6 +39,47 @@ const roleLabel =
 async function handleLogout() {
   await signOut();
   router.replace('/login');
+}
+
+// ── 계정 메뉴(역할 배지 + 비밀번호 변경 + 로그아웃 통합) ──
+const showAccountMenu = ref(false);
+
+// ── 비밀번호 변경 ──
+const showPasswordModal = ref(false);
+const newPassword = ref('');
+const newPasswordConfirm = ref('');
+const passwordError = ref<string | null>(null);
+const passwordSaving = ref(false);
+const passwordSaved = ref(false);
+
+function openPasswordModal() {
+  newPassword.value = '';
+  newPasswordConfirm.value = '';
+  passwordError.value = null;
+  passwordSaved.value = false;
+  showPasswordModal.value = true;
+}
+
+async function submitPasswordChange() {
+  passwordError.value = null;
+  if (newPassword.value.length < 6) {
+    passwordError.value = '비밀번호는 6자 이상이어야 합니다';
+    return;
+  }
+  if (newPassword.value !== newPasswordConfirm.value) {
+    passwordError.value = '비밀번호 확인이 일치하지 않습니다';
+    return;
+  }
+  passwordSaving.value = true;
+  try {
+    const { error } = await supabase.auth.updateUser({ password: newPassword.value });
+    if (error) throw error;
+    passwordSaved.value = true;
+  } catch (e: any) {
+    passwordError.value = e.message || '비밀번호 변경에 실패했습니다';
+  } finally {
+    passwordSaving.value = false;
+  }
 }
 
 // ── 3그룹 재분류: 경영·성과 / 영업·견적 / 운영·데이터 (3그룹 × 3페이지) ──────
@@ -74,6 +116,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/tools/dot-lookup', icon: ScanSearch, label: 'DOT 조회 — 공장코드', short: 'DOT', badge: null },
       { to: '/tire-import',      icon: Ship,       label: '수입 조회 — BPS자료',    short: '수입', badge: null },
       { to: '/load-calc',        icon: Gauge,      label: '하중 조회 — 차량하중',    short: '하중', badge: null },
+      { to: '/login-history',    icon: History,    label: '로그인 이력 — 회원 로그', short: '로그인이력', badge: null },
     ],
   },
   {
@@ -122,12 +165,13 @@ function closeGroupsAndRestore() {
 
 function onWindowClick(e: MouseEvent) {
   if (!(e.target as HTMLElement).closest?.('[data-navgroup]')) openGroup.value = null;
+  if (!(e.target as HTMLElement).closest?.('[data-account-menu]')) showAccountMenu.value = false;
 }
 
 // Escape 로도 닫는다(외부 클릭·라우트 이동과 함께 3경로 모두 차단).
 // 메뉴가 열려 있으면 ↑/↓ 로 항목 이동, Tab 은 메뉴 안에 가둔다(포커스 트랩 — 탈출은 Esc).
 function onWindowKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') { closeGroupsAndRestore(); return; }
+  if (e.key === 'Escape') { closeGroupsAndRestore(); showAccountMenu.value = false; return; }
 
   const key = openGroup.value;
   if (!key || !['ArrowDown', 'ArrowUp', 'Tab'].includes(e.key)) return;
@@ -274,6 +318,27 @@ async function maybeDailyCollect() {
   } catch { /* 런처 미가동 시 조용히 무시 */ }
 }
 
+// ── 자동 로그아웃 (30분 무활동) ────────────────────────────────────────────
+// 경고 없이 즉시 로그아웃 처리한다. mousemove 는 초당 수십 회 발생할 수 있어
+// 5초 스로틀로 타이머 재설정 빈도를 줄인다.
+const IDLE_LIMIT_MS   = 30 * 60 * 1000;
+const IDLE_THROTTLE_MS = 5000;
+const IDLE_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart'] as const;
+let idleTimer: number | undefined;
+let lastActivityAt = 0;
+
+function resetIdleTimer() {
+  if (idleTimer !== undefined) clearTimeout(idleTimer);
+  idleTimer = window.setTimeout(handleLogout, IDLE_LIMIT_MS);
+}
+
+function onUserActivity() {
+  const now = Date.now();
+  if (now - lastActivityAt < IDLE_THROTTLE_MS) return;
+  lastActivityAt = now;
+  resetIdleTimer();
+}
+
 onMounted(() => {
   void checkApiOnline();
   void checkDbOnline();
@@ -282,6 +347,8 @@ onMounted(() => {
   void maybeDailyCollect();
   window.addEventListener('click', onWindowClick);
   window.addEventListener('keydown', onWindowKeydown);
+  IDLE_EVENTS.forEach(ev => window.addEventListener(ev, onUserActivity, { passive: true }));
+  resetIdleTimer();
 });
 
 onUnmounted(() => {
@@ -289,6 +356,8 @@ onUnmounted(() => {
   stopHeartbeat();
   window.removeEventListener('click', onWindowClick);
   window.removeEventListener('keydown', onWindowKeydown);
+  IDLE_EVENTS.forEach(ev => window.removeEventListener(ev, onUserActivity));
+  if (idleTimer !== undefined) clearTimeout(idleTimer);
 });
 
 const route = useRoute();
@@ -418,17 +487,37 @@ const pageTitle = computed(() =>
             <RefreshCw :size="11" :class="isRefreshing && 'animate-spin'" />
             <span class="hidden sm:inline">{{ statusLabel }}</span>
           </button>
-          <div class="h-7 px-2.5 rounded-full border border-border bg-primary-soft hidden sm:flex items-center justify-center text-xs font-bold text-primary-soft-foreground whitespace-nowrap">
-            {{ roleLabel }}
+          <div class="relative shrink-0" data-account-menu>
+            <button
+              class="h-7 px-2.5 rounded-full border border-border bg-primary-soft flex items-center gap-1 text-xs font-bold text-primary-soft-foreground whitespace-nowrap hover:bg-primary-soft/80 transition-colors"
+              :aria-expanded="showAccountMenu"
+              aria-haspopup="menu"
+              aria-label="계정 메뉴"
+              @click="showAccountMenu = !showAccountMenu"
+            >
+              {{ roleLabel }}
+            </button>
+            <div
+              v-if="showAccountMenu"
+              class="absolute right-0 top-9 z-40 w-44 rounded-xl border border-border bg-card shadow-lg py-1 isolate"
+              role="menu"
+            >
+              <button
+                class="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
+                role="menuitem"
+                @click="showAccountMenu = false; openPasswordModal()"
+              >
+                <KeyRound :size="14" /> 비밀번호 변경
+              </button>
+              <button
+                class="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                role="menuitem"
+                @click="showAccountMenu = false; handleLogout()"
+              >
+                <LogOut :size="14" /> 로그아웃
+              </button>
+            </div>
           </div>
-          <button
-            class="h-7 w-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
-            title="로그아웃"
-            aria-label="로그아웃"
-            @click="handleLogout"
-          >
-            <LogOut :size="14" />
-          </button>
           <!-- 햄버거 — 좁은 폭 전용 메뉴 드로어 토글 -->
           <button
             v-if="!isQuoteOnly"
@@ -474,6 +563,36 @@ const pageTitle = computed(() =>
         <h1 class="sr-only">{{ pageTitle || 'AsuraDB' }}</h1>
         <RouterView />
     </main>
+
+    <!-- 비밀번호 변경 모달 -->
+    <div v-if="showPasswordModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showPasswordModal = false">
+      <div class="bg-card rounded-xl border border-border p-5 w-full max-w-sm shadow-lg">
+        <h3 class="font-semibold text-lg mb-4">비밀번호 변경</h3>
+        <div v-if="passwordSaved" class="space-y-4">
+          <p class="text-sm rounded-lg border border-success-border bg-success-soft text-success px-3 py-2.5">
+            비밀번호가 변경되었습니다.
+          </p>
+          <div class="flex justify-end">
+            <Button @click="showPasswordModal = false">닫기</Button>
+          </div>
+        </div>
+        <div v-else class="space-y-3">
+          <p v-if="passwordError" class="rounded-lg border border-destructive/40 border-l-[3px] border-l-destructive bg-destructive/5 px-3 py-2.5 text-sm text-destructive" role="alert">{{ passwordError }}</p>
+          <div class="form-field">
+            <label>새 비밀번호<span class="required">*</span></label>
+            <input v-model="newPassword" type="password" autocomplete="new-password" minlength="6" placeholder="6자 이상" />
+          </div>
+          <div class="form-field">
+            <label>새 비밀번호 확인<span class="required">*</span></label>
+            <input v-model="newPasswordConfirm" type="password" autocomplete="new-password" minlength="6" @keyup.enter="submitPasswordChange" />
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <Button variant="outline" @click="showPasswordModal = false">취소</Button>
+            <Button :disabled="passwordSaving" @click="submitPasswordChange">{{ passwordSaving ? '변경 중…' : '변경' }}</Button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

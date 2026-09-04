@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/asuraDB/pwa/sw.js', { scope: '/asuraDB/pwa/' })})}

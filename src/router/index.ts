@@ -104,6 +104,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '근태 보고서', desc: '일자별 직원 근태 집계 보고서' },
       },
       {
+        path: 'login-history',
+        name: 'login-history',
+        component: () => import('@/views/LoginHistory.vue'),
+        meta: { title: '회원 로그 관리', desc: '회원 로그인·로그아웃 이력 조회' },
+      },
+      {
         path: 'docs',
         name: 'docs',
         component: () => import('@/views/Docs.vue'),

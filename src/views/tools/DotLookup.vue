@@ -212,7 +212,7 @@ function pick(code: string) {
 /* ------------------------------------------------------------------ */
 
 const PRIORITY_COUNTRIES = ["Indonesia", "China", "Thailand", "India", "Vietnam", "Korea, Republic of"];
-const country = ref("");
+const country = ref("Indonesia");
 const countryRows = ref<PlantRow[]>([]);
 const countryLoading = ref(false);
 /** 서버 조회 상한 — 국가 하나에 공장이 이보다 많으면 잘려 나오므로 아래 표에 그 사실을 함께 표기한다. */
@@ -237,7 +237,7 @@ async function browseCountry() {
     countryLoading.value = false;
   }
 }
-watch(country, browseCountry);
+watch(country, browseCountry, { immediate: true });
 
 /** 국가 목록 표시용 — 3자리 현행코드를 대표로 삼아 구코드(2자리) 중복 행을 병합. */
 const countryDisplay = computed(() => {
@@ -378,7 +378,7 @@ const num = (n: number) => n.toLocaleString("en-US");
       </div>
 
       <!-- 오른쪽: 결과 / 미등록 / 안내 -->
-      <div class="lg:border-l lg:border-border lg:pl-4">
+      <div class="lg:border-l lg:border-border lg:pl-4 flex flex-col justify-center">
       <p v-if="errorMsg" class="rounded-lg border border-destructive/40 border-l-[3px] border-l-destructive bg-destructive/5 px-3 py-2.5 text-sm text-destructive" role="alert">{{ errorMsg }}</p>
 
       <!-- 결과 -->

@@ -12,7 +12,8 @@
     "deploy": "npm run build && npm run build:pwa && npm run bundle:pwa && gh-pages-clean && gh-pages -d dist -t",
     "test:e2e": "playwright test",
     "build:pwa": "npm --prefix employee-pwa run build",
-    "bundle:pwa": "rm -rf dist/pwa && cp -R employee-pwa/dist dist/pwa"
+    "bundle:pwa": "rm -rf dist/pwa && cp -R employee-pwa/dist dist/pwa",
+    "deploy:pwa": "npm run build:pwa && gh-pages-clean && gh-pages -d employee-pwa/dist --dest pwa -t"
   },
   "dependencies": {
     "@iconify/vue": "^4.1.2",

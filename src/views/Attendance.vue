@@ -41,7 +41,9 @@ function renderZones() {
   for (const { marker, circle } of zoneLayers.values()) { marker.remove(); circle.remove(); }
   zoneLayers.clear();
   for (const zone of zones.value) {
-    const marker = L.marker([zone.latitude, zone.longitude]).addTo(map).bindPopup(zone.name);
+    const popupEl = document.createElement('span');
+    popupEl.textContent = zone.name;
+    const marker = L.marker([zone.latitude, zone.longitude]).addTo(map).bindPopup(popupEl);
     const circle = L.circle([zone.latitude, zone.longitude], { radius: zone.radius_meters, color: '#546E7A', fillOpacity: 0.12 }).addTo(map);
     zoneLayers.set(zone.id, { marker, circle });
   }
@@ -223,7 +225,7 @@ function formatDate(iso: string) {
         </div>
 
         <!-- 미니 지도 -->
-        <div class="rounded-xl border border-border bg-card overflow-hidden lg:col-span-2" style="min-height: 320px;">
+        <div class="rounded-xl border border-border bg-card overflow-hidden isolate lg:col-span-2" style="min-height: 320px;">
           <div id="attendance-map" class="w-full h-full" style="min-height: 320px;"></div>
         </div>
       </div>

@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { MapPin, Users, Clock, CheckCircle2, XCircle, AlertTriangle, RefreshCw, Plus, Pencil, Trash2 } from 'lucide-vue-next';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { fetchEmployees, fetchGeofenceZones, fetchTodayAttendance, createGeofenceZone, updateGeofenceZone, deleteGeofenceZone, type Employee, type GeofenceZone, type AttendanceRecord } from '@/lib/attendance';
 import Button from '@/components/ui/Button.vue';
 import Input from '@/components/ui/Input.vue';
@@ -8,6 +13,13 @@ import Badge from '@/components/ui/Badge.vue';
 import DataState from '@/components/ui/DataState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { cn } from '@/lib/utils';
+
+// 번들러 환경에서 Leaflet 기본 마커 아이콘 경로가 깨지는 문제 — 아이콘을 직접 지정해야 한다.
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 // ── 상태 ──
 const loading = ref(true);
@@ -17,8 +29,48 @@ const zones = ref<GeofenceZone[]>([]);
 const todayRecords = ref<AttendanceRecord[]>([]);
 const selectedZone = ref<GeofenceZone | null>(null);
 const showZoneModal = ref(false);
-const zoneForm = ref({ name: '', description: '', latitude: 37.5665, longitude: 126.9780, radius_meters: 100 });
+const zoneForm = ref({ name: '', description: '', latitude: -6.2088, longitude: 106.8456, radius_meters: 100 });
 const editingZoneId = ref<string | null>(null);
+
+// ── 지도 ──
+let map: L.Map | null = null;
+const zoneLayers = new Map<string, { marker: L.Marker; circle: L.Circle }>();
+
+function renderZones() {
+  if (!map) return;
+  for (const { marker, circle } of zoneLayers.values()) { marker.remove(); circle.remove(); }
+  zoneLayers.clear();
+  for (const zone of zones.value) {
+    const marker = L.marker([zone.latitude, zone.longitude]).addTo(map).bindPopup(zone.name);
+    const circle = L.circle([zone.latitude, zone.longitude], { radius: zone.radius_meters, color: '#546E7A', fillOpacity: 0.12 }).addTo(map);
+    zoneLayers.set(zone.id, { marker, circle });
+  }
+  if (zones.value.length) {
+    const bounds = L.latLngBounds(zones.value.map(z => [z.latitude, z.longitude] as [number, number]));
+    map.fitBounds(bounds.pad(0.3), { maxZoom: 15 });
+  }
+}
+
+function initMap() {
+  const el = document.getElementById('attendance-map');
+  if (!el || map) return;
+  map = L.map(el).setView([-6.2088, 106.8456], 11); // 기본 중심: 자카르타
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  }).addTo(map);
+  renderZones();
+}
+
+watch(zones, () => { if (map) renderZones(); else nextTick(initMap); });
+
+watch(selectedZone, (zone) => {
+  if (!map || !zone) return;
+  map.flyTo([zone.latitude, zone.longitude], 16);
+  zoneLayers.get(zone.id)?.marker.openPopup();
+});
+
+onBeforeUnmount(() => { map?.remove(); map = null; });
 
 // ── 데이터 로드 ──
 async function loadData() {
@@ -55,7 +107,7 @@ const totalEmployees = computed(() => employees.value.length);
 // ── 지오펜싱 영역 관리 ──
 function openAddZone() {
   editingZoneId.value = null;
-  zoneForm.value = { name: '', description: '', latitude: 37.5665, longitude: 126.9780, radius_meters: 100 };
+  zoneForm.value = { name: '', description: '', latitude: -6.2088, longitude: 106.8456, radius_meters: 100 };
   showZoneModal.value = true;
 }
 

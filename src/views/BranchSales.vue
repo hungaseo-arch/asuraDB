@@ -479,10 +479,11 @@ const displayRows = computed<Row[]>(() => {
 });
 
 function rowCls(kind: Row['kind']): string {
-  if (kind === 'total') return 'font-bold bg-muted/40 [&>td]:border-t-2 [&>td]:border-border';
-  if (kind === 'amount') return 'bg-primary/10 text-primary font-semibold';
-  if (kind === 'subtotal') return 'font-semibold [&>td]:border-t [&>td]:border-primary/40';
-  return '';
+  const base = '[&>td]:border-b [&>td]:border-border/60';
+  if (kind === 'total') return base + ' font-bold bg-muted/40';
+  if (kind === 'amount') return base + ' bg-primary/10 text-primary font-semibold';
+  if (kind === 'subtotal') return base + ' font-semibold bg-muted/20';
+  return base;
 }
 
 // ── 운영 손익(P&L) — 상단 '연도'(2025/2026)·'지점' 드롭다운 공유 ─────────────────
@@ -588,12 +589,13 @@ function pnlFmt(n: number | null | undefined, fmt: PnlFmt): string {
 }
 
 function pnlRowCls(kind: PnlKind): string {
-  if (kind === 'profit') return 'font-bold bg-primary/10 text-primary [&>td]:border-t-2 [&>td]:border-primary/40';
-  if (kind === 'head') return 'font-bold [&>td]:border-t [&>td]:border-border/60';
-  if (kind === 'pct') return 'text-[11px] text-muted-foreground/80';
-  if (kind === 'bep') return 'text-foreground/75 [&>td]:border-t [&>td]:border-border/40';
-  if (kind === 'sub') return 'text-muted-foreground';
-  return '';
+  const base = '[&>td]:border-b [&>td]:border-border/60';
+  if (kind === 'profit') return base + ' font-bold bg-primary/10 text-primary';
+  if (kind === 'head') return base + ' font-bold bg-muted/20';
+  if (kind === 'pct') return base + ' text-[11px] text-muted-foreground/80';
+  if (kind === 'bep') return base + ' text-foreground/75';
+  if (kind === 'sub') return base + ' text-muted-foreground';
+  return base;
 }
 
 // P&L KPI — 선택 연도의 마지막 데이터 월. 없으면 전년 마지막 월로 폴백.
@@ -939,46 +941,41 @@ async function onUpload(e: Event) {
           >{{ mt.label }}</button>
         </div>
       </div> 
-      <div class="overflow-x-auto border rounded-xl bg-card">
-        <table class="w-full table-fixed text-xs border-collapse whitespace-nowrap">
+      <div class="overflow-x-auto border border-border rounded-xl bg-card">
+        <table class="w-full table-fixed text-xs tabular-nums border-collapse whitespace-nowrap">
           <caption class="sr-only">지점 월별 실적 상세</caption>
           <colgroup>
             <col class="w-44" />                                  <!-- Category -->
             <col v-if="hasPrev" class="w-20" />                   <!-- 전년 평균 -->
             <col v-for="m in months" :key="'c'+m" />              <!-- 당해 월 (균등 분배) -->
-            <col />                                                <!-- Avg -->
+            <col class="w-20" />                                  <!-- Avg -->
           </colgroup>
           <thead>
-            <tr>
-              <th scope="col" rowspan="2" class="sticky left-0 z-10 bg-card text-left px-2.5 py-1.5 font-semibold text-foreground min-w-30 shadow-[1px_0_0_var(--border)]">Category</th>
-              <th scope="col" v-if="hasPrev" class="px-2 py-1.5 bg-muted/40 text-muted-foreground font-semibold text-center border-b border-border/50 tabular-nums">{{ year - 1 }}</th>
-              <th scope="colgroup" :colspan="months.length + 1" class="px-2 py-1.5 bg-primary/10 text-primary font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
+            <tr class="text-muted-foreground">
+              <th scope="col" rowspan="2" class="sticky left-0 z-10 bg-card text-left px-3 py-2 font-semibold text-foreground min-w-30 border-b border-r border-border">Category</th>
+              <th scope="col" v-if="hasPrev" rowspan="2" class="px-2 py-2 bg-muted/40 font-semibold text-right border-b border-border">{{ year - 1 }}<br>평균</th>
+              <th scope="colgroup" :colspan="months.length" class="px-2 py-1.5 font-semibold text-center border-b border-border">{{ year }}</th>
+              <th scope="col" rowspan="2" class="px-2 py-2 bg-primary/10 text-primary font-semibold text-right border-b border-border">{{ year }}<br>Avg</th>
             </tr>
-            <tr>
-              <th scope="col" v-if="hasPrev" class="px-2 py-1 bg-muted/30 text-muted-foreground font-semibold text-right border-b border-border/50">평균</th>
+            <tr class="text-muted-foreground">
               <th scope="col"
                 v-for="(m, mi) in months" :key="'h'+m"
-                class="px-2 py-1 bg-muted/20 text-muted-foreground font-medium text-right border-b border-border/50"
-                :class="isPersonTab ? 'cursor-pointer select-none hover:bg-primary/15' : ''"
+                class="px-2 py-1.5 font-medium text-right border-b border-border"
+                :class="isPersonTab ? 'cursor-pointer select-none hover:text-foreground' : ''"
                 @click="toggleSort(mi)"
               >{{ monthKo(m) }}<span v-if="isPersonTab && sortCol === mi" class="ml-0.5">{{ sortDir === 'desc' ? '▾' : '▴' }}</span></th>
-              <th scope="col"
-                class="px-2 py-1 bg-primary/15 text-primary font-semibold text-right border-b border-border/50"
-                :class="isPersonTab ? 'cursor-pointer select-none hover:bg-primary/25' : ''"
-                @click="toggleSort('avg')"
-              >Avg<span v-if="isPersonTab && sortCol === 'avg'" class="ml-0.5">{{ sortDir === 'desc' ? '▾' : '▴' }}</span></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(r, ri) in displayRows" :key="ri" :class="rowCls(r.kind)">
-              <td :class="['sticky left-0 z-10 text-left px-2.5 py-1.5 font-medium min-w-30 shadow-[1px_0_0_var(--border)] border-b border-border/40', r.kind === 'amount' ? 'bg-primary/10 text-primary' : r.kind === 'total' ? 'bg-muted/40 text-foreground' : r.kind === 'subtotal' ? 'bg-primary/10 text-primary' : 'bg-card text-foreground/90']">{{ r.label }}</td>
-              <td v-if="hasPrev" :class="['px-2 py-1.5 text-right tabular-nums font-semibold border-b border-r border-border/40', r.kind === 'amount' ? '' : 'bg-muted/20 text-muted-foreground']">
+              <td :class="['sticky left-0 z-10 text-left px-3 py-2 border-r border-border', r.kind === 'total' ? 'bg-muted/40 text-foreground font-bold' : r.kind === 'subtotal' ? 'bg-muted/20 text-foreground font-semibold' : r.kind === 'amount' ? 'bg-primary/10 text-primary font-semibold' : 'bg-card text-foreground/90 font-medium']">{{ r.label }}</td>
+              <td v-if="hasPrev" class="px-2 py-2 text-right bg-muted/10 text-muted-foreground">
                 <span v-if="prevAvgOf(r) === null || prevAvgOf(r) === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ fmt(prevAvgOf(r)) }}</template>
               </td>
-              <td v-for="(_, i) in months" :key="'v'+i" :class="['px-2 py-1.5 text-right tabular-nums border-b border-border/40', r.kind === 'amount' ? '' : r.kind === 'subtotal' ? 'bg-primary/10 text-primary' : 'text-foreground']">
+              <td v-for="(_, i) in months" :key="'v'+i" class="px-2 py-2 text-right">
                 <span v-if="valsOf(r)[i] === null || valsOf(r)[i] === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ fmt(valsOf(r)[i]) }}</template>
               </td>
-              <td :class="['px-2 py-1.5 text-right tabular-nums font-semibold border-b border-border/40', r.kind === 'amount' ? '' : r.kind === 'subtotal' ? 'bg-primary/15 text-primary' : 'bg-primary/10 text-primary']">
+              <td class="px-2 py-2 text-right font-semibold bg-primary/5 text-primary">
                 <span v-if="avgOf(r) === null || avgOf(r) === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ fmt(avgOf(r)) }}</template>
               </td>
             </tr>
@@ -1033,7 +1030,7 @@ async function onUpload(e: Event) {
 
       <!-- P&L 표 -->
       <div class="overflow-x-auto border rounded-xl bg-card">
-        <table class="w-full table-fixed text-xs border-collapse whitespace-nowrap">
+        <table class="w-full table-fixed text-xs tabular-nums border-collapse whitespace-nowrap">
           <caption class="sr-only">지점 손익 월별 상세</caption>
           <colgroup>
             <col class="w-48" />                                  <!-- ITEM -->
@@ -1042,15 +1039,14 @@ async function onUpload(e: Event) {
             <col class="w-20" />                                  <!-- 당해 평균 -->
           </colgroup>
           <thead>
-            <tr>
-              <th scope="col" rowspan="2" class="sticky left-0 z-10 bg-card text-left px-2.5 py-1.5 font-semibold text-foreground min-w-32 shadow-[1px_0_0_var(--border)]">ITEM</th>
-              <th scope="col" class="px-2 py-1.5 bg-muted/40 text-muted-foreground font-semibold text-center border-b border-border/50 tabular-nums">{{ year - 1 }}</th>
-              <th scope="colgroup" :colspan="pnlMonths.length + 1" class="px-2 py-1.5 bg-primary/10 text-primary font-semibold text-center border-b border-border/50 tabular-nums">{{ year }}</th>
+            <tr class="text-muted-foreground">
+              <th scope="col" rowspan="2" class="sticky left-0 z-10 bg-card text-left px-3 py-2 font-semibold text-foreground min-w-32 border-b border-r border-border">ITEM</th>
+              <th scope="col" rowspan="2" class="px-2 py-2 bg-muted/40 font-semibold text-right border-b border-border">{{ year - 1 }}<br>평균</th>
+              <th scope="colgroup" :colspan="pnlMonths.length" class="px-2 py-1.5 font-semibold text-center border-b border-border">{{ year }}</th>
+              <th scope="col" rowspan="2" class="px-2 py-2 bg-primary/10 text-primary font-semibold text-right border-b border-border">{{ year }}<br>Avg</th>
             </tr>
-            <tr>
-              <th scope="col" class="px-2 py-1 bg-muted/30 text-muted-foreground font-semibold text-right border-b border-border/50">평균</th>
-              <th scope="col" v-for="m in pnlMonths" :key="'ph'+m" class="px-2 py-1 bg-muted/20 text-muted-foreground font-medium text-right border-b border-border/50">{{ monthKo(m) }}</th>
-              <th scope="col" class="px-2 py-1 bg-primary/15 text-primary font-semibold text-right border-b border-border/50">평균</th>
+            <tr class="text-muted-foreground">
+              <th scope="col" v-for="m in pnlMonths" :key="'ph'+m" class="px-2 py-1.5 font-medium text-right border-b border-border">{{ monthKo(m) }}</th>
             </tr>
           </thead>
           <tbody>
@@ -1059,17 +1055,17 @@ async function onUpload(e: Event) {
               :class="[pnlRowCls(r.kind), r._head && r._hasChildren ? 'cursor-pointer select-none hover:bg-muted/30' : '']"
               @click="r._head && r._hasChildren ? toggleSection(r.key) : null"
             >
-              <td :class="['sticky left-0 z-10 text-left px-2.5 py-1.5 min-w-32 shadow-[1px_0_0_var(--border)] border-b border-border/40', r.kind === 'profit' ? 'bg-primary/10 text-primary font-bold' : r.kind === 'head' ? 'bg-card text-foreground font-bold' : 'bg-card']" :style="{ paddingLeft: (10 + r.indent * 12) + 'px' }">
+              <td :class="['sticky left-0 z-10 text-left px-3 py-2 min-w-32 border-r border-border', r.kind === 'profit' ? 'bg-primary/10 text-primary font-bold' : r.kind === 'head' ? 'bg-card text-foreground font-bold' : 'bg-card']" :style="{ paddingLeft: (10 + r.indent * 12) + 'px' }">
                 <span v-if="r._head && r._hasChildren" class="inline-block w-3 mr-1 text-muted-foreground transition-transform" :class="r._open ? 'rotate-90' : ''">▸</span>
                 {{ r.label }}
               </td>
-              <td class="px-2 py-1.5 text-right tabular-nums font-semibold border-b border-r border-border/40 bg-muted/20 text-muted-foreground">
+              <td class="px-2 py-2 text-right bg-muted/10 text-muted-foreground">
                 <span v-if="r.prev === null || r.prev === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ pnlFmt(r.prev, r.fmt) }}</template>
               </td>
-              <td v-for="(_, i) in pnlMonths" :key="'pv'+i" class="px-2 py-1.5 text-right tabular-nums border-b border-border/40">
+              <td v-for="(_, i) in pnlMonths" :key="'pv'+i" class="px-2 py-2 text-right">
                 <span v-if="r.v[i] === null || r.v[i] === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ pnlFmt(r.v[i], r.fmt) }}</template>
               </td>
-              <td class="px-2 py-1.5 text-right tabular-nums font-semibold border-b border-l border-border/40 bg-primary/5">
+              <td class="px-2 py-2 text-right font-semibold bg-primary/5 text-primary">
                 <span v-if="r.a === null || r.a === undefined" class="text-muted-foreground/30">–</span><template v-else>{{ pnlFmt(r.a, r.fmt) }}</template>
               </td>
             </tr>

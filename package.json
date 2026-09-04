@@ -9,8 +9,10 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit",
-    "deploy": "npm run build && gh-pages-clean && gh-pages -d dist -t",
-    "test:e2e": "playwright test"
+    "deploy": "npm run build && npm run build:pwa && npm run bundle:pwa && gh-pages-clean && gh-pages -d dist -t",
+    "test:e2e": "playwright test",
+    "build:pwa": "npm --prefix employee-pwa run build",
+    "bundle:pwa": "rm -rf dist/pwa && cp -R employee-pwa/dist dist/pwa"
   },
   "dependencies": {
     "@iconify/vue": "^4.1.2",

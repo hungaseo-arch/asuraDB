@@ -32,5 +32,11 @@ CREATE POLICY admin_all ON login_history FOR ALL TO authenticated
 CREATE POLICY staff_read ON login_history FOR SELECT TO authenticated
   USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'staff');
 
+-- email/role 은 클라이언트가 보내는 값을 그대로 믿지 않고 JWT 클레임과 일치할 때만 허용한다
+-- (그렇지 않으면 낮은 권한 사용자가 남의 이메일·상위 역할을 사칭해 감사 기록을 위조할 수 있다).
 CREATE POLICY self_insert ON login_history FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (
+    user_id = auth.uid()
+    AND email IS NOT DISTINCT FROM (auth.jwt() ->> 'email')
+    AND role  IS NOT DISTINCT FROM (auth.jwt() -> 'app_metadata' ->> 'role')
+  );

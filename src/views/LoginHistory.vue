@@ -50,12 +50,17 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
+// 엑셀 등에서 셀 값이 =,+,-,@ 로 시작하면 수식으로 해석되는 CSV 인젝션을 막는다.
+function csvSafe(value: string): string {
+  return /^[=+\-@]/.test(value) ? `'${value}` : value;
+}
+
 function exportCSV() {
   const rows = [['시간', '이메일', '역할', '유형']];
   for (const r of records.value) {
     rows.push([
       new Date(r.created_at).toLocaleString('ko-KR'),
-      r.email ?? '-',
+      csvSafe(r.email ?? '-'),
       roleLabel(r.role),
       r.event_type === 'login' ? '로그인' : '로그아웃',
     ]);

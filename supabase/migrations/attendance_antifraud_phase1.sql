@@ -2,7 +2,7 @@
 --
 -- 배경: 기존 출퇴근 기록은 좌표만 서버가 검증하고(002_attendance_geofence_trigger.sql),
 --       ① 반경이 지점별로 들쭉날쭉하고 ② 집(HOME)도 근무지로 등록돼 있어 대리출석·재택 허위출석이
---       가능했다. 이번 Phase 1 은 아래 결정사항 D1/D2 를 반영하고, 4~7번 요건(이탈 알림·셀피 촬영·
+--       가능했다. 이번 Phase 1 은 아래 결정사항 D1/D2/D4 를 반영하고, 4~7번 요건(이탈 알림·셀피 촬영·
 --       미퇴근 자동 표시·HR 수기 보정 감사기록)에 필요한 스키마를 추가한다.
 --       실제 판정 로직(RPC)·프론트엔드 촬영 플로우는 Phase 2/3 에서 다룬다.
 --
@@ -137,9 +137,8 @@ CREATE POLICY emp_read_own_alerts ON geofence_alerts FOR SELECT TO authenticated
   USING (employee_id IN (SELECT id FROM employees WHERE user_id = auth.uid()));
 
 -- ── Storage: 출퇴근 셀피 버킷 (요건 5) ──────────────────────────────────────
--- 파일 경로 규약: attendance-selfies/<employee_id>/<attendance_id>.jpg
--- 90일 보관(D4) 은 SQL DELETE 만으로는 실제 파일까지 지워진다는 보장이 없어(Storage API 필요),
--- Phase 2 에서 pg_cron + Edge Function(Storage API 호출) 조합으로 별도 구현한다.
+-- 파일 경로 규약: <employee_id>/<attendance_id>.jpg (attendance.selfie_url 컬럼에는
+-- 이 경로만 저장한다 — 버킷이 private 이라 공개 URL 이 아니며, 화면에서는 signed URL 로 열람한다).
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('attendance-selfies', 'attendance-selfies', false)
 ON CONFLICT (id) DO NOTHING;
@@ -167,3 +166,50 @@ CREATE POLICY attendance_selfies_self_read ON storage.objects FOR SELECT TO auth
     bucket_id = 'attendance-selfies'
     AND (storage.foldername(name))[1] IN (SELECT id::text FROM employees WHERE user_id = auth.uid())
   );
+
+-- ── D4. 셀피 90일 보관 후 자동 삭제 ─────────────────────────────────────────
+-- Storage 객체 삭제는 Storage API 호출이 필요해 순수 SQL(DELETE FROM storage.objects)만으로는
+-- 실제 파일까지 지워진다는 보장이 없다 — 20260824_cloud_collectors_infra.sql 의
+-- trigger_collector() 와 완전히 동일한 패턴(vault 시크릿 + pg_net → Edge Function)으로 구현한다.
+-- project_url / service_role_key 는 그 마이그레이션에서 이미 vault 에 등록되어 있어 재사용한다.
+CREATE OR REPLACE FUNCTION trigger_attendance_selfie_cleanup()
+RETURNS bigint
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_url text;
+  v_key text;
+  v_req bigint;
+BEGIN
+  SELECT decrypted_secret INTO v_url FROM vault.decrypted_secrets WHERE name = 'project_url';
+  SELECT decrypted_secret INTO v_key FROM vault.decrypted_secrets WHERE name = 'service_role_key';
+
+  IF v_url IS NULL OR v_key IS NULL OR v_url LIKE '%<%' OR v_key LIKE '%<%' THEN
+    RAISE EXCEPTION 'trigger_attendance_selfie_cleanup: vault secret project_url/service_role_key 미등록';
+  END IF;
+
+  v_req := net.http_post(
+    url     := v_url || '/functions/v1/attendance-selfie-cleanup',
+    headers := jsonb_build_object(
+                 'Content-Type',  'application/json',
+                 'Authorization', 'Bearer ' || v_key),
+    body    := '{}'::jsonb,
+    timeout_milliseconds := 60000
+  );
+
+  INSERT INTO cron_run_log (kind, request_id) VALUES ('attendance_selfie_cleanup', v_req);
+  RETURN v_req;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION trigger_attendance_selfie_cleanup() FROM public, anon, authenticated;
+
+-- 미퇴근 배치 다음, 매일 UTC 18:30 (Jakarta 01:30) 실행.
+SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'attendance-selfie-cleanup';
+SELECT cron.schedule(
+  'attendance-selfie-cleanup',
+  '30 18 * * *',
+  $$SELECT trigger_attendance_selfie_cleanup();$$
+);

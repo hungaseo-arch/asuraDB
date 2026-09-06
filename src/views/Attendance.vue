@@ -745,34 +745,3 @@ async function removeZone(id: string) {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* 라벨이 있는 폼 = 전역 .form-grid/.form-field 규격(CLAUDE.md 입력창 디자인, 2026-08-19).
-   이 브랜치의 src/style.css 에는 아직 해당 전역 클래스가 없어 같은 규격을 이 화면에 한정해 정의한다
-   (채움 #ECEFF1 · 라벨 12px #546E7A · 값 14px #37474F · focus 흰 배경 + #546E7A 테두리). */
-.form-grid { display: grid; gap: 12px; }
-.form-field { display: flex; flex-direction: column; gap: 4px; }
-.form-field > label { font-size: 12px; color: #546E7A; padding-left: 12px; }
-.form-field > label .required { color: var(--destructive); margin-left: 2px; }
-.form-field > input,
-.form-field > select,
-.form-field > textarea {
-  width: 100%;
-  background: #ECEFF1;
-  color: #37474F;
-  font-size: 14px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 8px 12px;
-  outline: none;
-  transition: background-color .15s, border-color .15s;
-}
-.form-field > select { appearance: auto; }
-.form-field > textarea { resize: vertical; }
-.form-field > input:focus,
-.form-field > select:focus,
-.form-field > textarea:focus {
-  background: #FFFFFF;
-  border-color: #546E7A;
-}
-</style>

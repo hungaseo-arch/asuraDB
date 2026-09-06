@@ -91,10 +91,9 @@ type 은 `feat` · `fix` · `docs` · `style` · `chore` · `refactor` · `recov
 
 팔레트 밖의 새 색을 임의로 들이지 않는다.
 
-> ⚠ `.form-grid`/`.form-field` 는 아직 `src/style.css` 로 전역화되지 않았다. 현재 정의는
-> [src/views/Attendance.vue](src/views/Attendance.vue) 의 `<style scoped>` 와
-> [employee-pwa/src/style.css](employee-pwa/src/style.css) 에 각각 있다. 다른 화면에서 쓰려면
-> 전역화가 선행돼야 한다(미해결 항목).
+`.form-grid`/`.form-field` 는 [src/style.css](src/style.css) 의 `@layer components` 에 전역 정의돼 있다.
+화면마다 다시 정의하지 말고 클래스만 붙인다. 직원용 PWA 는 별도 프로젝트라
+[employee-pwa/src/style.css](employee-pwa/src/style.css) 에 같은 규격의 축약판을 따로 둔다.
 
 ### 2.4 숫자·표기
 

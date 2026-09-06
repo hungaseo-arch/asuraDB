@@ -221,3 +221,49 @@
     @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40;
   }
 }
+
+/* ── 입력창 규격 (CLAUDE.md 「입력창 디자인」, 2026-08-19 확정) ─────────────────
+   라벨이 있는 폼은 전부 .form-grid / .form-field 를 쓴다. 테두리 박스형 인풋은 쓰지 않는다.
+   채움 #ECEFF1 · 라벨 12px #546E7A(padding-left 12px 로 값과 정렬선 통일) · 값 14px #37474F ·
+   focus 시 흰 배경 + #546E7A 테두리. 필수 표시는 <span class="required">*</span>.
+   기준 적용처: Quote.vue Order Information · Attendance.vue · Layout.vue 비밀번호 변경.
+   (2026-09-06 Attendance.vue 의 <style scoped> 사본을 여기로 전역화)
+   ※ 표 안 인라인 편집 필드는 이 규격이 아니라 평문형(border-transparent/bg-transparent → hover
+     bg-[#F0F0F0] → focus bg-background + ring-1 ring-primary/50)을 쓴다. */
+@layer components {
+  .form-grid { display: grid; gap: 12px; }
+
+  .form-field { display: flex; flex-direction: column; gap: 4px; }
+  .form-field > label { font-size: 12px; color: #546E7A; padding-left: 12px; }
+  .form-field > label .required,
+  .form-field .required { color: var(--destructive); margin-left: 2px; }
+
+  .form-field > input,
+  .form-field > select,
+  .form-field > textarea {
+    width: 100%;
+    background: #ECEFF1;
+    color: #37474F;
+    font-size: 14px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 8px 12px;
+    outline: none;
+    transition: background-color .15s, border-color .15s;
+  }
+  .form-field > select { appearance: auto; }
+  .form-field > textarea { resize: vertical; }
+  .form-field > input::placeholder,
+  .form-field > textarea::placeholder { color: #90A4AE; }
+
+  .form-field > input:focus,
+  .form-field > select:focus,
+  .form-field > textarea:focus {
+    background: #FFFFFF;
+    border-color: #546E7A;
+  }
+
+  .form-field > input:disabled,
+  .form-field > select:disabled,
+  .form-field > textarea:disabled { opacity: .6; cursor: not-allowed; }
+}

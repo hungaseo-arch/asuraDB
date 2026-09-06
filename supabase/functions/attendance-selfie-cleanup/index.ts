@@ -45,14 +45,16 @@ Deno.serve(async (_req: Request) => {
     let deleted = 0, cleared = 0, failed = 0;
     for (const row of rows ?? []) {
       const path = row.selfie_url as string;
-      const { error: rmErr } = await sb.storage.from(BUCKET).remove([path]);
+      const { data: rmData, error: rmErr } = await sb.storage.from(BUCKET).remove([path]);
       // 이미 지워졌거나(404) 원래 없던 파일도 DB 정리는 진행 — 그 외 오류만 실패로 남긴다.
       if (rmErr && !/not.?found/i.test(rmErr.message)) {
         failed++;
         console.error(`[attendance-selfie-cleanup] remove(${path}) 실패:`, rmErr.message);
         continue;
       }
-      if (!rmErr) deleted++;
+      // remove() 는 대상이 이미 없어도 error 없이 빈 배열을 반환할 수 있으므로,
+      // 실제 삭제 건수는 반환된 data 길이로 센다(error 유무만으로는 과대 집계됨).
+      deleted += rmData?.length ?? 0;
 
       const { error: updErr } = await sb.from("attendance").update({ selfie_url: null }).eq("id", row.id);
       if (updErr) {

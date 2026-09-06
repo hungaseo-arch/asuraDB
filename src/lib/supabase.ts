@@ -97,6 +97,14 @@ export async function sbRpc<T>(fn: string, args: Record<string, unknown> = {}): 
     headers: { ...(await sbHeaders()), 'Content-Type': 'application/json' },
     body:    JSON.stringify(args),
   });
-  if (!res.ok) throw new Error(`RPC ${fn}: ${res.status}`);
+  if (!res.ok) {
+    // RAISE EXCEPTION 은 PostgREST 가 {message, code, details, hint} 로 돌려준다 — 화면에 그대로 띄울 수 있게 message 를 우선 쓴다.
+    let msg = `RPC ${fn}: ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && typeof body.message === 'string' && body.message) msg = body.message;
+    } catch { /* JSON 이 아니면 상태코드 문자열 유지 */ }
+    throw new Error(msg);
+  }
   return res.json() as Promise<T>;
 }

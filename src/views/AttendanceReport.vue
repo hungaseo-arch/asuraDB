@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { Download, Calendar, TrendingUp, Clock, UserCheck, UserX } from 'lucide-vue-next';
-import { fetchEmployees, fetchAttendanceByDate, type Employee, type AttendanceRecord } from '@/lib/attendance';
+import {
+  fetchEmployees, fetchAttendanceByDate, jakartaDate, formatJakartaTime,
+  type Employee, type AttendanceRecord, type AttendanceStatus,
+} from '@/lib/attendance';
 import Button from '@/components/ui/Button.vue';
 import Badge from '@/components/ui/Badge.vue';
 import DataState from '@/components/ui/DataState.vue';
@@ -12,7 +15,8 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 const employees = ref<Employee[]>([]);
 const records = ref<AttendanceRecord[]>([]);
-const selectedDate = ref(new Date().toISOString().slice(0, 10));
+// 하루의 경계는 서버와 동일하게 Asia/Jakarta 기준
+const selectedDate = ref(jakartaDate());
 const viewMode = ref<'daily' | 'summary'>('daily');
 
 async function loadData() {
@@ -34,38 +38,66 @@ async function loadData() {
 
 onMounted(loadData);
 window.addEventListener('asura:refresh', loadData);
+onBeforeUnmount(() => window.removeEventListener('asura:refresh', loadData));
 
 // 날짜 변경 시 다시 로드
 async function onDateChange() {
   await loadData();
 }
 
-// ── 집계 ──
+// ── 집계 (취소된 기록 제외) ──
+const activeRecords = computed(() => records.value.filter(r => r.status !== 'voided'));
+
 const checkedInIds = computed(() => {
-  const ids = new Set(records.value.filter(r => r.check_type === 'check_in').map(r => r.employee_id));
+  const ids = new Set(activeRecords.value.filter(r => r.check_type === 'check_in').map(r => r.employee_id));
   return ids;
 });
 
 const notCheckedIn = computed(() => employees.value.filter(e => !checkedInIds.value.has(e.id)));
 
-const geoCompliant = computed(() => records.value.filter(r => r.is_within_geofence).length);
+const geoCompliant = computed(() => activeRecords.value.filter(r => r.is_within_geofence).length);
 
-const totalChecks = computed(() => records.value.length);
+const totalChecks = computed(() => activeRecords.value.length);
 
-// ── 엑셀 다운로드 ──
+// ── 상태·기기 표시 ──
+type BadgeVariant = 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'danger';
+const STATUS_META: Record<AttendanceStatus, { label: string; variant: BadgeVariant }> = {
+  normal:         { label: '정상',   variant: 'default' },
+  belum_checkout: { label: '미퇴근', variant: 'warning' },
+  corrected:      { label: '정정',   variant: 'info' },
+  voided:         { label: '취소',   variant: 'secondary' },
+};
+function statusMeta(status: AttendanceStatus) {
+  return STATUS_META[status] ?? STATUS_META.normal;
+}
+
+function deviceLabel(rec: AttendanceRecord): string {
+  if (rec.device_id === 'manual') return '수기';
+  return rec.device_info?.label ?? rec.device_id ?? '-';
+}
+
+function geofenceLabel(rec: AttendanceRecord): string {
+  if (rec.latitude === null || rec.longitude === null) return '-'; // 수기 행은 좌표가 없어 판정 불가
+  return rec.is_within_geofence ? '영역 내' : '영역 밖';
+}
+
+// ── 엑셀 다운로드 (취소된 기록도 상태=취소 로 포함) ──
 function exportCSV() {
-  const rows = [['직원명', '부서', '유형', '시간', '지오펜싱', '거리(m)']];
+  const rows = [['직원명', '부서', '유형', '시간', '상태', '지오펜싱', '거리(m)', '기기', '정정 사유']];
   for (const r of records.value) {
     rows.push([
       r.employee?.name ?? '-',
       r.employee?.department ?? '-',
       r.check_type === 'check_in' ? '출근' : '퇴근',
-      new Date(r.check_time).toLocaleTimeString('ko-KR'),
-      r.is_within_geofence ? '영역 내' : '영역 밖',
+      formatJakartaTime(r.check_time),
+      statusMeta(r.status).label,
+      geofenceLabel(r),
       r.distance_meters ? String(Math.round(r.distance_meters)) : '-',
+      deviceLabel(r),
+      r.correction_reason ?? '',
     ]);
   }
-  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -76,13 +108,13 @@ function exportCSV() {
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  return iso ? formatJakartaTime(iso) : '-';
 }
 </script>
 
 <template>
   <div class="p-4 sm:p-6 space-y-6">
-    <PageHeader title="근태 보고서" desc="일자별 출퇴근 기록과 통계를 확인합니다" />
+    <PageHeader title="근태 보고서" desc="일자별 출퇴근 기록과 통계를 확인합니다 (자카르타 기준)" />
 
     <!-- 날짜 선택 + 액션 -->
     <div class="flex flex-wrap items-center gap-3">
@@ -135,7 +167,7 @@ function formatTime(iso: string) {
               class="flex items-center justify-between text-sm py-1">
               <span>{{ emp.name }} <span class="text-muted-foreground">· {{ emp.department }}</span></span>
               <span class="text-xs text-muted-foreground">
-                {{ formatTime(records.find(r => r.employee_id === emp.id && r.check_type === 'check_in')?.check_time ?? '') }}
+                {{ formatTime(activeRecords.find(r => r.employee_id === emp.id && r.check_type === 'check_in')?.check_time ?? '') }}
               </span>
             </div>
           </div>
@@ -166,12 +198,18 @@ function formatTime(iso: string) {
                 <th class="py-2 pr-3 font-medium">부서</th>
                 <th class="py-2 pr-3 font-medium">유형</th>
                 <th class="py-2 pr-3 font-medium">시간</th>
+                <th class="py-2 pr-3 font-medium">상태</th>
                 <th class="py-2 pr-3 font-medium">지오펜싱</th>
-                <th class="py-2 font-medium">거리</th>
+                <th class="py-2 pr-3 font-medium">거리</th>
+                <th class="py-2 pr-3 font-medium">기기</th>
+                <th class="py-2 font-medium">정정 사유</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="rec in records" :key="rec.id" class="border-b border-border/50 hover:bg-accent/50">
+              <tr
+                v-for="rec in records" :key="rec.id"
+                :class="cn('border-b border-border/50 hover:bg-accent/50', rec.status === 'voided' && 'line-through opacity-60')"
+              >
                 <td class="py-2.5 pr-3 font-medium">{{ rec.employee?.name ?? '-' }}</td>
                 <td class="py-2.5 pr-3 text-muted-foreground">{{ rec.employee?.department ?? '-' }}</td>
                 <td class="py-2.5 pr-3">
@@ -179,9 +217,29 @@ function formatTime(iso: string) {
                     {{ rec.check_type === 'check_in' ? '출근' : '퇴근' }}
                   </Badge>
                 </td>
-                <td class="py-2.5 pr-3">{{ formatTime(rec.check_time) }}</td>
-                <td class="py-2.5 pr-3">{{ rec.is_within_geofence ? '✅ 영역 내' : '⚠️ 영역 밖' }}</td>
-                <td class="py-2.5">{{ rec.distance_meters ? Math.round(rec.distance_meters) + 'm' : '-' }}</td>
+                <td class="py-2.5 pr-3 whitespace-nowrap">
+                  <div>{{ formatTime(rec.check_time) }}</div>
+                  <div v-if="rec.status === 'corrected' && rec.original_check_time" class="text-xs text-muted-foreground">
+                    원래 {{ formatTime(rec.original_check_time) }}
+                  </div>
+                </td>
+                <td class="py-2.5 pr-3">
+                  <span v-if="rec.status === 'normal'" class="text-xs text-muted-foreground">정상</span>
+                  <Badge v-else :variant="statusMeta(rec.status).variant">{{ statusMeta(rec.status).label }}</Badge>
+                </td>
+                <td class="py-2.5 pr-3">
+                  <template v-if="rec.latitude === null || rec.longitude === null">-</template>
+                  <template v-else>{{ rec.is_within_geofence ? '✅ 영역 내' : '⚠️ 영역 밖' }}</template>
+                </td>
+                <td class="py-2.5 pr-3">{{ rec.distance_meters ? Math.round(rec.distance_meters) + 'm' : '-' }}</td>
+                <td class="py-2.5 pr-3 text-muted-foreground max-w-40 truncate" :title="rec.device_id ?? undefined">{{ deviceLabel(rec) }}</td>
+                <td class="py-2.5 text-muted-foreground max-w-64">
+                  <template v-if="rec.correction_reason">
+                    {{ rec.correction_reason }}
+                    <span v-if="rec.corrector?.name" class="text-xs">({{ rec.corrector.name }})</span>
+                  </template>
+                  <template v-else>-</template>
+                </td>
               </tr>
             </tbody>
           </table>

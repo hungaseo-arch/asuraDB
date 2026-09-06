@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   // AsuraDB 메인앱과 같은 GitHub Pages 에 하위 경로로 얹는다.
@@ -10,6 +11,7 @@ export default defineConfig({
   base: '/asuraDB/pwa/',
   plugins: [
     vue(),
+    tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: false,

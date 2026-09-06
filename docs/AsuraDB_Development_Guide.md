@@ -773,6 +773,31 @@ export async function sbHeaders() {            // 로그인 시 사용자 JWT, �
 
 > PIN 로그인 구현 현황은 §13-1 참조.
 
+### 11-6. SECURITY DEFINER RPC 작성 규칙
+
+역할 검사에서 `<> 'super_admin'` 처럼 부등호 비교를 쓰지 않는다. Postgres에서
+`NULL <> 'super_admin'` 은 `NULL`(참도 거짓도 아님)이라 `WHERE`/`IF` 조건에서
+**조용히 통과**된다 — `app_metadata.role` 클레임이 비어 있는 계정이 있으면
+관리자 전용 함수가 그대로 실행되는 fail-open 취약점이 된다.
+(2026-09-06, 근태 `attendance_correct` RPC에서 실제 재현·수정: [`근태관리기능.md` §3.1](근태관리기능.md#31-대리출석-방지-phase-1~3-2026-09-02~06))
+
+```sql
+-- 나쁜 예 — role 이 NULL 이면 이 IF 를 그냥 통과한다
+IF (auth.jwt()->'app_metadata'->>'role') <> 'super_admin' THEN
+  RAISE EXCEPTION '관리자만 가능합니다';
+END IF;
+
+-- 올바른 예
+IF (auth.jwt()->'app_metadata'->>'role') IS DISTINCT FROM 'super_admin' THEN
+  RAISE EXCEPTION '관리자만 가능합니다';
+END IF;
+```
+
+같은 이유로 `plpgsql` 함수를 `RETURNS TABLE(col1 ..., col2 ...)` 로 선언할 때 그
+OUT 파라미터 이름이 참조하는 실제 테이블의 컬럼명과 겹치면(예: `is_active`) 함수
+본문 안에서 어느 쪽을 가리키는지 모호해질 수 있다. OUT 컬럼은 `o_` 접두사(예:
+`o_status`, `o_is_active`)로, 본문에서 쓰는 테이블은 별칭을 붙여 구분한다.
+
 ---
 
 ## 12. 개발 시작 커맨드

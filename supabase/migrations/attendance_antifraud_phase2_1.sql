@@ -535,8 +535,10 @@ GRANT EXECUTE ON FUNCTION attendance_void(uuid, text)                          T
 
 -- S6. 트리거 전용 SECURITY DEFINER 함수를 REST(/rpc) 로 호출하지 못하게 한다(어드바이저 0028/0029).
 --     트리거 실행은 EXECUTE 권한과 무관하므로 auth.users / 역할 동기화 트리거에는 영향 없다.
-REVOKE EXECUTE ON FUNCTION public.handle_new_user()   FROM anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.sync_role_to_auth() FROM anon, authenticated;
+--     ⚠ 이 두 함수의 EXECUTE 는 anon/authenticated 에 직접 부여된 게 아니라 PUBLIC 기본 권한(ACL `=X/...`)이다.
+--       `FROM anon, authenticated` 만 쓰면 아무것도 회수되지 않는다(2026-09-06 프로덕션에서 확인) — PUBLIC 을 함께 회수한다.
+REVOKE EXECUTE ON FUNCTION public.handle_new_user()   FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.sync_role_to_auth() FROM PUBLIC, anon, authenticated;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- S4. attendance RLS: 관리자 직접 UPDATE/DELETE 차단 → 읽기만. 쓰기는 위 RPC 로만.

@@ -798,6 +798,26 @@ OUT 파라미터 이름이 참조하는 실제 테이블의 컬럼명과 겹치�
 본문 안에서 어느 쪽을 가리키는지 모호해질 수 있다. OUT 컬럼은 `o_` 접두사(예:
 `o_status`, `o_is_active`)로, 본문에서 쓰는 테이블은 별칭을 붙여 구분한다.
 
+**함수 EXECUTE 권한 회수는 `PUBLIC` 부터.** 함수를 만들면 EXECUTE 는 기본적으로
+`PUBLIC` 에 부여된다(`pg_proc.proacl` 이 `NULL` 이거나 `=X/postgres` 항목). `anon`·
+`authenticated` 는 그 PUBLIC 권한을 통해 호출하므로, `REVOKE EXECUTE ... FROM anon,
+authenticated` 만 실행하면 **아무것도 회수되지 않고** 어드바이저 0028/0029 경고도
+그대로 남는다. 트리거 전용 함수처럼 REST(`/rpc`)로 노출하면 안 되는 함수는 반드시
+`PUBLIC` 을 함께 회수한다. (2026-09-06 `handle_new_user()`/`sync_role_to_auth()` 에서
+회수 누락 확인)
+
+```sql
+-- 효과 없음 — 권한은 PUBLIC 에 있으므로 회수될 게 없다
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon, authenticated;
+
+-- 올바른 예
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+```
+
+반대로 특정 역할만 호출해야 하는 RPC 는 `REVOKE ALL ... FROM public, anon` 후
+`GRANT EXECUTE ... TO authenticated` 로 명시한다. 이때 `authenticated` 에 남은
+0029 경고는 함수 본문의 역할 검사로 막는 정상 상태다(예: `attendance_correct`).
+
 ---
 
 ## 12. 개발 시작 커맨드

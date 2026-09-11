@@ -18,8 +18,15 @@
 -- 조치 후에도 앱 동작은 그대로다. products_sell 은 Quote.vue 가 distributor/end_user 로 읽는데,
 -- 두 역할 모두 products·products_price 의 `role IS DISTINCT FROM 'viewer'` 정책을 통과한다.
 -- (그 정책 자체의 범위 문제는 별건으로 docs/auth-audit.md 에 기록)
-
-alter view public.products_sell              set (security_invoker = true);
+--
+-- ⚠️ [2026-09-11 정정] 아래 products_sell 행은 같은 날 `20260911_rls_role_whitelist.sql` 이 되돌렸다.
+--    그 마이그레이션이 위 '별건'(role IS DISTINCT FROM 'viewer')을 super_admin/staff 화이트리스트로
+--    바꾸면서 기반 products·products_price 가 권한 역할 전용이 됐고, products_sell 은 *원가를 가리는*
+--    뷰라 security_invoker 로 두면 distributor/end_user 의 견적 화면이 빈다. 따라서 소유자 권한으로
+--    복귀 + 뷰 WHERE 절 역할 화이트리스트로 대체했다(anon 회수는 아래 그대로 유효).
+--    적용 순서는 DB 원장 기준(view_security_invoker_audit=…142739 → rls_role_whitelist=…155448).
+--    파일명 알파벳 순서는 반대이므로, 이 폴더를 순서대로 재적용하지 말 것.
+-- alter view public.products_sell           set (security_invoker = true);   -- 위 사유로 무효
 alter view public.v_weekly_indicator_summary set (security_invoker = true);
 alter view public.v_sheet_factory_brand      set (security_invoker = true);
 alter view public.v_weekly_highlights        set (security_invoker = true);

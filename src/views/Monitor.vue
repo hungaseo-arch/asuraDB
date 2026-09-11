@@ -28,12 +28,21 @@ interface HistoryRow {
   recorded_date: string;
 }
 
+interface CoverageRow {
+  indicator_id: string;
+  first_date: string;
+  last_date: string;
+  months: number;
+}
+
 interface CardData {
   indicator: Indicator;
   current: number | null;
   prev: number | null;
   changePct: number | null;
   history: { date: string; value: number }[];
+  /** 5년(60개월) 이력이 없는 지표의 보유 시작 연월. 충분하면 null */
+  shortSince: string | null;
 }
 
 // 사업 실적 KPI (새 kpi_metrics / kpi_monthly 테이블)
@@ -511,14 +520,18 @@ async function loadData() {
   loading.value   = true;
   loadError.value = null;
   try {
-    const [inds, histories] = await Promise.all([
+    const [inds, histories, coverage] = await Promise.all([
       sbGet<Indicator[]>('market_indicators?select=*&order=sort_order'),
       sbGet<HistoryRow[]>(
         'indicator_history?select=indicator_id,value,recorded_date&order=recorded_date.desc&limit=500',
       ),
+      sbGet<CoverageRow[]>('v_indicator_coverage?select=indicator_id,first_date,last_date,months'),
     ]);
 
     indicators.value = inds;
+
+    const covById: Record<string, CoverageRow> = {};
+    for (const c of coverage) covById[c.indicator_id] = c;
 
     const byId: Record<string, HistoryRow[]> = {};
     for (const h of histories) {
@@ -534,12 +547,16 @@ async function loadData() {
         current !== null && prev !== null && prev !== 0
           ? Math.round(((current - prev) / prev) * 10000) / 100
           : null;
+      // 이력이 아예 없는 지표(사내 수기 입력 대기)는 대상이 아니고,
+      // 값은 있는데 5년(60개월)을 못 채운 지표만 보유 시작 연월을 표기한다.
+      const cov = covById[ind.id];
       return {
         indicator: ind,
         current,
         prev,
         changePct,
         history: rows.slice(0, 7).map(r => ({ date: r.recorded_date, value: r.value })),
+        shortSince: cov && cov.months < 60 ? cov.first_date.slice(0, 7) : null,
       };
     });
   } catch (e) {
@@ -864,6 +881,13 @@ onMounted(async () => {
                 {{ card.indicator.name_ko }}
               </p>
               <p class="text-[9px] text-muted-foreground/60 truncate">{{ card.indicator.unit ?? '' }}</p>
+              <p
+                v-if="card.shortSince"
+                class="text-[9px] text-muted-foreground/70 truncate"
+                :title="`이력 보유 ${card.shortSince} 이후. 그 이전은 공개 시계열이 없어 채우지 않았습니다 (추정 보간 금지).`"
+              >
+                이력 {{ card.shortSince }}~
+              </p>
             </div>
 
             <div class="flex items-end justify-between gap-1">

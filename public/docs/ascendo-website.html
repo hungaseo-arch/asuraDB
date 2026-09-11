@@ -280,8 +280,9 @@ body.pdf-mode .logo-tile img{filter:none;opacity:1}
    회사소개서는 항상 영문 + A4 가로로 낸다. 본문은 세로 기준(폭 1200)으로 짜여 있어
    그대로 가로에 태우면 한 페이지에 들어가는 세로 분량이 줄어 장수만 늘어난다.
    가로는 폭이 남으므로 열 수를 늘려 세로 길이를 줄이고, 섹션마다 페이지를 끊는다.
-   ⚠️ html2pdf 는 html2canvas 의 windowWidth 설정을 무시하고 페이지 내부 크기(px)로 렌더한다.
-   A4 가로 + 여백 10/10/12/10mm 기준 실측 **1046 × 710 px** 이 한 페이지다.
+   ⚠️ html2pdf 는 본문을 '페이지 내부 크기' 폭의 컨테이너에 복제해 담는다. 즉 본문 CSS 는
+   창 폭이 아니라 그 컨테이너 폭으로 풀린다. A4 가로 + 여백 10/10/12/10mm 기준 실측
+   **1046 × 710 px** 이 한 페이지다(단, @media 는 여전히 창 폭으로 판정된다 → 아래 '뷰포트 독립 고정').
    아래 값은 전부 그 폭·높이에 맞춰 잡았다(섹션 하나가 710px 를 넘으면 빈 페이지가 생긴다). */
 body.pdf-mode.pdf-landscape .wrap{max-width:none;padding:0 28px}
 body.pdf-mode.pdf-landscape section{padding:24px 0}
@@ -290,6 +291,23 @@ body.pdf-mode.pdf-landscape h3{font-size:16px}
 body.pdf-mode.pdf-landscape .sec-head{margin-bottom:12px}
 body.pdf-mode.pdf-landscape .sec-head p{margin-top:8px;font-size:14px}
 body.pdf-mode.pdf-landscape .kicker{margin-bottom:8px}
+
+/* ── 뷰포트 독립 고정 ──
+   캡처는 실제 창 폭 그대로 배치되므로, 창이 좁으면 @media(max-width:1000px/900px/760px/…) 가 걸려
+   서비스 카드가 2열이 되거나 연혁이 한 줄로 무너진다. 출력물은 창 크기와 무관하게 같아야 하니
+   1046px 폭에서 쓰는 배치를 여기서 다시 못박는다(선택자 특이도가 미디어쿼리 규칙보다 높다). */
+body.pdf-mode.pdf-landscape .stats{grid-template-columns:repeat(4,1fr)}
+body.pdf-mode.pdf-landscape .about{grid-template-columns:1.1fr .9fr}
+body.pdf-mode.pdf-landscape .values{grid-template-columns:repeat(3,1fr)}
+body.pdf-mode.pdf-landscape .cards{grid-template-columns:repeat(3,1fr)}
+body.pdf-mode.pdf-landscape .logos{grid-template-columns:repeat(6,1fr)}
+body.pdf-mode.pdf-landscape .cta{grid-template-columns:1.1fr .9fr}
+body.pdf-mode.pdf-landscape .timeline::before{left:50%}
+body.pdf-mode.pdf-landscape .tl-item{width:50%;margin-left:0}
+body.pdf-mode.pdf-landscape .tl-item.r{width:50%;margin-left:50%}
+body.pdf-mode.pdf-landscape .tl-item::before{left:auto;right:-7px}
+body.pdf-mode.pdf-landscape .tl-item.r::before{left:-7px;right:auto}
+body.pdf-mode.pdf-landscape .tl-era{text-align:center;padding-left:0}
 
 /* 표지 — 파란 배경이 첫 장을 꽉 채우게 한다. 708px 은 한 페이지(710px) 바로 아래 값:
    딱 710 으로 맞추면 html2pdf 가 다음 섹션 앞에 한 페이지짜리 여백을 끼워 빈 장이 생긴다
@@ -780,10 +798,17 @@ const I18N={"ko": {"nav.about": "회사소개", "nav.services": "주요 서비�
       await new Promise(r=>setTimeout(r,350));   /* 영문 치환·로고 폴백 반영 대기 */
       restoreSVG=sizeSVGs();                     /* 레이아웃 확정 후에 실측해야 한다 */
       const root=document.body;
+      /* ⚠️ html2canvas 의 windowWidth 를 주면 안 된다.
+         html2pdf 는 복제본을 `position:absolute; left:0; right:0; margin:auto` 컨테이너에 담아
+         **뷰포트 한가운데** 놓는다. windowWidth 를 주면 html2canvas 는 클론을 그 폭으로 재배치하지만
+         잘라낼 위치는 실제 문서에서 재서 쓰므로, 창 폭이 그 값과 다르면
+         (창폭−1046)/2 와 (windowWidth−1046)/2 의 차이만큼 그림이 옆으로 밀리고 반대쪽이 잘린다.
+         뺀 채로 두면 클론도 실제 창 폭으로 배치돼 어긋나지 않는다. 대신 창 폭에 따라 @media 분기가
+         달라질 수 있으므로, .pdf-landscape 에서 열 수·타임라인을 전부 고정해 뒀다. */
       await html2pdf().set({
         filename:fname, margin:[10,10,12,10],
         image:{type:'jpeg',quality:.95},
-        html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollY:0,windowWidth:1440},
+        html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollY:0},
         jsPDF:{unit:'mm',format:'a4',orientation:'landscape'},
         pagebreak:{mode:['css','legacy'],before:['#about','#services','#customers','#history','#contact'],
                    avoid:['.card','.tl-item','.chain .node','.value','.stat','.logos','.cta']}

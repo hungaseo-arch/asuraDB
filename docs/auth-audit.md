@@ -119,7 +119,7 @@ RLS 를 건너뛴다. 그 뷰에 anon SELECT 가 붙어 있으면 프런트 번�
 - 나머지 24개 뷰는 이미 `security_invoker=true`(또는 `=on`). 점검 시 `reloptions` 를
   `like 'security_invoker=%true%'` 로만 보면 **`=on` 표기를 놓친다** — 두 표기 모두 확인할 것.
 
-### 별건 — `role IS DISTINCT FROM 'viewer'` 정책의 범위 (미조치, 결정 필요)
+### 별건 — `role IS DISTINCT FROM 'viewer'` 정책의 범위 (2026-09-11 조치 완료)
 
 - 현재 RLS 정책 다수가 `((auth.jwt()->'app_metadata')->>'role') IS DISTINCT FROM 'viewer'` 형태다.
   이 조건은 `viewer` 만 막으므로 **`distributor`·`end_user` 는 통과**한다.
@@ -129,3 +129,42 @@ RLS 를 건너뛴다. 그 뷰에 anon SELECT 가 붙어 있으면 프런트 번�
   **PostgREST 는 같은 토큰으로 직접 호출 가능**하므로 화면 게이팅만으로는 막히지 않는다.
 - 해당 패턴을 쓰는 테이블은 **42개**. 정책을 `= ANY(ARRAY['super_admin','staff'])` 화이트리스트로
   바꾸는 것이 정석이나, 범위가 넓어 수집기·PWA 포함 회귀 확인이 필요하다. 별도 작업으로 분리.
+
+**조치** — `supabase/migrations/20260911_rls_role_whitelist.sql` (MCP `rls_role_whitelist` 적용, 성공)
+
+1. **정책 43개 전환.** `IS DISTINCT FROM 'viewer'::text` → `= ANY (ARRAY['super_admin'::text, 'staff'::text])`.
+   `pg_policies` 를 훑어 각 정책의 `qual`·`with_check` **원문에서 해당 조건만 치환**하는 DO 블록으로 처리했다
+   (다른 조건은 보존 — 예: `dot_logs_insert` 의 `created_by = auth.uid()` 는 그대로 남았다).
+   최초 집계는 42개였으나 실제로는 43개(ALL 21 + SELECT 21 + INSERT 1)였다.
+2. **`products_sell` 는 소유자 권한으로 되돌렸다.** 이 뷰는 *원가 컬럼을 가리는* 용도라
+   `security_invoker` 로는 성립하지 않는다 — 기반 `products`·`products_price` 가 super_admin·staff 전용이 되면
+   distributor 의 견적 화면이 통째로 빈다. PostgREST 는 로그인 사용자를 모두 DB 역할 `authenticated` 로 묶으므로
+   컬럼 단위 GRANT 로도 역할을 가를 수 없다. 따라서 ① `reset (security_invoker)` ② 뷰 WHERE 절을
+   `= any(array['super_admin','staff','distributor','end_user'])` 명시 화이트리스트로 교체
+   ③ `anon` 권한 회수 유지(§5 조치) 의 조합을 썼다. 이전 `IS DISTINCT FROM 'viewer'` 가
+   anon(JWT NULL)에게 TRUE 였던 것이 §5 유출의 근인이었으므로, 명시 화이트리스트가 그 형태까지 함께 막는다.
+
+**검증** (역할별 JWT 시뮬레이션, 행 수)
+
+| 역할 | products_sell | products | products_price | margin_records | sap_purchase_invoice_lines |
+|---|---:|---:|---:|---:|---:|
+| super_admin | 569 | 582 | 582 | 15,658 | 21,706 |
+| staff | 569 | 582 | 582 | 15,658 | 21,706 |
+| distributor | **569** | **0** | **0** | **0** | **0** |
+| end_user | **569** | **0** | **0** | **0** | **0** |
+| viewer | 0 | 0 | 0 | 15,658 | 0 |
+
+- 잔존 `IS DISTINCT FROM 'viewer'` 정책 **0건**.
+- `*_select_viewer` 정책 **11개는 손대지 않았다** — viewer 의 읽기 권한(`margin_records` 등)은 그대로다.
+- `anon` 은 `products_sell` 에 대해 `has_table_privilege = false` (§5 조치 유지).
+- 역할이 5종뿐이므로 이 변경의 실질 영향 범위는 **distributor·end_user 차단** 하나다.
+
+**회귀 확인** — distributor/end_user 가 DB 를 실제로 읽는 경로는 `products_sell` 뷰 하나뿐임을 코드에서 확인했다.
+
+- `Quote.vue` — `canViewCost`(super_admin·staff) 가 아니면 `products_sell` 만 조회. `customers` 는 건너뛰고,
+  `quotes`·`quote_items` 저장·불러오기·삭제는 전부 `canSaveImport`(super_admin) 뒤에 있다.
+- `PriceCompare.vue` — `loadProducts()`·`openLoad()`·저장이 모두 `isPrivileged`/`canSaveImport` 로 게이팅되어
+  비권한 역할에게는 DB 호출이 없는 로컬 계산기다.
+- 수집기(`collectors/*.py`) — `SUPABASE_SERVICE_KEY`(service_role)라 RLS 를 우회한다. 영향 없음.
+- 직원용 PWA — `rest/v1/rpc` 와 스토리지 버킷만 쓴다. 테이블 정책 변경과 무관.
+- `doc_posts`·`dot_inspection_logs` 참조처(`Docs.vue`·`DotLookup.vue`)는 라우터가 권한 역할로 제한하는 화면이다.

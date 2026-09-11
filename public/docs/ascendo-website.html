@@ -345,10 +345,14 @@ body.pdf-mode.pdf-landscape .card p{font-size:13px;line-height:1.5}
 body.pdf-mode.pdf-landscape .card .tags{margin-top:8px;gap:5px}
 body.pdf-mode.pdf-landscape .card .tag{padding:2px 7px}
 
-/* 주요 고객 — 로고 18칸을 6열 3행으로 */
-body.pdf-mode.pdf-landscape .logos{gap:10px}
-body.pdf-mode.pdf-landscape .logo-tile{height:72px;padding:10px 14px}
-body.pdf-mode.pdf-landscape .logo-tile img{max-height:36px}
+/* 주요 고객 — 로고 18칸을 6열 3행으로, 남는 세로를 타일이 다 먹게 키운다.
+   실측: 이 섹션에서 격자 말고 고정으로 드는 높이는 210px(section 패딩 48 + 제목 블록 125 + 캡션 37).
+   한 페이지 710px 에서 빼면 격자에 500px 까지 줄 수 있다 → 3행 × 152px + 간격 16px × 2 = 488,
+   섹션 합계 698px 로 페이지(710) 안에 남는다(경계에 정확히 걸리면 빈 장이 생기므로 여유를 둔다). */
+body.pdf-mode.pdf-landscape .logos{gap:16px}
+body.pdf-mode.pdf-landscape .logo-tile{height:152px;padding:16px 20px}
+body.pdf-mode.pdf-landscape .logo-tile img{max-height:96px}
+body.pdf-mode.pdf-landscape .logo-tile .wm{font-size:16px}
 
 /* 연혁 — 항목 10개를 2페이지에 */
 body.pdf-mode.pdf-landscape .tl-item{padding:0 32px 6px 0}

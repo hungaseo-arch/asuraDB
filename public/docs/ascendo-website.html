@@ -246,7 +246,7 @@ footer a:hover{color:var(--primary)}
 .totop:hover{border-color:var(--primary);color:var(--primary)}
 
 /* ── 인쇄 · PDF ── */
-@page{size:A4;margin:14mm 12mm}
+@page{size:A4 landscape;margin:10mm 12mm}
 @media print{
   html{scroll-behavior:auto}
   body{background:#fff;font-size:12px}
@@ -254,7 +254,7 @@ footer a:hover{color:var(--primary)}
   .reveal{opacity:1!important;transform:none!important;transition:none!important}
   .hero{min-height:auto;padding:24mm 0;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   section{padding:10mm 0;break-inside:auto}
-  #services,#history{break-before:page}
+  #about,#services,#customers,#history,#contact{break-before:page}
   .card,.tl-item,.value,.chain .node,.stat,.logos{break-inside:avoid}
   .card:hover{transform:none}
   .map iframe{display:none}
@@ -268,6 +268,89 @@ body.pdf-mode .accent,body.pdf-mode .nav,body.pdf-mode .totop,body.pdf-mode .scr
 body.pdf-mode .hero{min-height:auto;padding:80px 0}
 body.pdf-mode .map iframe{display:none}
 body.pdf-mode .map{grid-template-columns:1fr}
+body.pdf-mode [data-pdf]{display:none!important}   /* 내려받은 문서 안에 '다운로드' 버튼이 남지 않도록 */
+/* html2canvas 는 CSS filter 를 지원하지 않는다. 히어로 로고는 .inv(brightness(0) invert(1)) 로
+   흰색으로 뒤집어 쓰는데, filter 가 무시되면 원본(짙은 색)이 파란 배경에 묻혀 사라진다.
+   PDF 에서는 filter 를 끄고 흰 판 위에 올려 원색 그대로 또렷하게 낸다. */
+body.pdf-mode .hero-logo.inv{filter:none;background:#fff;padding:10px 16px;border-radius:10px}
+/* 고객사 로고도 grayscale 은 무시되고 opacity 만 남아 흐리게 나온다 → PDF 에서는 원색·불투명 */
+body.pdf-mode .logo-tile img{filter:none;opacity:1}
+
+/* ── PDF: A4 가로 전용 레이아웃 ──
+   회사소개서는 항상 영문 + A4 가로로 낸다. 본문은 세로 기준(폭 1200)으로 짜여 있어
+   그대로 가로에 태우면 한 페이지에 들어가는 세로 분량이 줄어 장수만 늘어난다.
+   가로는 폭이 남으므로 열 수를 늘려 세로 길이를 줄이고, 섹션마다 페이지를 끊는다.
+   ⚠️ html2pdf 는 html2canvas 의 windowWidth 설정을 무시하고 페이지 내부 크기(px)로 렌더한다.
+   A4 가로 + 여백 10/10/12/10mm 기준 실측 **1046 × 710 px** 이 한 페이지다.
+   아래 값은 전부 그 폭·높이에 맞춰 잡았다(섹션 하나가 710px 를 넘으면 빈 페이지가 생긴다). */
+body.pdf-mode.pdf-landscape .wrap{max-width:none;padding:0 28px}
+body.pdf-mode.pdf-landscape section{padding:24px 0}
+body.pdf-mode.pdf-landscape h2{font-size:26px;padding-left:12px}
+body.pdf-mode.pdf-landscape h3{font-size:16px}
+body.pdf-mode.pdf-landscape .sec-head{margin-bottom:12px}
+body.pdf-mode.pdf-landscape .sec-head p{margin-top:8px;font-size:14px}
+body.pdf-mode.pdf-landscape .kicker{margin-bottom:8px}
+
+/* 표지 — 파란 배경이 첫 장을 꽉 채우게 한다. 708px 은 한 페이지(710px) 바로 아래 값:
+   딱 710 으로 맞추면 html2pdf 가 다음 섹션 앞에 한 페이지짜리 여백을 끼워 빈 장이 생긴다
+   (pad = 페이지높이 − top % 페이지높이 → top 이 경계에 정확히 걸리면 pad 가 한 페이지).
+   화면용 CTA 버튼은 종이에서 누를 수 없으므로 뺀다. */
+body.pdf-mode.pdf-landscape .hero{padding:44px 0;min-height:708px}
+body.pdf-mode.pdf-landscape .hero-cta{display:none}
+body.pdf-mode.pdf-landscape .hero-logo{height:40px;margin-bottom:18px}
+body.pdf-mode.pdf-landscape .hero h1{font-size:44px}
+body.pdf-mode.pdf-landscape .lead{font-size:16px}
+body.pdf-mode.pdf-landscape .stats{margin-top:34px;gap:12px}
+body.pdf-mode.pdf-landscape .stat{padding:14px 16px}
+
+/* 회사소개 */
+body.pdf-mode.pdf-landscape .about{gap:28px}
+body.pdf-mode.pdf-landscape .about p{font-size:14.5px}
+body.pdf-mode.pdf-landscape .about p+p{margin-top:8px}
+body.pdf-mode.pdf-landscape .values{margin-top:16px;gap:10px}
+body.pdf-mode.pdf-landscape .value{padding:10px 12px}
+body.pdf-mode.pdf-landscape .value b{font-size:16px}
+body.pdf-mode.pdf-landscape .value span{font-size:13px}
+body.pdf-mode.pdf-landscape .chain .node{padding:10px 16px 10px 52px}
+body.pdf-mode.pdf-landscape .chain .node::before{top:12px;left:14px;width:28px;height:28px;font-size:12px}
+body.pdf-mode.pdf-landscape .chain .node+.node{margin-top:6px}
+body.pdf-mode.pdf-landscape .chain .node b{font-size:15px}
+body.pdf-mode.pdf-landscape .chain .node span{font-size:13px}
+
+/* 주요 서비스 — 카드 6장을 3열 2행으로 한 페이지에 */
+body.pdf-mode.pdf-landscape .cards{gap:14px}
+body.pdf-mode.pdf-landscape .card{padding:14px}
+body.pdf-mode.pdf-landscape .card .ic{width:30px;height:30px;margin-bottom:8px}
+body.pdf-mode.pdf-landscape .card .ic svg{width:18px;height:18px}
+body.pdf-mode.pdf-landscape .card h3{margin-bottom:5px}
+body.pdf-mode.pdf-landscape .card p{font-size:13px;line-height:1.5}
+body.pdf-mode.pdf-landscape .card .tags{margin-top:8px;gap:5px}
+body.pdf-mode.pdf-landscape .card .tag{padding:2px 7px}
+
+/* 주요 고객 — 로고 18칸을 6열 3행으로 */
+body.pdf-mode.pdf-landscape .logos{gap:10px}
+body.pdf-mode.pdf-landscape .logo-tile{height:72px;padding:10px 14px}
+body.pdf-mode.pdf-landscape .logo-tile img{max-height:36px}
+
+/* 연혁 — 항목 10개를 2페이지에 */
+body.pdf-mode.pdf-landscape .tl-item{padding:0 32px 6px 0}
+body.pdf-mode.pdf-landscape .tl-item.r{padding:0 0 6px 32px}
+body.pdf-mode.pdf-landscape .tl-card{padding:8px 12px}
+body.pdf-mode.pdf-landscape .tl-card .yr{font-size:15px}
+body.pdf-mode.pdf-landscape .tl-card b{font-size:13.5px;margin-top:2px}
+body.pdf-mode.pdf-landscape .tl-card span{font-size:12px;line-height:1.42;margin-top:2px}
+body.pdf-mode.pdf-landscape .tl-era{margin:2px 0 8px}
+
+/* 오시는 길 — 지도 iframe 은 pdf-mode 에서 이미 빠지므로 주소만 두 칸으로 */
+body.pdf-mode.pdf-landscape .cta{padding:30px;gap:28px}
+body.pdf-mode.pdf-landscape .cta p{margin-top:10px;font-size:15px}
+body.pdf-mode.pdf-landscape .cta .btns{display:none}
+body.pdf-mode.pdf-landscape .cta .info{padding:18px}
+body.pdf-mode.pdf-landscape .map{margin-top:12px;grid-template-columns:1fr}
+body.pdf-mode.pdf-landscape .map .addr{padding:18px}
+/* 섹션별 페이지 나눔은 html2pdf 의 pagebreak.before 가 담당한다.
+   여기서 CSS break 까지 걸면 두 번 끊겨 빈 페이지가 생긴다.
+   인쇄 폴백 경로는 위 @media print 블록이 따로 처리한다. */
 
 /* ── 스크롤 애니메이션 ── */
 .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
@@ -599,23 +682,43 @@ body.pdf-mode .map{grid-template-columns:1fr}
   /* ── 숫자 카운트업 (히어로 지표) ── */
   const fmt=n=>n.toLocaleString('en-US');
   const counters=$$('[data-count]');
+  /* 최종 표기 — 카운트업의 도착값. PDF·인쇄에서는 애니메이션을 기다리지 않고 이 값을 바로 박는다. */
+  const countFinal=el=>{
+    const end=+el.dataset.count, pre=el.dataset.prefix||'', suf=el.dataset.suffix||'';
+    return pre+((end>1000&&end<3000)?String(end):fmt(end))+suf;
+  };
+  /* 카운터는 IntersectionObserver 로 화면에 들어올 때만 도는데, PDF 렌더는 스크롤 없이
+     한 번에 캡처하므로 그대로 두면 'USD 0M' 처럼 시작값이 찍힌다. */
+  /* 확정값을 넣은 뒤 옵저버를 끊지 않으면, 캡처 도중 화면에 들어온 카운터가 다시 0부터
+     애니메이션을 시작해 'USD 327M'(→375) 처럼 중간값이 찍힌다. */
+  /* 확정 후 잠금 — 옵저버를 끊어도 이미 돌던 requestAnimationFrame 루프가 살아 있어
+     확정값을 다시 중간값으로 덮는다. step 안에서 직접 빠져나오게 한다. */
+  let countLock=false;
   const runCount=el=>{
     const end=+el.dataset.count, pre=el.dataset.prefix||'', suf=el.dataset.suffix||'';
     const dur=1400, t0=performance.now();
     const isYear=end>1000&&end<3000;
     const step=now=>{
+      if(countLock)return;
       const p=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-p,3);
       const v=Math.round(end*e);
       el.textContent=pre+(isYear?String(v):fmt(v))+suf;
       if(p<1)requestAnimationFrame(step);
     };
-    if(reduce){el.textContent=pre+(isYear?String(end):fmt(end))+suf;return}
+    if(reduce||countLock){el.textContent=countFinal(el);return}
     requestAnimationFrame(step);
   };
   const cio=new IntersectionObserver(entries=>{
     entries.forEach(en=>{ if(en.isIntersecting){runCount(en.target);cio.unobserve(en.target)} });
   },{threshold:.5});
   counters.forEach(c=>cio.observe(c));
+  /* 확정값을 넣은 뒤 옵저버를 끊지 않으면, 캡처 도중 화면에 들어온 카운터가 다시 0부터
+     애니메이션을 시작해 'USD 327M'(→375) 처럼 중간값이 찍힌다. */
+  const finalizeCounters=()=>{
+    countLock=true;
+    try{cio.disconnect()}catch(e){}
+    counters.forEach(el=>{el.textContent=countFinal(el)});
+  };
 
 const I18N={"ko": {"nav.about": "회사소개", "nav.services": "주요 서비스", "nav.history": "연혁", "nav.contact": "오시는 길", "nav.cta": "문의하기", "nav.title": "PT Ascendo Internasional", "hero.h1": "대체 불가능한<br>타이어 파트너", "hero.lead": "천연고무 농장 → 타이어 제조 → 유통 → 리테일까지 완전 수직계열화 밸류체인 보유 —\n      인도네시아 상용차·산업 고객의 <b style=\"color:#fff\">차량 운영 안정성</b> 확보", "hero.sub": "Mitra ban yang tak tergantikan untuk armada komersial dan industri Indonesia.", "hero.btn1": "주요 서비스 보기", "hero.btn2": "상담 문의", "stat.rev": "그룹 합산 연매출 · Combined Revenue", "stat.est": "그룹 창립 · Founded in Korea", "stat.cty": "KR · ID · VN · CN 글로벌 거점", "stat.cty.u": "개국", "stat.store": "리테일 매장 · Proban Motoparts", "about.h2": "회사소개", "about.sub": "Tentang Perusahaan / Company Overview", "about.p": "1951년 한국에서 출발한 타이어·고무 산업의 글로벌 파트너, ASCENDO 그룹 — PT Ascendo Internasional은 그룹의 인도네시아 유통 축 담당, 상용·산업 고객에게 대체 불가능한 파트너 지향", "about.li1": "흥아타이어(HUNG-A) 75년 제조 경험 기반 — 한국·인도네시아·베트남·중국 8개 법인의 통합 플랫폼", "about.li2": "천연고무 재배(Montelo) → 타이어 제조(Arami Jaya·Hirundo·HUNG-A Indonesia) → 유통(Ascendo) → 리테일(Proban) 전 단계 직접 통제", "about.li3": "자카르타 본사 및 까라왕·스마랑·수라바야 거점 — 자바 전역 및 칼리만탄 광산 지역까지 TBR·OTR·산업용 타이어 공급", "about.li4": "유럽 1위 자전거 타이어 브랜드 SCHWALBE® 장기 생산 파트너 — 글로벌 제조 신뢰도 입증", "val1.b": "성실 · Sincerity", "val1.s": "모든 결정에서 쌓아가는 신뢰", "val2.b": "근면 · Diligence", "val2.s": "매일의 일관성과 정밀함", "val3.b": "창의 · Creativity", "val3.s": "새로운 길을 여는 혁신", "chain1.b": "천연고무 농장", "chain1.s": "PT Montelo — 농장·가공, Indonesia", "chain2.b": "타이어 제조", "chain3.b": "수입 · 유통 — PT Ascendo Internasional", "chain3.s": "TBR / OTR / 산업용 · MRO 통합 공급 · ID · KR · VN · CN", "chain4.b": "리테일 프랜차이즈", "chain4.s": "PT Proban Ostburg Trisakti — 매장 150+ · 앱 회원 590,000+", "svc.h2": "주요 서비스", "svc.sub": "Layanan Utama / Our Services", "svc.p": "제품 공급부터 현장 기술 서비스까지 — 플릿 운영에 필요한 모든 것을 단일 창구로 제공", "c1.h": "TBR 트럭·버스 타이어", "c1.p": "장거리·지역·도심 노선 상용 플릿용 래디얼 타이어 · TechKing·JK Tyre 공식 총판 및 자사 브랜드 Ascendo 공급", "c2.h": "OTR 광산·건설용 타이어", "c2.p": "광산·건설·중장비 극한 지형용 OTR 타이어 · TKPH 분석 기반 현장 맞춤 규격 제안으로 조기 파손 예방", "c3.h": "산업용 솔리드 타이어", "c3.p": "지게차·항만 장비용 솔리드 타이어 · 인도네시아 자사 공장(PT Arami Jaya) 연 180,000본 생산·공급", "c4.h": "재생 타이어 · 튜브 · 플랩", "c4.p": "GIS 재생 타이어 및 Ascendo 튜브·플랩으로 운행 원가 절감 · 소모성 자재 일괄 조달 MRO 통합 공급 솔루션", "c5.h": "타이어 모니터링 · CPK 분석", "c5.p": "필드 엔지니어의 고객 현장 마모·손상 정기 점검 · km당 비용(CPK) 기준 타이어 경제성 정량 보고", "c6.h": "공식 보증정책 · 사후관리", "c6.p": "체계적 클레임 판정 프로세스 및 공식 보증정책(Kebijakan Garansi) 운영 · 구매 이후까지 책임지는 사후 서비스", "hist.h2": "회사 연혁", "hist.sub": "Sejarah / Since 1951", "hist.p": "한국 흥아타이어에서 출발, 인도네시아·베트남·중국을 잇는 통합 플랫폼으로 성장한 75년의 여정", "h1.b": "HUNG-A TIRE 창립 (한국)", "h1.s": "그룹 전체의 기원 — 이후 한국 1위 이륜차 타이어 제조사로 성장", "h2.b": "글로벌 기술·상업 제휴", "h2.s": "일본 Kyowa 기술제휴, 독일 Bohle 상업제휴, 미국 DOT 안전인증 취득", "h3.b": "PT HUNG-A Indonesia 설립", "h3.s": "첫 해외 생산기지 Cikarang — 이후 ISO 9001(1997)·QS 9000(2002) 인증", "h4.b": "PT Arami Jaya 설립", "h4.s": "산업용 솔리드 타이어·튜브·러버트랙 (Purworejo) · ISO/TS 16949 &amp; ISO 14001", "h5.b": "PT Montelo 설립", "h5.s": "천연고무 농장·가공 — 밸류체인 최상류 확보", "h6.b": "Ascendo International 설립 (한국)", "h6.s": "TBR / LTR / OTR 글로벌 유통 거점", "h7.b": "PT Hirundo Tyre Utama 설립", "h7.s": "이륜차 타이어 제조 Cikarang — 연산 3,200,000본", "h8.b": "PT Ascendo Internasional 설립", "h8.s": "한국–인도네시아 유통 축 완성 — 자카르타 본사", "h9.b": "베트남·중국·리테일 확장", "h9.s": "HUNG-A Tire Vina(베트남), Hua In Global(상하이), PT Proban Ostburg Trisakti(리테일) 설립", "h10.b": "브랜드 리뉴얼 — Infinity Driving", "h10.s": "ASCENDO 브랜드 아이덴티티 재정립 · 디지털 전환(E-count · 온라인 채널) 가속", "cta.h2": "함께 만들어 갑시다", "cta.p": "제품 문의 · 유통 파트너십 · 플릿 솔루션 상담 환영 — 현장 조건 공유 시 최적 규격 및 CPK 시뮬레이션 제안", "cta.mail": "이메일 문의", "cta.tel": "전화 +62-811-155-372", "cta.pdf": "회사소개 PDF 다운로드", "info.hours": "월–금 08:00 – 17:00 (WIB)", "map.h3": "오시는 길", "map.sub": "Lokasi Kantor Pusat", "map.k1": "본사", "map.v1": "Jakarta — 유통·판매 총괄", "map.k2": "거점", "map.k3": "공급망", "map.v3": "자바 전역 · 칼리만탄 광산 지역", "ft.rights": "PT ASCENDO INTERNASIONAL. All rights reserved.", "_file": "PT_Ascendo_Internasional_회사소개", "_title": "PT Ascendo Internasional — 대체 불가능한 타이어 파트너", "cust.h2": "주요 고객", "cust.sub": "Pelanggan Utama / Key Accounts", "cust.p": "글로벌 그룹 계열 및 인도네시아 유수 기업 — 광산·물류·건설·플랜테이션·제조 전 산업에 걸친 공급 실적", "cust.note": "※ 게재 로고는 각사 확인을 거친 거래처 기준"}, "en": {"nav.about": "About", "nav.services": "Services", "nav.history": "History", "nav.contact": "Contact", "nav.cta": "Contact Us", "nav.title": "PT Ascendo International", "hero.h1": "Your Irreplaceable<br>Tire Partner", "hero.lead": "A fully integrated value chain — from rubber plantation to manufacturing, distribution and retail —\n      securing <b style=\"color:#fff\">stable vehicle operations</b> for Indonesia's commercial and industrial fleets", "hero.sub": "Mitra ban yang tak tergantikan untuk armada komersial dan industri Indonesia.", "hero.btn1": "Explore Services", "hero.btn2": "Get in Touch", "stat.rev": "Combined Group Revenue", "stat.est": "Group Founded in Korea", "stat.cty": "Countries — KR · ID · VN · CN", "stat.cty.u": "", "stat.store": "Retail Stores · Proban Motoparts", "about.h2": "About Us", "about.sub": "Tentang Perusahaan / 회사소개", "about.p": "ASCENDO Group — a global tire and rubber partner founded in Korea in 1951. PT Ascendo International is the group's distribution axis in Indonesia, aiming to be the irreplaceable partner for commercial and industrial customers.", "about.li1": "75 years of manufacturing heritage from HUNG-A Tire — an integrated platform of 8 entities across Korea, Indonesia, Vietnam and China", "about.li2": "Direct control of every stage: rubber cultivation (Montelo) → tire manufacturing (Arami Jaya · Hirundo · HUNG-A Indonesia) → distribution (Ascendo) → retail (Proban)", "about.li3": "Jakarta head office with Karawang, Semarang and Surabaya hubs — supplying TBR, OTR and industrial tires across Java and Kalimantan's mining regions", "about.li4": "Long-term production partner of SCHWALBE®, Europe's No.1 bicycle tire brand — proven global manufacturing credibility", "val1.b": "Sincerity", "val1.s": "Trust built through every decision", "val2.b": "Diligence", "val2.s": "Consistency and precision, day after day", "val3.b": "Creativity", "val3.s": "Innovation that opens new paths", "chain1.b": "Natural Rubber Plantation", "chain1.s": "PT Montelo — plantation &amp; processing, Indonesia", "chain2.b": "Tire Manufacturing", "chain3.b": "Import &amp; Distribution — PT Ascendo International", "chain3.s": "TBR / OTR / Industrial · Integrated MRO supply · ID · KR · VN · CN", "chain4.b": "Retail Franchise", "chain4.s": "PT Proban Ostburg Trisakti — 150+ stores · 590,000+ app members", "svc.h2": "Our Services", "svc.sub": "Layanan Utama / 주요 서비스", "svc.p": "From product supply to on-site technical services — everything a fleet needs, through a single point of contact", "c1.h": "TBR Truck &amp; Bus Tires", "c1.p": "Radial tires for long-haul, regional and urban commercial fleets · Official distributor of TechKing and JK Tyre, plus our own Ascendo brand", "c2.h": "OTR Mining &amp; Construction Tires", "c2.p": "OTR tires for mining, construction and heavy equipment in extreme terrain · TKPH-based specification matching to prevent premature failure", "c3.h": "Industrial Solid Tires", "c3.p": "Solid tires for forklifts and port equipment · 180,000 units/year produced at our own Indonesian plant (PT Arami Jaya)", "c4.h": "Retread Tires · Tubes · Flaps", "c4.p": "Lower running costs with GIS retreads and Ascendo tubes &amp; flaps · One-stop MRO supply for all consumables", "c5.h": "Tire Monitoring · CPK Analysis", "c5.p": "Regular on-site wear and damage inspections by field engineers · Quantified tire economics reported as cost per kilometer (CPK)", "c6.h": "Warranty Policy · After-Sales", "c6.p": "Systematic claim assessment and an official warranty policy · Accountable after-sales support beyond the purchase", "hist.h2": "Our History", "hist.sub": "Sejarah / 연혁 · Since 1951", "hist.p": "A 75-year journey from HUNG-A Tire in Korea to an integrated platform spanning Indonesia, Vietnam and China", "h1.b": "HUNG-A TIRE founded (Korea)", "h1.s": "Origin of the group — later Korea's No.1 two-wheeler tire maker", "h2.b": "Global technical &amp; commercial partnerships", "h2.s": "Technical alliance with Kyowa (Japan), commercial partnership with Bohle (Germany), US DOT certification", "h3.b": "PT HUNG-A Indonesia established", "h3.s": "First overseas plant in Cikarang — followed by ISO 9001 (1997) and QS 9000 (2002)", "h4.b": "PT Arami Jaya established", "h4.s": "Industrial solid tires, tubes &amp; rubber tracks (Purworejo) · ISO/TS 16949 &amp; ISO 14001", "h5.b": "PT Montelo established", "h5.s": "Natural rubber plantation &amp; processing — securing the top of the value chain", "h6.b": "Ascendo International established (Korea)", "h6.s": "Global TBR / LTR / OTR distribution hub", "h7.b": "PT Hirundo Tyre Utama established", "h7.s": "Motorcycle tire plant in Cikarang — 3,200,000 units/year", "h8.b": "PT Ascendo International established", "h8.s": "Completing the Korea–Indonesia distribution axis — Jakarta head office", "h9.b": "Expansion to Vietnam, China and retail", "h9.s": "HUNG-A Tire Vina (Vietnam), Hua In Global (Shanghai) and PT Proban Ostburg Trisakti (retail) established", "h10.b": "Brand renewal — Infinity Driving", "h10.s": "Redefined ASCENDO brand identity · accelerated digital transformation (E-count · online channels)", "cta.h2": "Let's Build Together", "cta.p": "Product inquiries · distribution partnerships · fleet solutions — share your site conditions and we'll propose the optimal specification and a CPK simulation", "cta.mail": "Email Us", "cta.tel": "Call +62-811-155-372", "cta.pdf": "Download Company PDF", "info.hours": "Mon–Fri 08:00 – 17:00 (WIB)", "map.h3": "Location", "map.sub": "Head Office · Jakarta", "map.k1": "Head Office", "map.v1": "Jakarta — distribution &amp; sales HQ", "map.k2": "Hubs", "map.k3": "Coverage", "map.v3": "All of Java · Kalimantan mining regions", "ft.rights": "PT ASCENDO INTERNATIONAL. All rights reserved.", "_file": "PT_Ascendo_International_Company_Profile", "_title": "PT Ascendo International — Your Irreplaceable Tire Partner", "cust.h2": "Key Accounts", "cust.sub": "Pelanggan Utama / 주요 고객", "cust.p": "Global group companies and leading Indonesian enterprises — a supply track record across mining, logistics, construction, plantation and manufacturing", "cust.note": "※ Logos shown with each customer's confirmation"}, "id": {"nav.about": "Tentang Kami", "nav.services": "Layanan", "nav.history": "Sejarah", "nav.contact": "Lokasi", "nav.cta": "Hubungi Kami", "nav.title": "PT Ascendo Internasional", "hero.h1": "Mitra Ban yang<br>Tak Tergantikan", "hero.lead": "Rantai nilai terintegrasi penuh — dari perkebunan karet, manufaktur, distribusi hingga ritel —\n      menjamin <b style=\"color:#fff\">stabilitas operasional kendaraan</b> pelanggan komersial dan industri di Indonesia", "hero.sub": "The irreplaceable tire partner for Indonesia's commercial and industrial fleets.", "hero.btn1": "Lihat Layanan", "hero.btn2": "Konsultasi", "stat.rev": "Pendapatan Gabungan Grup", "stat.est": "Grup Didirikan di Korea", "stat.cty": "Negara — KR · ID · VN · CN", "stat.cty.u": "", "stat.store": "Gerai Ritel · Proban Motoparts", "about.h2": "Tentang Kami", "about.sub": "Company Overview / 회사소개", "about.p": "Grup ASCENDO — mitra global industri ban dan karet yang berawal di Korea pada 1951. PT Ascendo Internasional menjalankan poros distribusi grup di Indonesia, dengan tujuan menjadi mitra tak tergantikan bagi pelanggan komersial dan industri.", "about.li1": "Warisan manufaktur 75 tahun HUNG-A Tire — platform terintegrasi 8 entitas di Korea, Indonesia, Vietnam, dan Tiongkok", "about.li2": "Kendali langsung di setiap tahap: perkebunan karet (Montelo) → manufaktur ban (Arami Jaya · Hirundo · HUNG-A Indonesia) → distribusi (Ascendo) → ritel (Proban)", "about.li3": "Kantor pusat Jakarta dengan hub Karawang, Semarang, dan Surabaya — memasok ban TBR, OTR, dan industri ke seluruh Jawa hingga wilayah tambang Kalimantan", "about.li4": "Mitra produksi jangka panjang SCHWALBE®, merek ban sepeda No.1 Eropa — bukti kredibilitas manufaktur global", "val1.b": "Ketulusan", "val1.s": "Kepercayaan yang dibangun di setiap keputusan", "val2.b": "Ketekunan", "val2.s": "Konsistensi dan presisi setiap hari", "val3.b": "Kreativitas", "val3.s": "Inovasi yang membuka jalan baru", "chain1.b": "Perkebunan Karet Alam", "chain1.s": "PT Montelo — perkebunan &amp; pengolahan, Indonesia", "chain2.b": "Manufaktur Ban", "chain3.b": "Impor &amp; Distribusi — PT Ascendo Internasional", "chain3.s": "TBR / OTR / Industri · Pasokan MRO terpadu · ID · KR · VN · CN", "chain4.b": "Waralaba Ritel", "chain4.s": "PT Proban Ostburg Trisakti — 150+ gerai · 590,000+ anggota aplikasi", "svc.h2": "Layanan Utama", "svc.sub": "Our Services / 주요 서비스", "svc.p": "Dari pasokan produk hingga layanan teknis lapangan — semua kebutuhan armada melalui satu pintu", "c1.h": "Ban TBR Truk &amp; Bus", "c1.p": "Ban radial untuk armada komersial jarak jauh, regional, dan perkotaan · Distributor resmi TechKing dan JK Tyre, serta merek sendiri Ascendo", "c2.h": "Ban OTR Tambang &amp; Konstruksi", "c2.p": "Ban OTR untuk tambang, konstruksi, dan alat berat di medan ekstrem · Rekomendasi spesifikasi berbasis TKPH untuk mencegah kerusakan dini", "c3.h": "Ban Solid Industri", "c3.p": "Ban solid untuk forklift dan alat pelabuhan · Produksi 180,000 unit/tahun di pabrik sendiri di Indonesia (PT Arami Jaya)", "c4.h": "Ban Vulkanisir · Ban Dalam · Flap", "c4.p": "Menekan biaya operasional dengan ban vulkanisir GIS serta ban dalam &amp; flap Ascendo · Solusi pasokan MRO terpadu untuk semua bahan habis pakai", "c5.h": "Pemantauan Ban · Analisis CPK", "c5.p": "Inspeksi keausan dan kerusakan berkala di lokasi pelanggan oleh insinyur lapangan · Laporan ekonomi ban terukur berbasis biaya per kilometer (CPK)", "c6.h": "Kebijakan Garansi · Purnajual", "c6.p": "Proses penilaian klaim yang sistematis dan kebijakan garansi resmi · Layanan purnajual yang bertanggung jawab setelah pembelian", "hist.h2": "Sejarah Kami", "hist.sub": "History / 연혁 · Sejak 1951", "hist.p": "Perjalanan 75 tahun dari HUNG-A Tire di Korea menjadi platform terintegrasi yang menghubungkan Indonesia, Vietnam, dan Tiongkok", "h1.b": "HUNG-A TIRE didirikan (Korea)", "h1.s": "Asal mula grup — kemudian menjadi produsen ban roda dua No.1 di Korea", "h2.b": "Kemitraan teknis &amp; komersial global", "h2.s": "Aliansi teknis dengan Kyowa (Jepang), kemitraan komersial dengan Bohle (Jerman), sertifikasi DOT AS", "h3.b": "PT HUNG-A Indonesia didirikan", "h3.s": "Pabrik luar negeri pertama di Cikarang — disusul sertifikasi ISO 9001 (1997) dan QS 9000 (2002)", "h4.b": "PT Arami Jaya didirikan", "h4.s": "Ban solid industri, ban dalam &amp; rubber track (Purworejo) · ISO/TS 16949 &amp; ISO 14001", "h5.b": "PT Montelo didirikan", "h5.s": "Perkebunan &amp; pengolahan karet alam — mengamankan hulu rantai nilai", "h6.b": "Ascendo International didirikan (Korea)", "h6.s": "Pusat distribusi global TBR / LTR / OTR", "h7.b": "PT Hirundo Tyre Utama didirikan", "h7.s": "Pabrik ban sepeda motor di Cikarang — 3,200,000 unit/tahun", "h8.b": "PT Ascendo Internasional didirikan", "h8.s": "Melengkapi poros distribusi Korea–Indonesia — kantor pusat Jakarta", "h9.b": "Ekspansi ke Vietnam, Tiongkok, dan ritel", "h9.s": "Pendirian HUNG-A Tire Vina (Vietnam), Hua In Global (Shanghai), dan PT Proban Ostburg Trisakti (ritel)", "h10.b": "Pembaruan merek — Infinity Driving", "h10.s": "Identitas merek ASCENDO diperbarui · percepatan transformasi digital (E-count · kanal daring)", "cta.h2": "Mari Membangun Bersama", "cta.p": "Pertanyaan produk · kemitraan distribusi · solusi armada — bagikan kondisi lapangan Anda dan kami usulkan spesifikasi optimal serta simulasi CPK", "cta.mail": "Kirim Email", "cta.tel": "Telepon +62-811-155-372", "cta.pdf": "Unduh PDF Profil", "info.hours": "Sen–Jum 08.00 – 17.00 (WIB)", "map.h3": "Lokasi", "map.sub": "Kantor Pusat · Jakarta", "map.k1": "Kantor Pusat", "map.v1": "Jakarta — pusat distribusi &amp; penjualan", "map.k2": "Hub", "map.k3": "Jangkauan", "map.v3": "Seluruh Jawa · wilayah tambang Kalimantan", "ft.rights": "PT ASCENDO INTERNASIONAL. Hak cipta dilindungi.", "_file": "PT_Ascendo_Internasional_Profil_Perusahaan", "_title": "PT Ascendo Internasional — Mitra Ban yang Tak Tergantikan", "cust.h2": "Pelanggan Utama", "cust.sub": "Key Accounts / 주요 고객", "cust.p": "Perusahaan grup global dan perusahaan terkemuka Indonesia — rekam jejak pasokan di sektor pertambangan, logistik, konstruksi, perkebunan, dan manufaktur", "cust.note": "※ Logo ditampilkan dengan konfirmasi masing-masing pelanggan"}};
   /* ── 언어 선택 ── */
@@ -641,28 +744,60 @@ const I18N={"ko": {"nav.about": "회사소개", "nav.services": "주요 서비�
   /* ── PDF 다운로드 ── */
   const pdfBtns=$$('[data-pdf]');
   const loadScript=src=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)});
+  /* 회사소개서는 화면 언어와 무관하게 **영문 + A4 가로** 로 낸다.
+     번역은 I18N.en 에 이미 전량(94키) 있으므로 렌더 직전 en 으로 바꿨다가 원복한다.
+     applyLang 이 localStorage 에도 쓰므로 사용자의 언어 설정까지 함께 되돌린다. */
+  /* html2canvas 는 인라인 <svg> 를 이미지로 직렬화할 때 **속성** width/height 를 본다.
+     CSS 로만 크기를 준 SVG(카드 아이콘 7개 중 6개)는 0×0 으로 잡혀 빈칸이 된다.
+     렌더 직전 실측값을 속성으로 박고, 끝나면 원복한다. */
+  function sizeSVGs(){
+    const touched=[];
+    $$('svg').forEach(sv=>{
+      if(sv.getAttribute('width')&&sv.getAttribute('height'))return;
+      const r=sv.getBoundingClientRect();
+      if(!r.width||!r.height)return;
+      touched.push(sv);
+      sv.setAttribute('width',Math.round(r.width));
+      sv.setAttribute('height',Math.round(r.height));
+    });
+    return ()=>touched.forEach(sv=>{sv.removeAttribute('width');sv.removeAttribute('height')});
+  }
+
   async function downloadPDF(){
     pdfBtns.forEach(b=>b.classList.add('busy'));
-    const fname=I18N[LANG]._file+'_'+new Date().toISOString().slice(0,10)+'.pdf';
+    const prevLang=LANG;
+    let restoreSVG=null;
+    let savedLang=null; try{savedLang=localStorage.getItem('ascendo_lang')}catch(e){}
+    applyLang('en');
+    const fname=I18N.en._file+'_'+new Date().toISOString().slice(0,10)+'.pdf';
     try{
+      /* 클래스를 먼저 건다 — 라이브러리 로드가 실패해 인쇄 폴백으로 빠져도
+         가로 재배치(.pdf-landscape 규칙)가 그대로 적용되도록. */
+      document.body.classList.add('pdf-mode','pdf-landscape');
+      finalizeCounters();
       if(!window.html2pdf){await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js')}
-      document.body.classList.add('pdf-mode');
       window.scrollTo(0,0);
-      await new Promise(r=>setTimeout(r,300));
+      await new Promise(r=>setTimeout(r,350));   /* 영문 치환·로고 폴백 반영 대기 */
+      restoreSVG=sizeSVGs();                     /* 레이아웃 확정 후에 실측해야 한다 */
       const root=document.body;
       await html2pdf().set({
         filename:fname, margin:[10,10,12,10],
         image:{type:'jpeg',quality:.95},
-        html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollY:0,windowWidth:1200},
-        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-        pagebreak:{mode:['css','legacy'],before:['#services','#history','#contact'],avoid:['.card','.tl-item','.chain .node','.value','.cta']}
+        html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollY:0,windowWidth:1440},
+        jsPDF:{unit:'mm',format:'a4',orientation:'landscape'},
+        pagebreak:{mode:['css','legacy'],before:['#about','#services','#customers','#history','#contact'],
+                   avoid:['.card','.tl-item','.chain .node','.value','.stat','.logos','.cta']}
       }).from(root).save();
     }catch(err){
-      /* 라이브러리 로드 실패(오프라인 등) → 브라우저 인쇄 대화상자에서 "PDF로 저장" */
+      /* 라이브러리 로드 실패(오프라인 등) → 브라우저 인쇄 대화상자에서 "PDF로 저장".
+         @page 가 A4 가로라 이 경로로 빠져도 가로로 나온다. */
       const prev=document.title; document.title=fname.replace('.pdf','');
       window.print(); document.title=prev;
     }finally{
-      document.body.classList.remove('pdf-mode');
+      if(restoreSVG)restoreSVG();
+      document.body.classList.remove('pdf-mode','pdf-landscape');
+      applyLang(prevLang);
+      try{ savedLang===null ? localStorage.removeItem('ascendo_lang') : localStorage.setItem('ascendo_lang',savedLang); }catch(e){}
       pdfBtns.forEach(b=>b.classList.remove('busy'));
     }
   }

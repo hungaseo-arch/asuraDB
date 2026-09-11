@@ -120,6 +120,10 @@ const trendSubtitle = ref('');
 const trendSeries   = ref<TrendSeries[]>([]);
 const trendInfo     = ref('');   // 지표 간략 설명 (모달 표시)
 const trendSource   = ref('');   // 지표 데이터 출처 (모달 표시)
+// 모달의 연도 축 — KPI 는 화면 상단 연도 선택(selectedYear/availableYears)을 그대로 쓰지만
+// 산업 지표는 지표마다 보유 기간이 달라 시계열에서 직접 뽑는다.
+const trendYear     = ref(0);
+const trendYears    = ref<number[]>([]);
 
 // 지표별 데이터 출처 (추이 모달에 표시). '근사'=웹 리서치 근사치.
 const INDICATOR_SOURCE: Record<string, string> = {
@@ -421,6 +425,8 @@ function openProductTrend(pc: ProductCard) {
   trendInfo.value     = '';
   trendSource.value   = '';
   trendSeries.value   = series;
+  trendYear.value     = selectedYear.value;
+  trendYears.value    = availableYears.value;
   trendOpen.value     = true;
 }
 
@@ -452,25 +458,46 @@ function openFinancialTrend(s: MetricSeries) {
   trendInfo.value     = '';
   trendSource.value   = '';
   trendSeries.value   = [base];
+  trendYear.value     = selectedYear.value;
+  trendYears.value    = availableYears.value;
   trendOpen.value     = true;
 }
 
-// 산업 지표(원자재/환율/물류/정책) 추이 모달 — 목표 없이 실적(수집값) 시계열만 표시
-function openIndicatorTrend(card: CardData) {
-  const hist = [...card.history].reverse();  // 최신순 → 시간순
-  if (!hist.length) return;
-  trendTitle.value    = `${card.indicator.name_ko} — 추이`;
-  trendSubtitle.value = '수집값 추이 · 월간/연간';
-  trendInfo.value     = INDICATOR_INFO[card.indicator.id] ?? '';
-  trendSource.value   = INDICATOR_SOURCE[card.indicator.id] ?? '';
+// 산업 지표(원자재/환율/물류/정책) 추이 모달 — 목표 없이 실적(수집값) 시계열만 표시.
+// 카드가 들고 있는 배열은 스파크라인용 최근 7개뿐이라 그대로 쓰면 과거 구간이 통째로 빠진다.
+// 모달을 열 때 그 지표의 indicator_history 를 전부 다시 읽어 월 1개 점으로 눌러 쓴다.
+async function openIndicatorTrend(card: CardData) {
+  const ind = card.indicator;
+  // 월별 1개 점 — 일간 수집 지표(브렌트유·환율)는 해당 월 마지막(월말) 값을 대표로 쓴다
+  const byMonth = new Map<string, number>();
+  try {
+    const rows = await sbGetAll<{ recorded_date: string; value: number }>(
+      `indicator_history?select=recorded_date,value&indicator_id=eq.${ind.id}&order=recorded_date`,
+    );
+    for (const r of rows) byMonth.set(r.recorded_date.slice(0, 7), Number(r.value));
+  } catch {
+    // 조회 실패 시에도 모달은 열되 카드가 가진 최근 구간만 보여준다
+    for (const h of [...card.history].reverse()) byMonth.set(h.date.slice(0, 7), h.value);
+  }
+  const months = [...byMonth.keys()].sort();
+  if (!months.length) return;
+
+  trendTitle.value    = `${ind.name_ko} — 추이`;
+  trendSubtitle.value = '수집값 추이 · 월간/연간(연평균)';
+  trendInfo.value     = INDICATOR_INFO[ind.id] ?? '';
+  trendSource.value   = INDICATOR_SOURCE[ind.id] ?? '';
   trendSeries.value   = [{
-    label:  card.indicator.name_ko,
-    unit:   card.indicator.unit ?? '',
-    months: hist.map(h => h.date),        // 'YYYY-MM(-DD)'
-    target: hist.map(() => null),          // 목표 없음
-    actual: hist.map(h => h.value),
+    label:  ind.name_ko,
+    unit:   ind.unit ?? '',
+    months,                                        // 'YYYY-MM'
+    target: months.map(() => null),                // 목표 없음
+    actual: months.map(m => byMonth.get(m) ?? null),
+    aggregate: 'avg',                              // 가격·지수는 연합계가 무의미 → 연평균
   }];
-  trendOpen.value = true;
+  // 연도 축은 KPI(availableYears)가 아니라 이 지표가 실제로 가진 연도에서 뽑는다
+  trendYears.value = [...new Set(months.map(m => Number(m.slice(0, 4))))].sort((a, b) => a - b);
+  trendYear.value  = trendYears.value[trendYears.value.length - 1];
+  trendOpen.value  = true;
 }
 
 // 카드 클릭: 데이터 있으면 추이 모달, 값 없는 수동 카드는 입력 모달
@@ -971,8 +998,8 @@ onMounted(async () => {
       :info="trendInfo"
       :source="trendSource"
       :series="trendSeries"
-      :year="selectedYear"
-      :years="availableYears"
+      :year="trendYear"
+      :years="trendYears"
       @close="trendOpen = false"
     />
 

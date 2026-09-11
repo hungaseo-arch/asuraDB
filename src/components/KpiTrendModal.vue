@@ -17,6 +17,11 @@ export interface TrendSeries {
   denomTarget?: (number | null)[]; // 비율 모드용 분모(매출) 목표
   denomActual?: (number | null)[]; // 비율 모드용 분모(매출) 실적
   ratioLabel?: string;             // 비율 모드 부제 (예: '매출 대비')
+  /**
+   * 연간 탭의 집계 방식. 판매량·금액 KPI 는 'sum'(기본),
+   * 가격·지수처럼 합계가 의미 없는 산업 지표는 'avg'(연평균).
+   */
+  aggregate?: 'sum' | 'avg';
 }
 
 const props = defineProps<{
@@ -78,6 +83,13 @@ function sumIdx(arr: (number | null)[] | undefined, idx: number[]): number | nul
   const f = idx.filter(i => arr[i] !== null && arr[i] !== undefined);
   return f.length ? f.reduce((a, i) => a + (arr[i] as number), 0) : null;
 }
+// 연간 집계 — 'avg' 시리즈는 연평균(가격·지수는 합계가 무의미)
+function aggIdx(s: TrendSeries, arr: (number | null)[] | undefined, idx: number[]): number | null {
+  const total = sumIdx(arr, idx);
+  if (total === null || s.aggregate !== 'avg') return total;
+  const n = idx.filter(i => arr![i] !== null && arr![i] !== undefined).length;
+  return n ? total / n : null;
+}
 
 // 비율 모드: 값 = 분자/분모*100 (분모 없으면 null)
 function toDisplay(num: (number | null)[], den: (number | null)[]): (number | null)[] {
@@ -101,10 +113,10 @@ function periodData(s: TrendSeries) {
   }
   return {
     labels: props.years.map(String),
-    tNum: props.years.map(y => sumIdx(s.target, monthIdx(s, y))),
-    tDen: props.years.map(y => sumIdx(s.denomTarget, monthIdx(s, y))),
-    aNum: props.years.map(y => sumIdx(s.actual, monthIdx(s, y))),
-    aDen: props.years.map(y => sumIdx(s.denomActual, monthIdx(s, y))),
+    tNum: props.years.map(y => aggIdx(s, s.target, monthIdx(s, y))),
+    tDen: props.years.map(y => aggIdx(s, s.denomTarget, monthIdx(s, y))),
+    aNum: props.years.map(y => aggIdx(s, s.actual, monthIdx(s, y))),
+    aDen: props.years.map(y => aggIdx(s, s.denomActual, monthIdx(s, y))),
   };
 }
 
@@ -329,7 +341,7 @@ function optionsFor(unit: string): ChartOptions<'line' | 'bar'> {
             </div>
 
             <p class="text-[11px] text-muted-foreground">
-              {{ period === 'month' ? `${year}년 월별` : '연도별 합계' }}
+              {{ period === 'month' ? `${year}년 월별` : (s.aggregate === 'avg' ? '연도별 평균' : '연도별 합계') }}
               <template v-if="valueMode === 'ratio'">
                 · {{ year }} 연간 목표 비율 <span class="tabular-nums text-foreground/80">{{ fmt(annuals[i].fullTargetRatio, '%') }}%</span>
               </template>

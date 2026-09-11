@@ -62,10 +62,18 @@ function fmt(v: number | null, unit: string): string {
   if (v === null || v === undefined || Number.isNaN(v)) return '—';
   if (unit === '%')   return v.toFixed(1);
   if (unit === 'pcs') return Math.round(v).toLocaleString('en-US');
-  return v.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  // USD/CNY(≈7.1)·KRW/IDR(≈12.3) 처럼 자릿수가 작은 지표는 정수로 끊으면 변화가 사라진다.
+  // 1,000 미만은 소수점 1자리까지 표기하고, 그 이상(매출·USD/IDR 등)은 정수로 둔다.
+  const digits = Math.abs(v) < 1000 ? 1 : 0;
+  return v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
+// KPI 는 금액(USD)이라 '$' 를 붙이지만 산업 지표는 단위가 제각각(CNY·IDR/KRW·USD/MT …)이라
+// 시리즈가 가진 단위 문자열을 그대로 쓴다.
 function unitSuffix(unit: string): string {
-  return unit === '%' ? '%' : unit === 'pcs' ? ' pcs' : ' $';
+  if (unit === '%')   return '%';
+  if (unit === 'pcs') return ' pcs';
+  if (!unit || unit === 'USD') return ' $';
+  return ` ${unit}`;
 }
 function unitFor(s: TrendSeries): string {
   return valueMode.value === 'ratio' ? '%' : s.unit;

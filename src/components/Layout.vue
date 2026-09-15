@@ -319,10 +319,10 @@ async function maybeDailyCollect() {
   } catch { /* 런처 미가동 시 조용히 무시 */ }
 }
 
-// ── 자동 로그아웃 (30분 무활동) ────────────────────────────────────────────
+// ── 자동 로그아웃 (24시간 무활동) ──────────────────────────────────────────
 // 경고 없이 즉시 로그아웃 처리한다. mousemove 는 초당 수십 회 발생할 수 있어
 // 5초 스로틀로 타이머 재설정 빈도를 줄인다.
-const IDLE_LIMIT_MS   = 30 * 60 * 1000;
+const IDLE_LIMIT_MS   = 24 * 60 * 60 * 1000;
 const IDLE_THROTTLE_MS = 5000;
 const IDLE_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart'] as const;
 let idleTimer: number | undefined;

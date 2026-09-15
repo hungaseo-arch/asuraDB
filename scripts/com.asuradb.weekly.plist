@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  AsuraDB weekly_collector 자동 실행 (macOS LaunchAgent)
+  대상: 주간 원자재·운임 5종 — 석탄 · 카본블랙 · 합성고무 BD · 강선 · SCFI
+
+  ◆ 스케줄
+    매주 금요일 10:00 (시스템 시간대) — SCFI 금요일 발표 반영.
+
+  ◆ 외부 venv 사용 (iCloud Deadlock 회피)
+    daily/monthly 와 동일한 ~/.venvs/asuradb 사용.
+
+  ◆ 설치
+    cp scripts/com.asuradb.weekly.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.asuradb.weekly.plist
+    # 즉시 1회 실행
+    launchctl kickstart -k gui/$(id -u)/com.asuradb.weekly
+    # 로그 확인
+    tail -f /tmp/asuradb-weekly.log
+
+  ◆ 제거
+    launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.asuradb.weekly.plist
+    rm ~/Library/LaunchAgents/com.asuradb.weekly.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.asuradb.weekly</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/seojonghwan/.venvs/asuradb/bin/python</string>
+    <string>collectors/weekly_collector.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/seojonghwan/dev/asuraDB</string>
+
+  <!-- 매주 금요일 10:00 -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>5</integer>
+    <key>Hour</key>
+    <integer>10</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>KeepAlive</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/asuradb-weekly.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/asuradb-weekly.err</string>
+</dict>
+</plist>

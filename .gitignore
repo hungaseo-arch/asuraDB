@@ -53,3 +53,6 @@ token*.json
 tests/e2e/.auth/
 test-results/
 playwright-report/
+
+# 수집기 원본 다운로드 캐시 (재다운로드 가능 — 저장소에 두지 않는다)
+data/cache/

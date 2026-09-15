@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  AsuraDB daily_collector 자동 실행 (macOS LaunchAgent)
+  대상: 웹 스크래핑 원자재 3종 — 천연고무 TSR20 · 팜유 CPO · 니켈
+        (com.asuradb.daily 는 indicator_collector.py(yfinance) 담당 — 별개 잡)
+
+  ◆ 스케줄
+    평일 09:00 (시스템 시간대) — Investing.com/TE 갱신 직후.
+
+  ◆ 외부 venv 사용 (iCloud Deadlock 회피)
+    daily/monthly 와 동일한 ~/.venvs/asuradb 사용.
+
+  ◆ 설치
+    cp scripts/com.asuradb.commodity.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.asuradb.commodity.plist
+    # 즉시 1회 실행
+    launchctl kickstart -k gui/$(id -u)/com.asuradb.commodity
+    # 로그 확인
+    tail -f /tmp/asuradb-commodity.log
+
+  ◆ 제거
+    launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.asuradb.commodity.plist
+    rm ~/Library/LaunchAgents/com.asuradb.commodity.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.asuradb.commodity</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/seojonghwan/.venvs/asuradb/bin/python</string>
+    <string>collectors/daily_collector.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/seojonghwan/dev/asuraDB</string>
+
+  <!-- 평일(월~금) 09:00 -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+  </array>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>KeepAlive</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/asuradb-commodity.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/asuradb-commodity.err</string>
+</dict>
+</plist>

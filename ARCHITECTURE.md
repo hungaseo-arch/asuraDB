@@ -85,7 +85,7 @@ src/
   반드시 `IS DISTINCT FROM` 을 쓴다(`<>` 는 role 이 NULL 일 때 통과하는 fail-open).
   자세한 규칙은 [개발 지침서 §11-6](docs/AsuraDB_Development_Guide.md).
 
-30분 미조작 시 자동 로그아웃되며, 로그인·로그아웃 이력은 `login_history` 에 남는다.
+24시간 미조작 시 자동 로그아웃되며, 로그인·로그아웃 이력은 `login_history` 에 남는다.
 
 ---
 

@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>타이어 TCO 기준서 | PT ASCENDO INTERNASIONAL</title>
+<style>
+:root{
+  --grey:#F0F0F0;
+  --blue:#E3F2FD;
+  --sage:#E8F5E9;
+  --bluegrey:#ECEFF1;
+  --ink:#546E7A;
+  --ink-strong:#37474F;
+  --line:#CFD8DC;
+  --white:#FFFFFF;
+  --font: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'D2Coding', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--grey);
+  color:var(--ink);
+  font-family:var(--font);
+  font-size:15px;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+
+/* ---------- header ---------- */
+.masthead{
+  background:var(--blue);
+  border-bottom:1px solid var(--line);
+  padding:44px 0 38px;
+  margin-bottom:44px;
+}
+.masthead .wrap{padding-bottom:0}
+.eyebrow{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--ink);
+  opacity:.75;
+  margin-bottom:14px;
+}
+h1{
+  font-size:34px;
+  font-weight:800;
+  letter-spacing:-.02em;
+  line-height:1.25;
+  color:var(--ink-strong);
+  margin-bottom:12px;
+}
+.lede{font-size:16px;max-width:64ch}
+.meta{
+  margin-top:22px;
+  padding-top:16px;
+  border-top:1px solid rgba(84,110,122,.22);
+  font-family:var(--mono);
+  font-size:11.5px;
+  letter-spacing:.02em;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 26px;
+  opacity:.85;
+}
+
+/* ---------- sections ---------- */
+section{margin-bottom:52px}
+.sec-head{
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+  padding-bottom:10px;
+  border-bottom:2px solid var(--ink-strong);
+  margin-bottom:22px;
+}
+.sec-num{
+  font-family:var(--mono);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+  color:var(--ink);
+  opacity:.7;
+}
+h2{font-size:21px;font-weight:700;letter-spacing:-.01em;color:var(--ink-strong)}
+h3{
+  font-size:15.5px;
+  font-weight:700;
+  color:var(--ink-strong);
+  margin:28px 0 10px;
+}
+p{margin-bottom:14px;max-width:74ch}
+p:last-child{margin-bottom:0}
+strong{color:var(--ink-strong);font-weight:700}
+.term{font-family:var(--mono);font-size:.88em;opacity:.8}
+
+/* ---------- formula band ---------- */
+.formula{
+  background:var(--white);
+  border:1px solid var(--line);
+  border-left:4px solid var(--ink-strong);
+  padding:20px 24px;
+  margin:20px 0;
+  font-family:var(--mono);
+  font-size:14px;
+  line-height:1.9;
+  color:var(--ink-strong);
+  overflow-x:auto;
+}
+.formula .cap{
+  display:block;
+  font-family:var(--font);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--ink);
+  opacity:.75;
+  margin-bottom:8px;
+}
+
+/* ---------- lifecycle phases ---------- */
+.phase{
+  background:var(--white);
+  border:1px solid var(--line);
+  margin-bottom:14px;
+}
+.phase-head{
+  background:var(--bluegrey);
+  padding:11px 18px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+}
+.phase-head b{font-size:14.5px;color:var(--ink-strong)}
+.phase-head span{font-family:var(--mono);font-size:11px;opacity:.75}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px 18px;text-align:left;vertical-align:top;border-bottom:1px solid #E4E8EA}
+tbody tr:last-child td{border-bottom:none}
+th{
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--ink);
+  opacity:.8;
+  background:var(--grey);
+  border-bottom:1px solid var(--line);
+}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.item{width:26%;color:var(--ink-strong);font-weight:600}
+td.local{width:30%;font-family:var(--mono);font-size:12.5px;opacity:.9}
+
+/* generic bordered table */
+.tbl{background:var(--white);border:1px solid var(--line);margin:18px 0;overflow-x:auto}
+.tbl table{min-width:520px}
+
+/* ---------- callouts ---------- */
+.note{
+  background:var(--bluegrey);
+  border:1px solid var(--line);
+  padding:16px 20px;
+  margin:18px 0;
+  font-size:14px;
+}
+.note b{display:block;margin-bottom:5px;color:var(--ink-strong)}
+.key{
+  background:var(--sage);
+  border:1px solid #C8E6C9;
+  padding:18px 22px;
+  margin:20px 0;
+  font-size:14.5px;
+}
+.key b{display:block;margin-bottom:6px;color:var(--ink-strong);font-size:15px}
+
+/* ---------- calculator (signature) ---------- */
+.calc{background:var(--white);border:1px solid var(--line);padding:0;margin:22px 0}
+.calc-top{
+  background:var(--blue);
+  padding:16px 22px;
+  border-bottom:1px solid var(--line);
+}
+.calc-top b{font-size:15px;color:var(--ink-strong)}
+.calc-top p{font-size:13px;margin:4px 0 0;opacity:.9}
+.calc-grid{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:0}
+.calc-grid>div{padding:14px 18px;border-bottom:1px solid #E4E8EA}
+.calc-grid .lbl{font-size:13.5px;display:flex;align-items:center}
+.calc-grid .hdr{
+  background:var(--bluegrey);
+  font-family:var(--mono);
+  font-size:11.5px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  font-weight:700;
+  color:var(--ink-strong);
+  text-align:center;
+  border-bottom:1px solid var(--line);
+}
+.calc-grid input{
+  width:100%;
+  border:1px solid var(--line);
+  background:var(--grey);
+  padding:7px 10px;
+  font-family:var(--mono);
+  font-variant-numeric:tabular-nums;
+  font-size:13.5px;
+  color:var(--ink-strong);
+  text-align:right;
+  border-radius:0;
+}
+.calc-grid input:focus{outline:2px solid var(--ink-strong);outline-offset:-2px;background:var(--white)}
+.out{background:var(--sage)}
+.out .rslt{
+  font-family:var(--mono);
+  font-variant-numeric:tabular-nums;
+  font-size:20px;
+  font-weight:700;
+  color:var(--ink-strong);
+  text-align:center;
+  line-height:1.3;
+}
+.out .rslt small{display:block;font-size:11px;font-weight:400;opacity:.75;letter-spacing:.04em}
+.verdict{padding:16px 22px;background:var(--bluegrey);font-size:14px;border-top:1px solid var(--line)}
+.verdict b{color:var(--ink-strong)}
+/* composition bar */
+.barwrap{padding:16px 22px;border-bottom:1px solid #E4E8EA}
+.barlbl{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.8;margin-bottom:7px}
+.bar{display:flex;height:22px;border:1px solid var(--line);background:var(--grey);overflow:hidden}
+.bar i{display:block;height:100%;font-style:normal}
+.bar .s1{background:#B0BEC5}
+.bar .s2{background:#CFD8DC}
+.bar .s3{background:#E3F2FD}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px;font-family:var(--mono);font-size:11px;opacity:.85}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;display:inline-block;border:1px solid var(--line)}
+
+/* ---------- pitfalls ---------- */
+.pit{border-top:1px solid var(--line);padding:16px 0}
+.pit:last-child{border-bottom:1px solid var(--line)}
+.pit b{display:block;color:var(--ink-strong);font-size:14.5px;margin-bottom:4px}
+.pit p{font-size:14px;margin:0}
+
+footer{
+  margin-top:60px;
+  padding-top:20px;
+  border-top:1px solid var(--line);
+  font-family:var(--mono);
+  font-size:11.5px;
+  opacity:.8;
+  line-height:2;
+}
+
+@media (max-width:720px){
+  h1{font-size:26px}
+  .calc-grid{grid-template-columns:1fr 1fr;font-size:13px}
+  .calc-grid .lbl{grid-column:1 / -1;padding-bottom:2px;font-weight:600;color:var(--ink-strong)}
+  .calc-grid .hdr:first-child{display:none}
+  td.item{width:auto}
+  td.local{display:none}
+  .tbl table{min-width:440px}
+}
+@media print{
+  body{background:var(--white)}
+  .masthead{background:var(--white)}
+  section{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">ASCENDO TECHNICAL REFERENCE · TCO-01</div>
+    <h1>타이어 총소유비용(TCO) 기준서</h1>
+    <p class="lede">타이어의 경쟁력은 구매단가가 아니라 <strong>1 km, 1시간, 1톤을 움직이는 데 드는 비용</strong>으로 결정된다. 이 문서는 PT Ascendo가 실차시험·고객 제안·경쟁 비교에 공통으로 적용하는 TCO 산출 기준을 정의한다.</p>
+    <div class="meta">
+      <span>PT ASCENDO INTERNASIONAL</span>
+      <span>적용 범위 : TBR · OTR · 산업용</span>
+      <span>통화 기준 : IDR</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- 1 -->
+<section>
+  <div class="sec-head"><span class="sec-num">01</span><h2>정의</h2></div>
+  <p><strong>TCO</strong> <span class="term">(Total Cost of Ownership / Biaya Kepemilikan Total / 총소유비용)</span>는 타이어를 구입해 폐기할 때까지 발생하는 모든 비용에서 회수 가치를 뺀 금액을, 그 타이어가 실제로 수행한 작업량으로 나눈 값이다.</p>
+
+  <div class="formula">
+    <span class="cap">기본식</span>
+    TCO = (취득비용 + 운용비용 + 처분비용 − 회수가치) ÷ 작업량
+  </div>
+
+  <p>구매단가만 비교하면 저가 제품이 항상 이긴다. 그러나 실무에서 저가 제품은 수명이 짧아 교체 횟수가 늘고, 교체마다 공임·다운타임·케이싱 손실이 함께 발생한다. TCO는 이 숨은 비용을 모두 드러내 <strong>같은 조건에서 비교 가능한 하나의 숫자</strong>로 만든다.</p>
+
+  <div class="key">
+    <b>고객 설득의 핵심 전환</b>
+    “이 타이어 얼마입니까?” → “이 타이어로 1 km 달리는 데 얼마 듭니까?”<br>
+    구매단가는 총비용의 일부다. 아래 계산기에서 그 비중을 직접 확인할 수 있다.
+  </div>
+</section>
+
+<!-- 2 -->
+<section>
+  <div class="sec-head"><span class="sec-num">02</span><h2>비용 구성 — 수명주기 3단계</h2></div>
+  <p>비용 항목은 발생 시점에 따라 취득·운용·처분 3단계로 묶인다. 이 구분은 회계 처리 시점과 담당 부서가 다르기 때문에 실무상 반드시 분리해서 집계한다.</p>
+
+  <div class="phase">
+    <div class="phase-head"><b>Ⅰ. 취득 단계</b><span>Perolehan / Acquisition</span></div>
+    <table>
+      <thead><tr><th>항목</th><th>Bahasa Indonesia · English</th><th>집계 기준</th></tr></thead>
+      <tbody>
+        <tr><td class="item">타이어 구매가</td><td class="local">Harga beli · Purchase price</td><td>본당 단가, 부가세 제외</td></tr>
+        <tr><td class="item">튜브·플랩</td><td class="local">Ban dalam, flap · Tube &amp; flap</td><td>Tube Type만 해당</td></tr>
+        <tr><td class="item">운송비</td><td class="local">Biaya kirim · Freight</td><td>창고 → 현장, 본당 배분</td></tr>
+        <tr><td class="item">장착 공임</td><td class="local">Biaya pasang · Mounting</td><td>탈착 공임 포함</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><b>Ⅱ. 운용 단계</b><span>Operasional / In-service</span></div>
+    <table>
+      <thead><tr><th>항목</th><th>Bahasa Indonesia · English</th><th>집계 기준</th></tr></thead>
+      <tbody>
+        <tr><td class="item">공기압 관리</td><td class="local">Pemeriksaan tekanan · Pressure check</td><td>점검 인건비, TPMS 상각</td></tr>
+        <tr><td class="item">수리비</td><td class="local">Biaya tambal · Repair</td><td>펑크·컷 수리 실비</td></tr>
+        <tr><td class="item">로테이션</td><td class="local">Rotasi · Rotation</td><td>위치 교환 공임</td></tr>
+        <tr><td class="item">연료비 영향</td><td class="local">Dampak konsumsi BBM · Fuel impact</td><td>회전저항·저압 손실분</td></tr>
+        <tr><td class="item">다운타임</td><td class="local">Waktu henti · Downtime</td><td>정지시간 × 시간당 기회손실</td></tr>
+        <tr><td class="item">조기 폐기 손실</td><td class="local">Kerugian afkir dini · Premature removal</td><td>잔여 트레드 미사용분</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><b>Ⅲ. 처분 단계</b><span>Pelepasan / Disposal</span></div>
+    <table>
+      <thead><tr><th>항목</th><th>Bahasa Indonesia · English</th><th>집계 기준</th></tr></thead>
+      <tbody>
+        <tr><td class="item">폐타이어 처리</td><td class="local">Biaya limbah · Scrap handling</td><td>운반·처리 실비</td></tr>
+        <tr><td class="item">스크랩 매각액</td><td class="local">Nilai jual afkir · Scrap value</td><td>회수가치 <b>(−)</b></td></tr>
+        <tr><td class="item">케이싱 가치</td><td class="local">Nilai casing · Casing value</td><td>회수가치 <b>(−)</b>, 재생 가능 시</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <b>회수가치를 반드시 음수로 반영한다</b>
+    재생(vulkanisir / retread)이 가능한 규격은 케이싱 가치가 구매가의 15~25%에 달한다. 이를 빼지 않으면 자사 제품의 TCO가 실제보다 높게 계산되어 경쟁 비교에서 불리해진다. 반대로 3 mm까지 완전 마모시켜 케이싱을 버리면, 절약한 것처럼 보이는 트레드보다 잃은 케이싱 가치가 더 큰 경우가 많다.
+  </div>
+</section>
+
+<!-- 3 -->
+<section>
+  <div class="sec-head"><span class="sec-num">03</span><h2>핵심 지표</h2></div>
+  <p>분모를 무엇으로 두느냐가 지표의 성격을 결정한다. 고객이 자기 원가를 관리하는 단위와 일치시켜야 제안이 검토 대상에 오른다.</p>
+
+  <div class="tbl">
+    <table>
+      <thead><tr><th>지표</th><th>산식</th><th>적용 대상</th></tr></thead>
+      <tbody>
+        <tr><td class="item">CPK<br><span class="term">Cost per km</span></td><td class="local">총비용 ÷ 주행거리(km)</td><td>TBR, 장거리 운송, Road Train</td></tr>
+        <tr><td class="item">CPH<br><span class="term">Cost per hour</span></td><td class="local">총비용 ÷ 가동시간(HM)</td><td>Loader, Dozer, Grader, 지게차</td></tr>
+        <tr><td class="item">Cost per ton</td><td class="local">총비용 ÷ 총 운반톤수</td><td>Hauling 계약, 광산</td></tr>
+        <tr><td class="item">Cost per ton-km</td><td class="local">총비용 ÷ (톤수 × 거리)</td><td>장거리 hauling 통합 비교</td></tr>
+        <tr><td class="item">TKPH<br><span class="term">Ton-Kilometer Per Hour</span></td><td class="local">평균 하중(ton) × 평균 속도(km/h)</td><td>OTR 열부하 진단</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>TKPH — 비용이 아니라 진단 지표</h3>
+  <p>TKPH는 타이어가 견디는 열부하의 척도다. 실사용 TKPH가 규격 TKPH를 넘으면 트레드가 남아 있어도 열분리(<span class="term">pemisahan panas / heat separation</span>)로 폐기된다. <strong>실사용 ÷ 규격이 100%를 넘는 상태에서 나온 TCO 비교는 제품 성능이 아니라 운용 조건을 측정한 것</strong>이므로, 경쟁 비교 근거로 쓸 수 없다.</p>
+
+  <h3>마모율과 수명 추정</h3>
+  <div class="formula">
+    <span class="cap">마모율 · 예상수명</span>
+    마모율 (mm/1,000 km) = (초기 트레드 − 현재 트레드) ÷ 주행거리 × 1,000
+    사용가능 트레드 (mm) = 신품 트레드 − 탈착 기준 트레드
+    예상수명 (km)       = 사용가능 트레드 ÷ 마모율 × 1,000
+  </div>
+  <p><strong>탈착 기준 트레드</strong>를 몇 mm로 잡느냐가 수명을 좌우한다. 재생을 전제하면 케이싱 보호를 위해 더 일찍 탈착하므로 사용가능 트레드가 줄지만, 케이싱 가치가 회수되어 최종 TCO는 오히려 낮아진다. 경쟁 비교 시 양사의 탈착 기준이 다르면 그 비교는 무효다.</p>
+</section>
+
+<!-- 4 -->
+<section>
+  <div class="sec-head"><span class="sec-num">04</span><h2>비교 계산기</h2></div>
+  <p>두 제품의 조건을 입력하면 본당 총비용과 km당 비용이 즉시 계산된다. 기본값은 14.00R24 급 Road Train 조건 예시다.</p>
+
+  <div class="calc">
+    <div class="calc-top">
+      <b>제품 A vs 제품 B · km당 비용 비교</b>
+      <p>금액 단위 IDR, 본당 기준. 회수가치는 양수로 입력하면 자동으로 차감된다.</p>
+    </div>
+    <div class="calc-grid" id="calcGrid">
+      <div class="hdr">항목</div><div class="hdr">제품 A</div><div class="hdr">제품 B</div>
+
+      <div class="lbl">타이어 구매가</div>
+      <div><input type="text" inputmode="numeric" id="a_price" value="6,000,000"></div>
+      <div><input type="text" inputmode="numeric" id="b_price" value="7,200,000"></div>
+
+      <div class="lbl">예상수명 (km)</div>
+      <div><input type="text" inputmode="numeric" id="a_life" value="42,600"></div>
+      <div><input type="text" inputmode="numeric" id="b_life" value="55,000"></div>
+
+      <div class="lbl">운송 + 장착·탈착</div>
+      <div><input type="text" inputmode="numeric" id="a_mount" value="230,000"></div>
+      <div><input type="text" inputmode="numeric" id="b_mount" value="230,000"></div>
+
+      <div class="lbl">수리 + 공기압 관리</div>
+      <div><input type="text" inputmode="numeric" id="a_maint" value="150,000"></div>
+      <div><input type="text" inputmode="numeric" id="b_maint" value="120,000"></div>
+
+      <div class="lbl">다운타임 손실</div>
+      <div><input type="text" inputmode="numeric" id="a_down" value="400,000"></div>
+      <div><input type="text" inputmode="numeric" id="b_down" value="300,000"></div>
+
+      <div class="lbl">회수가치 (케이싱 + 스크랩)</div>
+      <div><input type="text" inputmode="numeric" id="a_recov" value="600,000"></div>
+      <div><input type="text" inputmode="numeric" id="b_recov" value="900,000"></div>
+
+      <div class="lbl" style="font-weight:700;color:#37474F">본당 순비용</div>
+      <div class="out"><div class="rslt" id="a_net">—<small>IDR / 본</small></div></div>
+      <div class="out"><div class="rslt" id="b_net">—<small>IDR / 본</small></div></div>
+
+      <div class="lbl" style="font-weight:700;color:#37474F">km당 비용 (CPK)</div>
+      <div class="out"><div class="rslt" id="a_cpk">—<small>IDR / km</small></div></div>
+      <div class="out"><div class="rslt" id="b_cpk">—<small>IDR / km</small></div></div>
+    </div>
+
+    <div class="barwrap">
+      <div class="barlbl">총비용 구성 · 제품 A</div>
+      <div class="bar" id="bar_a"><i class="s1" style="width:70%"></i><i class="s2" style="width:20%"></i><i class="s3" style="width:10%"></i></div>
+      <div class="barlbl" style="margin-top:14px">총비용 구성 · 제품 B</div>
+      <div class="bar" id="bar_b"><i class="s1" style="width:70%"></i><i class="s2" style="width:20%"></i><i class="s3" style="width:10%"></i></div>
+      <div class="legend">
+        <span><i class="s1"></i>구매가</span>
+        <span><i class="s2"></i>운용·부대비용</span>
+        <span><i class="s3"></i>다운타임</span>
+      </div>
+    </div>
+
+    <div class="verdict" id="verdict">—</div>
+  </div>
+
+  <div class="note">
+    <b>다운타임 손실을 0으로 두지 않는다</b>
+    광산·hauling 고객의 차량 정지 손실은 시간당 IDR 수백만 원 규모다. 교체 1회에 2시간이 걸린다면 그 자체가 타이어 단가에 필적하는 비용이 된다. 고객사의 시간당 기회손실 단가를 확인해 반영하면, 수명이 긴 제품의 우위가 급격히 커진다.
+  </div>
+</section>
+
+<!-- 5 -->
+<section>
+  <div class="sec-head"><span class="sec-num">05</span><h2>실무에서 반복되는 5가지 오류</h2></div>
+
+  <div class="pit">
+    <b>① 초기 구간 마모율로 수명을 외삽한다</b>
+    <p>신품 초기 마모가 가장 빠르다. 첫 10,000~15,000 km 데이터로 환산하면 수명이 과소평가되고, 반대로 마모가 완만해진 중기 구간만 쓰면 과대평가된다. 실제 탈착 데이터가 확보되기 전 수치는 <strong>잠정치</strong>로 표기한다.</p>
+  </div>
+  <div class="pit">
+    <b>② 탈착 사유를 구분하지 않는다</b>
+    <p>정상 마모 폐기와 손상 폐기를 섞으면 평균 수명이 무너진다. 손상 폐기는 제품 성능이 아니라 노면·운전·공기압 관리의 결과인 경우가 많다. 사유 코드 없이 나온 수명 비교는 클레임 대응 근거가 되지 못한다.</p>
+  </div>
+  <div class="pit">
+    <b>③ 축 위치를 매칭하지 않고 브랜드를 비교한다</b>
+    <p>조향축·구동축·복륜 내측은 마모 속도가 2~3배 차이 난다. 서로 다른 축의 데이터를 평균 내어 브랜드를 비교하면 결과는 위치 배분의 차이일 뿐이다.</p>
+  </div>
+  <div class="pit">
+    <b>④ 공기압 이력 없이 마모 데이터만 본다</b>
+    <p>저압은 숄더 마모와 회전저항을, 과압은 중앙 마모를 만든다. 냉간(<span class="term">tekanan dingin / cold</span>) 기준 측정값이 없으면 마모 패턴의 원인을 제품에 귀속시킬 수 없다.</p>
+  </div>
+  <div class="pit">
+    <b>⑤ 조건 없이 CPK 숫자만 제안서에 넣는다</b>
+    <p>노선·하중·공기압 관리 수준·시험 기간을 병기하지 않은 CPK는 사실상 성능 보증으로 읽힌다. 미달 시 클레임 근거가 되므로 산출 조건을 반드시 함께 명시한다.</p>
+  </div>
+</section>
+
+<!-- 6 -->
+<section>
+  <div class="sec-head"><span class="sec-num">06</span><h2>실차시험에서 수집해야 할 데이터</h2></div>
+  <p>TCO를 산출하려면 아래 항목이 타이어 개체(시리얼) 단위로 연결되어야 한다. 차량 단위로만 기록하면 중고 재배치 타이어의 누적 수명이 끊어져 CPK가 왜곡된다.</p>
+
+  <div class="tbl">
+    <table>
+      <thead><tr><th>구분</th><th>수집 항목</th><th class="num">주기</th></tr></thead>
+      <tbody>
+        <tr><td class="item">개체 식별</td><td>시리얼, 브랜드·패턴, 신품 트레드, 장착일, 장착 차량·축·포지션</td><td class="num">장착 시</td></tr>
+        <tr><td class="item">마모</td><td>4점 트레드 (Kiri / Center 2점 / Kanan), 측정일</td><td class="num">격주</td></tr>
+        <tr><td class="item">공기압</td><td>냉간 실측치, 목표치, 복륜 내측 포함 전 포지션</td><td class="num">격주</td></tr>
+        <tr><td class="item">가동</td><td>주행거리(km), 가동시간(HM), 운반톤수, 평균 속도</td><td class="num">격주</td></tr>
+        <tr><td class="item">이벤트</td><td>수리 내역·비용, 로테이션, 손상 발생, 정지시간</td><td class="num">발생 시</td></tr>
+        <tr><td class="item">탈착</td><td>탈착일, 누적 km, 잔여 트레드, <b>탈착 사유 코드</b>, 케이싱 등급, 재생 여부</td><td class="num">탈착 시</td></tr>
+        <tr><td class="item">비용</td><td>본당 단가, 운송·공임 단가, 시간당 기회손실, 케이싱·스크랩 단가</td><td class="num">분기</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>탈착 사유 코드 <span class="term">(Kode alasan pelepasan / Removal reason code)</span></h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th class="num">코드</th><th>사유</th><th>Bahasa Indonesia</th><th>TCO 귀속</th></tr></thead>
+      <tbody>
+        <tr><td class="num">NW</td><td>정상 마모</td><td class="local">Aus normal</td><td>제품 성능</td></tr>
+        <tr><td class="num">TC</td><td>트레드 컷</td><td class="local">Potongan tapak</td><td>노면 조건</td></tr>
+        <tr><td class="num">IB</td><td>임팩트 브레이크</td><td class="local">Impact break</td><td>운전·노면</td></tr>
+        <tr><td class="num">SW</td><td>사이드월 손상</td><td class="local">Kerusakan dinding samping</td><td>운전·노면</td></tr>
+        <tr><td class="num">UP</td><td>공기압 부족 기인</td><td class="local">Akibat kurang tekanan</td><td>관리 요인</td></tr>
+        <tr><td class="num">HS</td><td>열분리</td><td class="local">Pemisahan panas</td><td>TKPH 초과</td></tr>
+        <tr><td class="num">IR</td><td>불규칙 마모</td><td class="local">Aus tidak merata</td><td>정렬·관리</td></tr>
+        <tr><td class="num">MF</td><td>제조 결함</td><td class="local">Cacat produksi</td><td>제조사 귀책</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="key">
+    <b>사유 코드가 있어야 대화가 달라진다</b>
+    코드가 없으면 “우리 타이어가 짧게 갔다”로 끝난다. 코드가 있으면 “정상 마모분의 수명은 목표 대비 몇 %이며, 나머지는 공기압 관리와 노면 요인이었다”로 설명된다. 이 구분이 클레임 방어와 재수주의 근거가 된다.
+  </div>
+</section>
+
+<footer>
+  PT ASCENDO INTERNASIONAL · 타이어 TCO 기준서 (TCO-01)<br>
+  숫자 표기 : 천 단위 콤마, 소수점 마침표. 금액은 통화 코드 선행 표기(IDR).<br>
+  본 문서의 계산 결과는 입력 조건에 따른 참고값이며, 대외 제안 시 산출 조건을 반드시 병기한다.
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var ids = ['price','life','mount','maint','down','recov'];
+  var fields = [];
+  ['a','b'].forEach(function(p){ ids.forEach(function(k){ fields.push(p+'_'+k); }); });
+
+  function num(id){
+    var el = document.getElementById(id);
+    if(!el) return 0;
+    var v = parseFloat(String(el.value).replace(/[^0-9.\-]/g,''));
+    return isNaN(v) ? 0 : v;
+  }
+  function fmt(n, d){
+    d = d || 0;
+    if(!isFinite(n)) return '—';
+    return n.toLocaleString('en-US',{minimumFractionDigits:d, maximumFractionDigits:d});
+  }
+  function side(p){
+    var price = num(p+'_price'),
+        life  = num(p+'_life'),
+        mount = num(p+'_mount'),
+        maint = num(p+'_maint'),
+        down  = num(p+'_down'),
+        recov = num(p+'_recov');
+    var other = mount + maint;
+    var net = price + other + down - recov;
+    return {price:price, life:life, other:other, down:down, recov:recov,
+            net:net, cpk: life > 0 ? net/life : NaN};
+  }
+  function drawBar(el, s){
+    var total = s.price + s.other + s.down;
+    if(total <= 0){ total = 1; }
+    var parts = el.querySelectorAll('i');
+    parts[0].style.width = (s.price/total*100) + '%';
+    parts[1].style.width = (s.other/total*100) + '%';
+    parts[2].style.width = (s.down/total*100)  + '%';
+    el.setAttribute('title','구매가 ' + (s.price/total*100).toFixed(1) + '% · 부대비용 '
+      + (s.other/total*100).toFixed(1) + '% · 다운타임 ' + (s.down/total*100).toFixed(1) + '%');
+  }
+  function run(){
+    var A = side('a'), B = side('b');
+    document.getElementById('a_net').innerHTML = fmt(A.net) + '<small>IDR / 본</small>';
+    document.getElementById('b_net').innerHTML = fmt(B.net) + '<small>IDR / 본</small>';
+    document.getElementById('a_cpk').innerHTML = (isFinite(A.cpk)? fmt(A.cpk,2):'—') + '<small>IDR / km</small>';
+    document.getElementById('b_cpk').innerHTML = (isFinite(B.cpk)? fmt(B.cpk,2):'—') + '<small>IDR / km</small>';
+
+    drawBar(document.getElementById('bar_a'), A);
+    drawBar(document.getElementById('bar_b'), B);
+
+    var v = document.getElementById('verdict');
+    if(!isFinite(A.cpk) || !isFinite(B.cpk) || A.cpk <= 0 || B.cpk <= 0){
+      v.innerHTML = '예상수명(km)을 입력하면 비교 결과가 표시된다.';
+      return;
+    }
+    var win = A.cpk < B.cpk ? 'A' : 'B';
+    var lose = win === 'A' ? 'B' : 'A';
+    var hi = Math.max(A.cpk, B.cpk), lo = Math.min(A.cpk, B.cpk);
+    var gap = (hi - lo) / hi * 100;
+    var pDiff = (B.price - A.price) / (A.price || 1) * 100;
+    var msg = '<b>제품 ' + win + '</b>의 km당 비용이 ' + gap.toFixed(1) + '% 낮다. '
+            + '1,000 km 기준 IDR ' + fmt(lo*1000, 0) + ' vs IDR ' + fmt(hi*1000, 0) + '.';
+    if(win === 'B' && pDiff > 0){
+      msg += ' 제품 B는 구매가가 ' + pDiff.toFixed(1) + '% 높지만 수명·부대비용에서 이를 회수한다.';
+    } else if(win === 'A' && pDiff > 0){
+      msg += ' 제품 B는 구매가가 ' + pDiff.toFixed(1) + '% 높고 km당 비용도 높다 — 수명 우위가 단가 차이를 상쇄하지 못한다.';
+    }
+    v.innerHTML = msg;
+  }
+  fields.forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('input', run);
+    el.addEventListener('blur', function(){
+      var v = parseFloat(String(el.value).replace(/[^0-9.\-]/g,''));
+      if(!isNaN(v)) el.value = v.toLocaleString('en-US');
+      run();
+    });
+  });
+  run();
+})();
+</script>
+</body>
+</html>

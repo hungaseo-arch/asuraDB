@@ -2,7 +2,6 @@
 주간 지표 수집기 — 원자재·운임 주간 갱신 (매주 금요일 실행)
 
 수집 대상:
-  #5  coal             — 석탄 Newcastle (Trading Economics)
   #6  carbon_black     — 카본블랙 (브렌트유 Proxy 자동 추정 + 수동)
   #7  synthetic_rubber — 합성고무 BD (Trading Economics Butadiene + 수동)
   #8  steel_wire       — 강선 HRC (Trading Economics Steel HRC + 수동)
@@ -11,9 +10,16 @@
 실행: uv run python collectors/weekly_collector.py
 cron: 0 10 * * 5  uv run python collectors/weekly_collector.py
 
-소스 우선순위 (#5,#7,#8): Trading Economics → 수동 입력
-소스 우선순위 (#6):        DB 브렌트유 Proxy → 수동 입력
-소스 우선순위 (#13):       SSE AJAX → SSE HTML → MacroMicro → 수동 입력
+소스 우선순위 (#7,#8): Trading Economics → 수동 입력
+소스 우선순위 (#6):     DB 브렌트유 Proxy → 수동 입력
+소스 우선순위 (#13):    SSE AJAX → SSE HTML → MacroMicro → 수동 입력
+
+품질 등급(quality): 실측 = 소스 발표 원본값 · 파생 = 규칙 산출 · 추정 = Proxy/대체품목
+  · carbon_black = 브렌트유 Proxy → 추정
+  · steel_wire   = HRC 대체 → 추정 (강선 실가격 아님)
+
+coal 은 이 수집기에서 제외했다. 출처가 Trading Economics Newcastle → ESDM
+HBA/HBA I(인니 정부 월 1회 고시) 로 바뀌어 monthly_collector 가 맡는다.
 """
 import json
 import os
@@ -53,7 +59,6 @@ _TE_GUEST    = "https://api.tradingeconomics.com/commodity"
 # TE 슬러그 및 유효 범위
 _TE_CFG: dict[str, tuple[str, float, float]] = {
     # indicator_id: (slug, val_min, val_max)
-    "coal":             ("coal-newcastle",  80,   500),   # USD/MT
     "synthetic_rubber": ("butadiene",      500,  3000),   # USD/MT (BD)
     "steel_wire":       ("steel",          300,  2000),   # USD/MT (HRC 기준)
 }
@@ -63,16 +68,41 @@ _TE_CFG: dict[str, tuple[str, float, float]] = {
 #  공통 유틸
 # ══════════════════════════════════════════════════════════════
 
-def upsert(indicator_id: str, record_date: date, value: float, note: str = "") -> None:
+def upsert(indicator_id: str, record_date: date, value: float,
+           note: str = "", quality: str = "실측") -> None:
+    """모든 행은 출처(note)와 품질 등급(실측/파생/추정)을 갖는다 (5년백필 원칙)."""
+    if not note:
+        raise ValueError(f"note(출처) 없는 행 금지: {indicator_id} {record_date}")
+    if quality not in ("실측", "파생", "추정"):
+        raise ValueError(f"quality 값 오류: {quality}")
     _sb.table("indicator_history").upsert(
         {
             "indicator_id":  indicator_id,
             "value":         value,
             "recorded_date": record_date.isoformat(),
-            "note":          note or None,
+            "note":          note,
+            "quality":       quality,
         },
         on_conflict="indicator_id,recorded_date",
     ).execute()
+
+
+def _reject_outlier(indicator_id: str, val: Optional[float],
+                    max_dev: float = 0.25) -> Optional[float]:
+    """DB 최근값 대비 ±max_dev 초과 이탈 값은 스크래핑 오인으로 간주하고 버린다.
+
+    TE 페이지가 무관한 숫자를 집어오는 사고 방지 (2026-08 steel_wire 에서
+    308~970 USD/MT 를 오갔고 synthetic_rubber 도 1,054↔2,753 로 튀었다).
+    실제 급등락이라면 CLI 수동 입력으로 반영한다(이 검사를 거치지 않음).
+    """
+    if val is None:
+        return None
+    prev = _latest_in_db(indicator_id)
+    if prev and prev[1] > 0 and abs(val - prev[1]) / prev[1] > max_dev:
+        print(f"  [WARN] {indicator_id} 이상값 폐기: {val:,.2f} vs DB {prev[1]:,.2f} ({prev[0]})",
+              file=sys.stderr)
+        return None
+    return val
 
 
 def _latest_in_db(indicator_id: str) -> Optional[tuple[date, float]]:
@@ -259,44 +289,6 @@ def _latest_brent_from_db() -> Optional[float]:
 
 
 # ══════════════════════════════════════════════════════════════
-#  #5  석탄 Newcastle (coal)
-#  단위: USD/MT  |  소스: Trading Economics Newcastle
-# ══════════════════════════════════════════════════════════════
-
-def collect_coal() -> bool:
-    print("\n── #5 석탄 Newcastle (coal) ─────────────────────────────")
-    slug, lo, hi = _TE_CFG["coal"]
-
-    print("  1차: Trading Economics Newcastle 시도...")
-    val = _fetch_te(slug, lo, hi)
-
-    if val is None:
-        print("  TE 파싱 실패 → TE API 시도...")
-        val = _fetch_te_api(slug, lo, hi)
-
-    if val is None:
-        latest = _latest_in_db("coal")
-        print("  [FAIL] 자동 수집 실패 — 수동 입력 필요")
-        print("  ▸ Newcastle: https://tradingeconomics.com/commodity/coal-newcastle (USD/MT)")
-        print("  ▸ HBA 인도네시아: https://www.minerba.esdm.go.id/harga_acuan")
-        if latest:
-            print(f"  ▸ DB 최근값: {latest[1]:.2f} USD/MT  ({latest[0]})")
-        print("  ▸ 수동 실행: uv run python collectors/weekly_collector.py --coal 135.0")
-        return False
-
-    today = date.today()
-    prev  = _latest_in_db("coal")
-    upsert("coal", today, val, "Trading Economics Newcastle Coal")
-    change = ""
-    if prev and prev[1] != 0:
-        pct    = (val - prev[1]) / prev[1] * 100
-        arrow  = "▲" if pct > 0 else ("▼" if pct < 0 else "─")
-        change = f"  {arrow} {pct:+.2f}% vs {prev[0]}"
-    print(f"  석탄: {val:.2f} USD/MT{change}  ✓")
-    return True
-
-
-# ══════════════════════════════════════════════════════════════
 #  #6  카본블랙 (carbon_black)
 #  단위: USD/MT  |  소스: 브렌트유 DB Proxy (수동 우선)
 # ══════════════════════════════════════════════════════════════
@@ -313,7 +305,8 @@ def collect_carbon_black() -> bool:
         val    = round(brent * _CB_BRENT_FACTOR, 0)
         today  = date.today()
         prev   = _latest_in_db("carbon_black")
-        upsert("carbon_black", today, val, f"Proxy: Brent×{_CB_BRENT_FACTOR} (Brent={brent:.2f})")
+        upsert("carbon_black", today, val,
+               f"추정: 브렌트유 Proxy Brent×{_CB_BRENT_FACTOR} (Brent={brent:.2f} USD/bbl)", "추정")
         change = ""
         if prev and prev[1] != 0:
             pct    = (val - prev[1]) / prev[1] * 100
@@ -339,14 +332,15 @@ def collect_carbon_black() -> bool:
 
 def collect_synthetic_rubber() -> bool:
     print("\n── #7 합성고무 BD (synthetic_rubber) ────────────────────")
-    slug, lo, hi = _TE_CFG["synthetic_rubber"]
+    _ind = "synthetic_rubber"
+    slug, lo, hi = _TE_CFG[_ind]
 
     print("  1차: Trading Economics Butadiene 시도...")
-    val = _fetch_te(slug, lo, hi)
+    val = _reject_outlier(_ind, _fetch_te(slug, lo, hi))
 
     if val is None:
-        print("  TE 파싱 실패 → TE API 시도...")
-        val = _fetch_te_api(slug, lo, hi)
+        print("  TE 파싱 실패/이상값 → TE API 시도...")
+        val = _reject_outlier(_ind, _fetch_te_api(slug, lo, hi))
 
     if val is None:
         latest = _latest_in_db("synthetic_rubber")
@@ -360,7 +354,8 @@ def collect_synthetic_rubber() -> bool:
 
     today = date.today()
     prev  = _latest_in_db("synthetic_rubber")
-    upsert("synthetic_rubber", today, val, "Trading Economics Butadiene (BD)")
+    upsert("synthetic_rubber", today, val,
+           "Trading Economics Butadiene (BD) 시세 · USD/MT")
     change = ""
     if prev and prev[1] != 0:
         pct    = (val - prev[1]) / prev[1] * 100
@@ -377,14 +372,15 @@ def collect_synthetic_rubber() -> bool:
 
 def collect_steel_wire() -> bool:
     print("\n── #8 강선 HRC (steel_wire) ─────────────────────────────")
-    slug, lo, hi = _TE_CFG["steel_wire"]
+    _ind = "steel_wire"
+    slug, lo, hi = _TE_CFG[_ind]
 
     print("  1차: Trading Economics Steel HRC 시도...")
-    val = _fetch_te(slug, lo, hi)
+    val = _reject_outlier(_ind, _fetch_te(slug, lo, hi))
 
     if val is None:
-        print("  TE 파싱 실패 → TE API 시도...")
-        val = _fetch_te_api(slug, lo, hi)
+        print("  TE 파싱 실패/이상값 → TE API 시도...")
+        val = _reject_outlier(_ind, _fetch_te_api(slug, lo, hi))
 
     if val is None:
         latest = _latest_in_db("steel_wire")
@@ -399,7 +395,8 @@ def collect_steel_wire() -> bool:
 
     today = date.today()
     prev  = _latest_in_db("steel_wire")
-    upsert("steel_wire", today, val, "Trading Economics Steel HRC (Proxy)")
+    upsert("steel_wire", today, val,
+           "추정: Trading Economics Steel HRC 대체 (강선 실가격 아님) · USD/MT", "추정")
     change = ""
     if prev and prev[1] != 0:
         pct    = (val - prev[1]) / prev[1] * 100
@@ -579,7 +576,7 @@ def collect_scfi() -> bool:
         return False
 
     record_date, idx = result
-    upsert("scfi", record_date, idx, "SSE / MacroMicro")
+    upsert("scfi", record_date, idx, "SSE(상하이항운교역소) 공식 SCFI Composite / MacroMicro 대체")
 
     # 전주 대비 변화
     latest = _latest_in_db("scfi")
@@ -597,16 +594,15 @@ def collect_scfi() -> bool:
 # ══════════════════════════════════════════════════════════════
 #  CLI 수동 입력
 #  예) uv run python collectors/weekly_collector.py --scfi 1234.5
-#      uv run python collectors/weekly_collector.py --coal 135.0
 #      uv run python collectors/weekly_collector.py --carbon-black 1050 --steel-wire 650
 # ══════════════════════════════════════════════════════════════
 
+# (ind_id, 단위, 표기포맷, 품질등급)
 _CLI_MAP = {
-    "--coal":             ("coal",             "USD/MT",  "{:.2f}"),
-    "--carbon-black":     ("carbon_black",     "USD/MT",  "{:,.0f}"),
-    "--synthetic-rubber": ("synthetic_rubber", "USD/MT",  "{:,.0f}"),
-    "--steel-wire":       ("steel_wire",       "USD/MT",  "{:,.0f}"),
-    "--scfi":             ("scfi",             "Index",   "{:,.1f}"),
+    "--carbon-black":     ("carbon_black",     "USD/MT",  "{:,.0f}", "추정"),
+    "--synthetic-rubber": ("synthetic_rubber", "USD/MT",  "{:,.0f}", "실측"),
+    "--steel-wire":       ("steel_wire",       "USD/MT",  "{:,.0f}", "추정"),
+    "--scfi":             ("scfi",             "Index",   "{:,.1f}", "실측"),
 }
 
 
@@ -618,10 +614,11 @@ def _handle_cli(args: list[str]) -> bool:
     while i < len(args):
         flag = args[i]
         if flag in _CLI_MAP and i + 1 < len(args):
-            ind_id, unit, fmt = _CLI_MAP[flag]
+            ind_id, unit, fmt, qual = _CLI_MAP[flag]
             val = float(args[i + 1])
             record_date = friday if ind_id == "scfi" else today
-            upsert(ind_id, record_date, val, "수동 입력")
+            upsert(ind_id, record_date, val,
+                   f"수동 입력 ({fmt.format(val)} {unit})", qual)
             print(f"  {ind_id} 수동 저장: {fmt.format(val)} {unit}  ({record_date})")
             handled = True; i += 2
         else:
@@ -643,7 +640,6 @@ def run() -> None:
             print("\n[weekly_collector] 수동 입력 완료")
             return
 
-    ok_coal   = collect_coal()
     ok_cb     = collect_carbon_black()
     ok_sr     = collect_synthetic_rubber()
     ok_sw     = collect_steel_wire()
@@ -651,7 +647,6 @@ def run() -> None:
 
     print("\n" + "=" * 52)
     results = [
-        ("#5  석탄 Newcastle",  ok_coal,  "--coal <USD/MT>"),
         ("#6  카본블랙",         ok_cb,    "--carbon-black <USD/MT>"),
         ("#7  합성고무 BD",      ok_sr,    "--synthetic-rubber <USD/MT>"),
         ("#8  강선 HRC",        ok_sw,    "--steel-wire <USD/MT>"),
@@ -667,7 +662,7 @@ def run() -> None:
     if failed:
         print("\n수동 입력 명령어:")
         for _, cmd in failed:
-            print(f"  uv run python collectors/weekly_collector.py --{cmd}")
+            print(f"  uv run python collectors/weekly_collector.py {cmd}")
 
     from heartbeat import record
     record("weekly_collector")

@@ -1,0 +1,100 @@
+indicator_id,year_month,value,unit,quality,source_note
+idn_pmi,2021-09,52.2,Index,실측,take-profit.org PMI history (release 2021-10-01)
+idn_pmi,2021-10,57.2,Index,실측,Trading Economics · Databoks (역대 최고치)
+idn_pmi,2021-11,53.9,Index,실측,Databoks (ASEAN 최고 확장)
+idn_pmi,2021-12,53.5,Index,실측,Jakarta Globe / IHS Markit press
+idn_pmi,2022-01,53.7,Index,실측,take-profit.org · Databoks
+idn_pmi,2022-02,51.2,Index,실측,take-profit.org · Databoks
+idn_pmi,2022-03,51.3,Index,실측,take-profit.org PMI history
+idn_pmi,2022-04,51.9,Index,실측,take-profit.org · Databoks
+idn_pmi,2022-05,50.8,Index,실측,take-profit.org PMI history
+idn_pmi,2022-06,50.2,Index,실측,take-profit.org PMI history
+idn_pmi,2022-07,51.3,Index,실측,take-profit.org PMI history
+idn_pmi,2022-08,51.7,Index,실측,take-profit.org PMI history
+idn_pmi,2022-09,53.7,Index,실측,take-profit.org PMI history
+idn_pmi,2022-10,51.8,Index,실측,take-profit.org PMI history
+idn_pmi,2022-11,50.3,Index,실측,take-profit.org PMI history
+idn_pmi,2022-12,50.9,Index,실측,take-profit.org PMI history
+idn_pmi,2023-01,51.3,Index,실측,take-profit.org PMI history
+idn_pmi,2023-02,51.2,Index,실측,take-profit.org PMI history
+idn_pmi,2023-03,51.9,Index,실측,take-profit.org · Databoks
+idn_pmi,2023-04,52.7,Index,실측,take-profit.org · Databoks
+idn_pmi,2023-05,50.3,Index,실측,take-profit.org PMI history
+idn_pmi,2023-06,52.5,Index,실측,take-profit.org · Databoks
+idn_pmi,2023-07,53.3,Index,실측,take-profit.org PMI history
+idn_pmi,2023-08,53.9,Index,실측,take-profit.org PMI history
+idn_pmi,2023-09,52.3,Index,실측,take-profit.org PMI history
+idn_pmi,2023-10,51.5,Index,실측,"ANTARA (Okt 2023 51,5)"
+idn_pmi,2023-11,51.7,Index,실측,"Databoks (Nov 51,7)"
+idn_pmi,2023-12,52.2,Index,실측,"Databoks (Des 52,2)"
+idn_pmi,2024-01,52.9,Index,실측,"Databoks (Jan 52,9)"
+idn_pmi,2024-02,52.7,Index,실측,ANTARA/Databoks (Mar 비교치)
+idn_pmi,2024-03,54.2,Index,실측,ANTARA (2.5년 최고)
+idn_pmi,2024-04,52.9,Index,실측,Databoks (Eid 연휴 둔화)
+idn_pmi,2024-05,52.1,Index,실측,CNBC Indonesia
+idn_pmi,2024-06,50.7,Index,실측,Bisnis.com
+idn_pmi,2024-07,49.3,Index,실측,Kontan (2021-08 이후 첫 수축)
+idn_pmi,2024-08,48.9,Index,실측,Bisnis.com
+idn_pmi,2024-09,49.2,Index,실측,Bisnis.com
+idn_pmi,2024-10,49.2,Index,실측,Dataindonesia · Kompas
+idn_pmi,2024-11,49.6,Index,실측,Kontan (Des 비교치)
+idn_pmi,2024-12,51.2,Index,실측,Kontan
+idn_pmi,2025-01,51.9,Index,실측,Investing.com event 1096 history
+idn_pmi,2025-02,53.6,Index,실측,Investing.com event 1096 history
+idn_pmi,2025-03,52.4,Index,실측,Investing.com event 1096 history
+idn_pmi,2025-04,46.7,Index,실측,Investing.com event 1096 history
+idn_pmi,2025-05,47.4,Index,실측,Investing.com event 1096 history
+idn_pmi,2025-06,46.9,Index,실측,Investing.com event 1096 history
+idn_pmi,2025-07,49.2,Index,실측,Investing.com event 1096 history
+idn_pmi,2025-08,51.5,Index,실측,Investing.com event 1096 history
+idn_pmi,2025-09,50.4,Index,실측,Investing.com event 1096 history
+idn_pmi,2025-10,51.2,Index,실측,Investing.com event 1096 · news
+idn_pmi,2025-11,53.3,Index,실측,Investing.com news (2월 이후 최고)
+idn_pmi,2025-12,51.2,Index,실측,Investing.com event 1096 history
+idn_pmi,2026-01,52.6,Index,실측,Investing.com event 1096 history
+idn_pmi,2026-02,53.8,Index,실측,Investing.com event 1096 (anchor 일치)
+idn_pmi,2026-03,50.1,Index,실측,Investing.com event 1096 history
+idn_pmi,2026-04,49.1,Index,실측,Trading Economics · Investing.com
+idn_pmi,2026-05,50.0,Index,실측,Trading Economics · Investing.com
+idn_pmi,2026-06,46.9,Index,실측,Trading Economics · Investing.com
+idn_pmi,2026-07,50.2,Index,실측,Trading Economics · Investing.com
+scfi,2021-09,4614.10,Index,실측,"SSE via container-news.com 주간 차트, 2021-09-30 발표치"
+scfi,2021-10,4567.28,Index,실측,"SSE via container-news.com 주간 차트, 2021-10-29 발표치"
+scfi,2021-11,4601.97,Index,실측,"SSE via container-news.com 주간 차트, 2021-11-26 발표치"
+scfi,2021-12,5046.66,Index,실측,"SSE via container-news.com 주간 차트, 2021-12-31 발표치"
+scfi,2022-01,5010.36,Index,실측,"SSE via container-news.com 주간 차트, 2022-01-28 발표치"
+scfi,2022-02,4818.47,Index,실측,"SSE via container-news.com 주간 차트, 2022-02-25 발표치"
+scfi,2022-03,4434.07,Index,실측,"SSE via container-news.com 주간 차트, 2022-03-25 발표치"
+scfi,2022-04,4177.30,Index,실측,"SSE via container-news.com 주간 차트, 2022-04-29 발표치"
+scfi,2022-05,4175.35,Index,실측,"SSE via container-news.com 주간 차트, 2022-05-27 발표치"
+scfi,2022-06,4216.13,Index,실측,"SSE via container-news.com 주간 차트, 2022-06-24 발표치"
+scfi,2022-07,3887.85,Index,실측,"SSE via container-news.com 주간 차트, 2022-07-29 발표치"
+scfi,2022-08,3154.26,Index,실측,"SSE via container-news.com 주간 차트, 2022-08-26 발표치"
+scfi,2022-09,1922.95,Index,실측,"SSE via container-news.com 주간 차트, 2022-09-30 발표치"
+scfi,2022-10,1697.65,Index,실측,"SSE via container-news.com 주간 차트, 2022-10-28 발표치"
+scfi,2022-11,1229.90,Index,실측,"SSE via container-news.com 주간 차트, 2022-11-25 발표치"
+scfi,2022-12,1107.55,Index,실측,"SSE via container-news.com 주간 차트, 2022-12-30 발표치"
+scfi,2023-01,1029.75,Index,실측,"SSE via container-news.com, 2023-01-20 발표치(춘절 전 마지막 · 근사치)"
+scfi,2023-02,946.68,Index,실측,"SSE via container-news.com 주간 차트, 2023-02-24 발표치"
+scfi,2023-03,923.78,Index,실측,"SSE via container-news.com 주간 차트, 2023-03-31 발표치"
+scfi,2023-04,999.73,Index,실측,"SSE via container-news.com 주간 차트, 2023-04-28 발표치"
+scfi,2023-05,983.46,Index,실측,"SSE via container-news.com 주간 차트, 2023-05-26 발표치"
+scfi,2023-06,953.60,Index,실측,"SSE via container-news.com 주간 차트, 2023-06-30 발표치"
+scfi,2023-07,1029.23,Index,실측,"SSE via container-news.com 주간 차트, 2023-07-28 발표치"
+scfi,2023-08,1013.78,Index,실측,"SSE via container-news.com 주간 차트, 2023-08-25 발표치"
+scfi,2023-09,886.85,Index,실측,"SSE via container-news.com 주간 차트, 2023-09-28 발표치"
+scfi,2023-10,1012.60,Index,실측,"SSE via Container News 기사 (week 43, 2023-10-27)"
+scfi,2023-11,993.21,Index,실측,"SSE via container-news.com 주간 차트, 2023-11-24 발표치"
+scfi,2023-12,1760,Index,실측,"SSE via Container News 기사 (2023-12-29 약 1,760 · 근사치)"
+scfi,2024-01,2179.09,Index,실측,"SSE via container-news.com 주간 차트, 2024-01-26 발표치"
+scfi,2024-02,2109.91,Index,실측,"SSE via container-news.com 주간 차트, 2024-02-23 발표치"
+scfi,2024-03,1730.98,Index,실측,"SSE via container-news.com 주간 차트, 2024-03-29 발표치"
+scfi,2024-04,1940.63,Index,실측,"SSE via container-news.com 주간 차트, 2024-04-26 발표치"
+scfi,2024-05,3044.77,Index,실측,"SSE via container-news.com 주간 차트, 2024-05-31 발표치"
+scfi,2024-06,3714.32,Index,실측,"SSE via container-news.com 주간 차트, 2024-06-28 발표치"
+scfi,2024-07,3447.87,Index,실측,"SSE via container-news.com 주간 차트, 2024-07-26 발표치"
+scfi,2024-08,2963.38,Index,실측,"SSE via container-news.com 주간 차트, 2024-08-30 발표치"
+scfi,2024-09,2135.08,Index,실측,"SSE via container-news.com 주간 차트, 2024-09-27 발표치"
+scfi,2024-10,2185.33,Index,실측,"SSE via container-news.com 주간 차트, 2024-10-25 발표치"
+scfi,2024-11,2233.83,Index,실측,"SSE via container-news.com 주간 차트, 2024-11-29 발표치"
+scfi,2024-12,2460.34,Index,실측,"SSE via container-news.com 주간 차트, 2024-12-27 발표치"

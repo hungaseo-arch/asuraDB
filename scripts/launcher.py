@@ -32,9 +32,10 @@ VENV_PYTHON = os.environ.get(
     os.path.expanduser("~/.venvs/asuradb/bin/python"),
 )
 COLLECTOR_SCRIPTS = {
-    "daily":   "collectors/indicator_collector.py",  # yfinance: 환율 4종 + 브렌트유 등
-    "weekly":  "collectors/weekly_collector.py",     # 주간 원자재
-    "monthly": "collectors/monthly_collector.py",    # 정책/거시 4종
+    "daily":     "collectors/indicator_collector.py",  # yfinance: 환율 4종 + 브렌트유 등
+    "commodity": "collectors/daily_collector.py",      # 스크래핑 원자재 3종 (고무·CPO·니켈)
+    "weekly":    "collectors/weekly_collector.py",     # 주간 원자재
+    "monthly":   "collectors/monthly_collector.py",    # 정책/거시 4종
 }
 
 # 로컬 dev 출처만 허용 (외부 악성 사이트의 교차 출처 제어 차단)

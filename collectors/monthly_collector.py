@@ -2,6 +2,8 @@
 월간 지표 수집기 — BI 기준금리 + 인도네시아 물가 + PMI + 수입관세율 (월 1회)
 
 수집 대상:
+  #3  cpo            — Kemendag Harga Referensi CPO (USD/MT, 월 1회 고시)
+  #5  coal           — ESDM HBA I (5,300 kcal, USD/MT)
   #14 bi_rate        — Bank Indonesia BI-Rate (웹 스크래핑)
   #15 idn_inflation  — BPS Web API (YoY CPI %)
   #16 idn_pmi        — S&P Global / Trading Economics (웹 스크래핑)
@@ -10,6 +12,14 @@
 기록 일자
   recorded_date 는 해당 월의 **마지막 날** (예: 6월 분 → 2026-06-30) 로 저장.
   실제 발표 일자는 지표마다 다르나, 모니터링 시점(말일) 기준으로 단일화.
+
+품질 등급(quality): 실측 = 소스 발표 원본값 · 파생 = 규칙 산출 · 추정 = Proxy/역산
+
+2026-08-24 소스 이관 (5년백필 작업지시서 ②)
+  · cpo  : Bursa FCPO(MYR/MT, daily_collector) → Kemendag Harga Referensi(USD/MT)
+  · coal : Trading Economics Newcastle(weekly_collector) → ESDM HBA I(USD/MT)
+  두 지표 모두 월 1회 정부 고시라 여기(월간)로 옮겼다. 자동 수집 실패 시
+  **옛 소스로 되돌아가지 않고** 수동 입력을 요구한다(단위·기준이 다르므로).
 
 실행: uv run python collectors/monthly_collector.py
 스케줄: launchd com.asuradb.monthly.plist (매일 새벽 1시 + 내부에서 말일 가드)
@@ -50,16 +60,23 @@ def _month_end(d: date) -> date:
     return date(d.year, d.month, calendar.monthrange(d.year, d.month)[1])
 
 
-def upsert(indicator_id: str, record_date: date, value: float, note: str = "") -> None:
+def upsert(indicator_id: str, record_date: date, value: float,
+           note: str = "", quality: str = "실측") -> None:
     # 사용자 요청: "매월 마지막 일 기준" — published 일자/실행 일자와 무관하게
     # 해당 월의 말일로 저장해 시계열을 균일하게 유지.
+    # 모든 행은 출처(note)와 품질 등급(실측/파생/추정)을 갖는다 (5년백필 원칙).
     record_date = _month_end(record_date)
+    if not note:
+        raise ValueError(f"note(출처) 없는 행 금지: {indicator_id} {record_date}")
+    if quality not in ("실측", "파생", "추정"):
+        raise ValueError(f"quality 값 오류: {quality}")
     _sb.table("indicator_history").upsert(
         {
             "indicator_id":  indicator_id,
             "value":         value,
             "recorded_date": record_date.isoformat(),
-            "note":          note or None,
+            "note":          note,
+            "quality":       quality,
         },
         on_conflict="indicator_id,recorded_date",
     ).execute()
@@ -121,6 +138,200 @@ def _parse_date(s: str) -> Optional[date]:
             except ValueError:
                 pass
     return None
+
+
+# ══════════════════════════════════════════════════════════════
+#  #3  팜유 CPO (cpo) — Kemendag Harga Referensi
+#  단위: USD/MT (VAT 무관, FOB 기준 고시가)
+#  고시: 매월 1일부터 적용되는 Kepmendag. 산정은 전월 평균가 기준.
+#  1차: jdih.kemendag.go.id (Kepmendag 원문) · 실무 확인처: GIMNI 집계표
+# ══════════════════════════════════════════════════════════════
+
+_CPO_HR_URL   = "https://gimni.org/harga-cpo/"          # Kepmendag HR 집계표
+_CPO_JDIH_URL = "https://jdih.kemendag.go.id/"          # 고시 원문(수동 확인)
+_CPO_RANGE    = (500.0, 2500.0)                         # USD/MT 유효 범위
+
+# 인도네시아어 월 약어 → 월 번호
+_ID_MONTH = {
+    "jan": 1, "feb": 2, "peb": 2, "mar": 3, "apr": 4, "mei": 5, "jun": 6,
+    "jul": 7, "agt": 8, "ags": 8, "agu": 8, "sep": 9, "okt": 10, "nov": 11, "des": 12,
+}
+
+
+def _parse_id_date(s: str) -> Optional[date]:
+    """'01 Agt 2026' 형태의 인도네시아어 날짜 파싱."""
+    m = re.search(r"(\d{1,2})\s+([A-Za-z]+)\.?\s+(\d{4})", s.strip())
+    if not m:
+        return None
+    mo = _ID_MONTH.get(m.group(2)[:3].lower())
+    if not mo:
+        return None
+    try:
+        return date(int(m.group(3)), mo, int(m.group(1)))
+    except ValueError:
+        return None
+
+
+def _parse_id_number(s: str) -> Optional[float]:
+    """'US$ 1.029,51' → 1029.51 (인니 표기: . = 천단위, , = 소수점)."""
+    m = re.search(r"([\d.]+,\d+|[\d.]+)", s.replace("\u00a0", " "))
+    if not m:
+        return None
+    try:
+        return float(m.group(1).replace(".", "").replace(",", "."))
+    except ValueError:
+        return None
+
+
+def _fetch_cpo_hr() -> list[tuple[date, float, str]]:
+    """Kemendag HR 집계표 → [(적용 시작일, USD/MT, 근거 고시)] 최신순."""
+    out: list[tuple[date, float, str]] = []
+    try:
+        resp = requests.get(_CPO_HR_URL, headers=HEADERS, timeout=TIMEOUT)
+        if resp.status_code != 200:
+            print(f"  [WARN] HR 집계표 HTTP {resp.status_code}", file=sys.stderr)
+            return out
+    except Exception as e:
+        print(f"  [WARN] HR 집계표 접속 실패: {e}", file=sys.stderr)
+        return out
+
+    lo, hi = _CPO_RANGE
+    soup = BeautifulSoup(resp.text, "html.parser")
+    for table in soup.find_all("table"):
+        head = [c.get_text(" ", strip=True).lower() for c in table.find_all(["th", "td"])[:6]]
+        if not any("hr" in h and "us$" in h for h in head):
+            continue
+        for tr in table.find_all("tr"):
+            # 날짜 칸이 th 로 오는 표(row header)가 있어 th·td 를 함께 읽는다
+            cells = [c.get_text(" ", strip=True) for c in tr.find_all(["th", "td"])]
+            if len(cells) < 2:
+                continue
+            d = _parse_id_date(cells[0])
+            v = _parse_id_number(cells[1])
+            if d is None or v is None or not (lo <= v <= hi):
+                continue
+            basis = cells[4] if len(cells) > 4 else ""
+            basis = re.sub(r"\s*↗\s*$", "", basis).strip()
+            out.append((d, v, basis))
+    return sorted(out, key=lambda r: r[0], reverse=True)
+
+
+def collect_cpo() -> bool:
+    print("\n── #3 팜유 CPO — Kemendag Harga Referensi ───────────────")
+    rows = _fetch_cpo_hr()
+
+    if not rows:
+        latest = _latest_in_db("cpo")
+        print("  [FAIL] 자동 수집 실패 — 수동 입력 필요")
+        print(f"  ▸ 고시 원문(Kepmendag): {_CPO_JDIH_URL}")
+        print(f"  ▸ 집계표: {_CPO_HR_URL}  (USD/MT, 매월 1일 적용)")
+        if latest:
+            print(f"  ▸ DB 최근값: {latest[1]:,.2f} USD/MT  ({latest[0]})")
+        print("  ▸ 수동 실행: uv run python collectors/monthly_collector.py --cpo 996.52")
+        print("  ⚠ 옛 소스(Bursa FCPO MYR/MT)로 대체하지 말 것 — 단위·기준이 다르다")
+        return False
+
+    saved = 0
+    latest = _latest_in_db("cpo")
+    threshold = _month_end(latest[0]) if latest else date(1970, 1, 1)
+    for d, v, basis in rows:
+        m = _month_end(d)
+        if m <= threshold:
+            continue
+        note = f"Kemendag Harga Referensi CPO {m:%Y-%m}"
+        if basis:
+            note += f" · {basis[:80]}"
+        upsert("cpo", m, v, note)
+        print(f"  CPO HR {m:%Y-%m}: {v:,.2f} USD/MT  ✓")
+        saved += 1
+
+    if saved == 0:
+        d, v, _ = rows[0]
+        print(f"  최신 고시 {_month_end(d):%Y-%m} {v:,.2f} USD/MT 는 이미 DB 보유 — skip")
+    return True
+
+
+# ══════════════════════════════════════════════════════════════
+#  #5  석탄 (coal) — ESDM 고시
+#  coal = HBA I (5,300 kcal GAR, USD/MT) — 2023-03 도입, 실제 원가 기준
+#  고시: 2025-03 부터 매월 2기(1일·15일). 월값은 그 달 고시의 최신값.
+#  ※ 참고용 HBA(6,322 kcal)는 2026-08-24 지표 삭제 — 저장하지 않는다.
+# ══════════════════════════════════════════════════════════════
+
+_HBA_URL   = "https://www.minerba.esdm.go.id/harga_acuan"
+_HBA_RANGE = (30.0, 450.0)   # USD/MT 유효 범위 (2022 피크 HBA 344 포함)
+
+
+def _fetch_hba() -> list[tuple[date, float]]:
+    """ESDM 고시표 → [(고시일, HBA I)]."""
+    out: list[tuple[date, float]] = []
+    try:
+        resp = requests.get(_HBA_URL, headers=HEADERS, timeout=TIMEOUT)
+    except Exception as e:
+        print(f"  [WARN] ESDM 접속 실패: {e}", file=sys.stderr)
+        return out
+    if resp.status_code != 200:
+        print(f"  [WARN] ESDM HTTP {resp.status_code}", file=sys.stderr)
+        return out
+    if "Perbaikan" in resp.text or "Maintenance" in resp.text:
+        print("  [WARN] ESDM 사이트 점검 중(Sistem Sedang Dalam Perbaikan)", file=sys.stderr)
+        return out
+
+    lo, hi = _HBA_RANGE
+    soup = BeautifulSoup(resp.text, "html.parser")
+    for table in soup.find_all("table"):
+        rows_all = [[c.get_text(" ", strip=True) for c in tr.find_all(["th", "td"])]
+                    for tr in table.find_all("tr")]
+        if not rows_all:
+            continue
+        headers = [h.upper() for h in rows_all[0]]
+        col_i = next((i for i, h in enumerate(headers) if "HBA I" in h or "5.300" in h or "5,300" in h), None)
+        if col_i is None:
+            continue
+        for cells in rows_all[1:]:
+            if len(cells) < 2 or col_i >= len(cells):
+                continue
+            d = _parse_id_date(cells[0]) or _parse_date(cells[0])
+            if d is None:
+                continue
+            v = _parse_id_number(cells[col_i])
+            if v is not None and lo <= v <= hi:
+                out.append((d, v))
+    out.sort(key=lambda r: r[0], reverse=True)
+    return out
+
+
+def collect_coal() -> bool:
+    print("\n── #5 석탄 — ESDM HBA I ─────────────────────────────────")
+    rows = _fetch_hba()
+
+    if not rows:
+        latest = _latest_in_db("coal")
+        print("  [FAIL] 자동 수집 실패 — 수동 입력 필요")
+        print(f"  ▸ ESDM 고시: {_HBA_URL}  (HBA I = 5,300 kcal GAR, USD/MT)")
+        print("  ▸ 2025-03 부터 매월 2기(1일·15일) 고시 — 그 달 최신 고시값을 쓴다")
+        if latest:
+            print(f"  ▸ DB 최근값: {latest[1]:,.2f} USD/MT  ({latest[0]})")
+        print("  ▸ 수동 실행: uv run python collectors/monthly_collector.py --coal 96.92")
+        print("  ⚠ 옛 소스(TE Newcastle)로 대체하지 말 것 — 기준 발열량·산정식이 다르다")
+        return False
+
+    saved = 0
+    latest = _latest_in_db("coal")
+    threshold = _month_end(latest[0]) if latest else date(1970, 1, 1)
+    by_month: dict[date, tuple[date, float]] = {}
+    for d, v in sorted(rows, key=lambda r: r[0]):
+        m = _month_end(d)
+        if m > threshold:
+            by_month[m] = (d, v)   # 같은 달 2기 고시면 나중(15일) 값 채택
+    for m, (d, v) in sorted(by_month.items()):
+        upsert("coal", m, v, f"ESDM HBA I(5,300 kcal) {m:%Y-%m} · 고시일 {d}")
+        print(f"  coal {m:%Y-%m}: {v:,.2f} USD/MT  ✓")
+        saved += 1
+
+    if saved == 0:
+        print("  최신 고시분은 이미 DB 보유 — skip")
+    return True
 
 
 # ══════════════════════════════════════════════════════════════
@@ -223,7 +434,8 @@ def collect_bi_rate() -> bool:
         print("  ▸ 수동 실행: uv run python collectors/monthly_collector.py --bi-rate 5.25")
         return False
 
-    saved = _upsert_new_months("bi_rate", rows, "BI official scraping")
+    saved = _upsert_new_months("bi_rate", rows,
+                               "Bank Indonesia BI-Rate 공식 페이지 (RDG 결정값)")
     if saved:
         latest_d, latest_v = max(rows, key=lambda r: r[0])
         print(f"  BI-Rate: {latest_v:.2f}%  (latest {_month_end(latest_d)}, +{saved} new month(s))  ✓")
@@ -237,29 +449,51 @@ def collect_bi_rate() -> bool:
 # ══════════════════════════════════════════════════════════════
 
 _BPS_BASE = "https://webapi.bps.go.id/v1/api"
-_VAR_YOY  = "1707"
-_BPS_MONTH = {
-    "Januari": 1, "Februari": 2, "Maret": 3, "April": 4,
-    "Mei": 5, "Juni": 6, "Juli": 7, "Agustus": 8,
-    "September": 9, "Oktober": 10, "November": 11, "Desember": 12,
-    "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
-    "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12,
-}
+# 2026-08-24 정정: 구 변수 1707 은 인플레이션이 아니라 "10세 이상 인터넷 이용 인구
+# 비율" 이었다(그동안 잘못된 값을 저장). 실제 인플레이션 변수는 다음 둘이다.
+#   2249 = Inflasi Tahunan (Y-on-Y, 2022=100)  · 2024-01 이후 · vervar 151(INDONESIA)
+#   1    = Inflasi Bulanan (M-to-M)            · 2020-01 이후 · vervar 9999(INDONESIA)
+# Y-on-Y 가 없는 월은 M-to-M 12개월 누적환산으로 산출한다(등급 = 파생).
+_VAR_YOY  = "2249"
+_VAR_MOM  = "1"
+def _bps_series(var: str, years: list[int], key: str) -> dict[str, float]:
+    """BPS 국가 전체(INDONESIA) 월별 시계열 → {YYYY-MM: 값}.
 
-
-def _parse_bps_date(label: str, item: dict) -> Optional[date]:
-    parts = label.split()
-    if len(parts) == 2:
-        m = _BPS_MONTH.get(parts[0])
-        if m and parts[1].isdigit():
-            return date(int(parts[1]), m, 1)
-    year, month = item.get("year"), item.get("month")
-    if year and month:
+    th(연도) 파라미터는 필수이며 1회 호출당 3개년까지만 허용된다.
+    연도 id = 연도 − 1900 (예: 2026 → 126). 월 13 은 '연간' 집계라 제외한다.
+    """
+    out: dict[str, float] = {}
+    for i in range(0, len(years), 3):
+        win = years[i:i + 3]
+        th = f"{win[0] - 1900}:{win[-1] - 1900}" if len(win) > 1 else f"{win[0] - 1900}"
+        url = f"{_BPS_BASE}/list/model/data/domain/0000/var/{var}/th/{th}/key/{key}"
         try:
-            return date(int(year), int(month), 1)
-        except (ValueError, TypeError):
-            pass
-    return None
+            p = requests.get(url, timeout=60).json()
+        except Exception as e:
+            print(f"  [WARN] BPS var {var} th {th}: {e}", file=sys.stderr)
+            continue
+        if p.get("data-availability") != "available":
+            continue
+        nat = next((str(v["val"]) for v in p.get("vervar", [])
+                    if str(v.get("label", "")).strip().upper() == "INDONESIA"), None)
+        yrs = {str(t["val"]): int(t["label"]) for t in p.get("tahun", [])}
+        if not nat:
+            continue
+        prefix = f"{nat}{var}0"
+        for k, v in (p.get("datacontent") or {}).items():
+            if not k.startswith(prefix):
+                continue
+            yid, mm = k[len(prefix):][:3], k[len(prefix):][3:]
+            if yid not in yrs or not mm.isdigit():
+                continue
+            mo = int(mm)
+            if not 1 <= mo <= 12:
+                continue
+            try:
+                out[f"{yrs[yid]}-{mo:02d}"] = float(v)
+            except (TypeError, ValueError):
+                continue
+    return out
 
 
 def collect_idn_inflation() -> bool:
@@ -274,47 +508,55 @@ def collect_idn_inflation() -> bool:
         )
         return False
 
-    url = f"{_BPS_BASE}/list/model/data/domain/0000/var/{_VAR_YOY}/key/{api_key}"
-    try:
-        resp = requests.get(url, timeout=TIMEOUT)
-        resp.raise_for_status()
-        payload = resp.json()
-    except Exception as e:
-        print(f"  [FAIL] BPS API 오류: {e}", file=sys.stderr)
+    today = date.today()
+    years = [today.year - 1, today.year]
+    yoy = _bps_series(_VAR_YOY, years, api_key)
+    mom = _bps_series(_VAR_MOM, [years[0] - 1] + years, api_key)
+    print(f"  Y-on-Y(var {_VAR_YOY}) {len(yoy)}개월 · M-to-M(var {_VAR_MOM}) {len(mom)}개월 수신")
+    if not yoy and not mom:
+        print("  [FAIL] BPS 응답 데이터 없음", file=sys.stderr)
         return False
 
-    raw: list[dict] = []
-    dc = payload.get("datacontent")
-    if isinstance(dc, list):
-        raw = dc
-    elif isinstance(dc, dict):
-        for year, months in dc.items():
-            if isinstance(months, dict):
-                for month, item in months.items():
-                    if isinstance(item, dict) and "val" in item:
-                        raw.append({"year": year, "month": month, "val": item["val"]})
+    def _yoy_from_mom(y: int, m: int) -> Optional[float]:
+        """M-to-M 12개월 누적 → Y-on-Y 환산 (파생)."""
+        acc = 1.0
+        for i in range(12):
+            mm, yy = m - i, y
+            while mm <= 0:
+                mm += 12
+                yy -= 1
+            v = mom.get(f"{yy}-{mm:02d}")
+            if v is None:
+                return None
+            acc *= 1 + v / 100
+        return (acc - 1) * 100
 
-    if not raw:
-        print("  [FAIL] BPS 응답 데이터 없음")
-        return False
+    latest = _latest_in_db("idn_inflation")
+    threshold = _month_end(latest[0]) if latest else date(1970, 1, 1)
 
     saved, latest_date, latest_val = 0, None, None
-    for item in raw:
-        try:
-            val = float(str(item.get("val", "")).replace(",", "."))
-            d   = _parse_bps_date(item.get("label", ""), item)
-            if d is None:
-                continue
-            upsert("idn_inflation", d, val, "BPS YoY CPI")
-            saved += 1
-            if latest_date is None or d > latest_date:
-                latest_date, latest_val = d, val
-        except (ValueError, TypeError):
+    for ym in sorted(set(yoy) | set(mom)):
+        y, m = int(ym[:4]), int(ym[5:7])
+        d = _month_end(date(y, m, 1))
+        if d <= threshold:
             continue
+        v, note, quality = yoy.get(ym), "", "실측"
+        if v is not None:
+            note = f"BPS Web API 변수 {_VAR_YOY} · 인플레이션 Y-on-Y(2022=100) {ym}"
+        else:
+            v = _yoy_from_mom(y, m)
+            if v is None:
+                continue
+            v, quality = round(v, 2), "파생"
+            note = f"파생: BPS 월별 M-to-M(변수 {_VAR_MOM}) 12개월 누적 환산 {ym}"
+        upsert("idn_inflation", d, v, note, quality)
+        saved += 1
+        if latest_date is None or d > latest_date:
+            latest_date, latest_val = d, v
 
     if saved == 0:
-        print("  [FAIL] 유효 데이터 없음")
-        return False
+        print("  신규 월 없음 (이미 최신)  ✓")
+        return True
 
     print(f"  인플레이션(YoY): {latest_val:.2f}%  ({latest_date.strftime('%Y-%m')})  ✓")
     print(f"  총 {saved}개 레코드 upsert")
@@ -493,7 +735,8 @@ def collect_idn_pmi() -> bool:
         print("  ▸ 해석: >50 = 확장, <50 = 위축")
         return False
 
-    saved = _upsert_new_months("idn_pmi", rows, "S&P Global / Trading Economics")
+    saved = _upsert_new_months("idn_pmi", rows,
+                               "S&P Global 인도네시아 제조업 PMI (공식 페이지 · TE 백업)")
     if saved:
         latest_d, latest_v = max(rows, key=lambda r: r[0])
         signal = "확장 ▲" if latest_v > 50 else ("위축 ▼" if latest_v < 50 else "보합 ─")
@@ -563,7 +806,8 @@ def collect_import_tariff() -> bool:
         print("  ▸ 수동 실행: uv run python collectors/monthly_collector.py --tariff 8.5")
         return False
 
-    saved = _upsert_new_months("import_tariff", rows, "Kemendag/beacukai scraping")
+    saved = _upsert_new_months("import_tariff", rows,
+                               "인도네시아 관세청(beacukai)/Kemendag 고시")
     if saved:
         latest_d, latest_v = max(rows, key=lambda r: r[0])
         print(f"  수입관세율: {latest_v:.2f}%  (latest {_month_end(latest_d)}, +{saved} new month(s))  ✓")
@@ -597,7 +841,9 @@ def _upsert_new_months(
 
 # ══════════════════════════════════════════════════════════════
 #  CLI — 수동 값 직접 입력 지원
-#  예) uv run python collectors/monthly_collector.py --bi-rate 5.25
+#  예) uv run python collectors/monthly_collector.py --cpo 996.52
+#      uv run python collectors/monthly_collector.py --coal 96.92
+#      uv run python collectors/monthly_collector.py --bi-rate 5.25
 #      uv run python collectors/monthly_collector.py --inflation 2.42
 #      uv run python collectors/monthly_collector.py --pmi 52.1
 # ══════════════════════════════════════════════════════════════
@@ -609,25 +855,37 @@ def _handle_cli_override(args: list[str]) -> bool:
 
     i = 0
     while i < len(args):
-        if args[i] == "--bi-rate" and i + 1 < len(args):
+        if args[i] == "--cpo" and i + 1 < len(args):
             val = float(args[i + 1])
-            upsert("bi_rate", record_date, val, "수동 입력")
+            upsert("cpo", record_date, val,
+                   "수동 입력 (Kemendag Harga Referensi CPO 고시 확인, USD/MT)")
+            print(f"  cpo 수동 저장: {val:,.2f} USD/MT  ({_month_end(record_date)})")
+            handled = True; i += 2
+        elif args[i] == "--coal" and i + 1 < len(args):
+            val = float(args[i + 1])
+            upsert("coal", record_date, val,
+                   "수동 입력 (ESDM HBA I 5,300 kcal 고시 확인, USD/MT)")
+            print(f"  coal 수동 저장: {val:,.2f} USD/MT  ({_month_end(record_date)})")
+            handled = True; i += 2
+        elif args[i] == "--bi-rate" and i + 1 < len(args):
+            val = float(args[i + 1])
+            upsert("bi_rate", record_date, val, "수동 입력 (Bank Indonesia RDG 결정값 확인)")
             print(f"  bi_rate 수동 저장: {val:.2f}%  ({_month_end(record_date)})")
             handled = True; i += 2
         elif args[i] == "--inflation" and i + 1 < len(args):
             val = float(args[i + 1])
-            upsert("idn_inflation", record_date, val, "수동 입력")
+            upsert("idn_inflation", record_date, val, "수동 입력 (BPS 발표치 확인)")
             print(f"  idn_inflation 수동 저장: {val:.2f}%  ({_month_end(record_date)})")
             handled = True; i += 2
         elif args[i] == "--pmi" and i + 1 < len(args):
             val = float(args[i + 1])
-            upsert("idn_pmi", record_date, val, "수동 입력")
+            upsert("idn_pmi", record_date, val, "수동 입력 (S&P Global 발표치 확인)")
             signal = "확장 ▲" if val > 50 else ("위축 ▼" if val < 50 else "보합 ─")
             print(f"  idn_pmi 수동 저장: {val:.1f}  [{signal}]  ({_month_end(record_date)})")
             handled = True; i += 2
         elif args[i] == "--tariff" and i + 1 < len(args):
             val = float(args[i + 1])
-            upsert("import_tariff", record_date, val, "수동 입력")
+            upsert("import_tariff", record_date, val, "수동 입력 (관세 고시 확인)")
             print(f"  import_tariff 수동 저장: {val:.2f}%  ({_month_end(record_date)})")
             handled = True; i += 2
         else:
@@ -640,7 +898,7 @@ def _handle_cli_override(args: list[str]) -> bool:
 # ══════════════════════════════════════════════════════════════
 
 def _needs_catchup() -> bool:
-    """직전 월말 기준으로 4개 지표 중 미보유 가 있으면 True (catchup 트리거).
+    """직전 월말 기준으로 미보유 지표가 있으면 True (catchup 트리거).
 
     매월 말일 launchd 실행을 놓치거나 그 사이 발표가 늦어진 경우에도, 다음
     실행 시 자동으로 누락된 월을 채우게 한다. import_tariff 는 연간 단위라
@@ -648,7 +906,7 @@ def _needs_catchup() -> bool:
     """
     today = date.today()
     prev_month_end = _month_end(today.replace(day=1) - timedelta(days=1))
-    for ind in ("bi_rate", "idn_inflation", "idn_pmi"):
+    for ind in ("cpo", "coal", "bi_rate", "idn_inflation", "idn_pmi"):
         latest = _latest_in_db(ind)
         if latest is None or _month_end(latest[0]) < prev_month_end:
             return True
@@ -683,6 +941,8 @@ def run() -> None:
     if force:             reason.append("force")
     print(f"  실행 사유: {' / '.join(reason)}")
 
+    ok_cpo       = collect_cpo()
+    ok_coal      = collect_coal()
     ok_bi        = collect_bi_rate()
     ok_inflation = collect_idn_inflation()
     ok_pmi       = collect_idn_pmi()
@@ -690,6 +950,8 @@ def run() -> None:
 
     print("\n" + "=" * 52)
     results = [
+        ("#3  팜유 CPO(HR)",     ok_cpo,       "cpo <USD/MT>"),
+        ("#5  석탄 HBA I",       ok_coal,      "coal <USD/MT>"),
         ("#14 BI 기준금리",      ok_bi,        "bi-rate <금리%>"),
         ("#15 인도네시아 물가",  ok_inflation, "inflation <물가%>"),
         ("#16 인도네시아 PMI",   ok_pmi,       "pmi <PMI값>"),

@@ -13,6 +13,7 @@ import {
   jakartaDate, formatJakartaTime, formatJakartaDateTime, toJakartaLocalInput, fromJakartaLocalInput,
   type Employee, type GeofenceZone, type AttendanceRecord, type AttendanceStatus, type EmployeeDevice, type GeofenceAlert,
 } from '@/lib/attendance';
+import { formatWibDateLabel } from '@/lib/datetime';
 import { supabase } from '@/lib/supabase';
 import Button from '@/components/ui/Button.vue';
 import Input from '@/components/ui/Input.vue';
@@ -161,11 +162,9 @@ const checkedInCount = computed(() => {
 const geoCount = computed(() => activeRecords.value.filter(r => r.is_within_geofence).length);
 const totalEmployees = computed(() => employees.value.length);
 
-// 오늘(자카르타) 날짜 라벨 — 브라우저가 한국 시간이어도 자카르타 하루를 표시
+// 오늘(WIB) 날짜 라벨 — 브라우저가 한국 시간이어도 자카르타 하루를 표시
 const todayLabel = computed(() =>
-  new Date(`${jakartaDate()}T00:00:00+07:00`).toLocaleDateString('ko-KR', {
-    timeZone: 'Asia/Jakarta', month: 'long', day: 'numeric', weekday: 'short',
-  })
+  formatWibDateLabel(jakartaDate(), { month: 'long', day: 'numeric', weekday: 'short' })
 );
 
 // ── 상태·기기 표시 ──

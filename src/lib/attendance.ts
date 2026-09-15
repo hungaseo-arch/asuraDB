@@ -1,4 +1,5 @@
 import { supabase, sbGet, sbGetAll, sbPost, sbPatch, sbRpc } from './supabase';
+import { wibDate as jakartaDate, wibDayRange as jakartaDayRange } from './datetime';
 
 // ── 타입 정의 ──
 export interface Employee {
@@ -109,49 +110,17 @@ export interface OvertimeRecord {
   approved_at: string | null;
 }
 
-// ── Asia/Jakarta 날짜·시각 helper ──
+// ── WIB(Asia/Jakarta) 날짜·시각 helper ──
+// 실제 구현은 src/lib/datetime.ts (앱 전체 시간대 SSOT). 근태 화면이 쓰던 jakarta* 이름은
+// 그대로 유지하되 WIB 헬퍼를 가리키는 별칭으로 둔다.
 // 서버(RPC·배치)는 모두 (check_time AT TIME ZONE 'Asia/Jakarta')::date 로 하루를 자른다.
-// 관리자 브라우저가 한국(UTC+9)이어도 같은 하루를 보도록 화면도 자카르타 기준으로 맞춘다.
-const JAKARTA_TZ = 'Asia/Jakarta';
-
-/** 자카르타 기준 'YYYY-MM-DD' */
-export function jakartaDate(d: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: JAKARTA_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
-  }).format(d);
-}
-
-/** 자카르타 하루의 [from, to] ISO 경계. PostgREST 쿼리에 넣을 때는 반드시 encodeURIComponent (+ → %2B). */
-export function jakartaDayRange(date: string): { from: string; to: string } {
-  return { from: `${date}T00:00:00+07:00`, to: `${date}T23:59:59.999+07:00` };
-}
-
-/** HH:mm (자카르타 벽시계) */
-export function formatJakartaTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('ko-KR', { timeZone: JAKARTA_TZ, hour: '2-digit', minute: '2-digit' });
-}
-
-/** YYYY. MM. DD. HH:mm (자카르타 벽시계) */
-export function formatJakartaDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('ko-KR', {
-    timeZone: JAKARTA_TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
-  });
-}
-
-/** ISO → <input type="datetime-local"> 값('YYYY-MM-DDTHH:mm', 자카르타 벽시계) */
-export function toJakartaLocalInput(iso: string | Date): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: JAKARTA_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-  }).formatToParts(new Date(iso));
-  const get = (t: string) => parts.find(p => p.type === t)?.value ?? '00';
-  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
-}
-
-/** datetime-local 값('YYYY-MM-DDTHH:mm')을 자카르타 시각으로 해석한 ISO 문자열 */
-export function fromJakartaLocalInput(value: string): string {
-  return `${value}:00+07:00`;
-}
+export { jakartaDate, jakartaDayRange };
+export {
+  formatWibTime as formatJakartaTime,
+  formatWibDateTime as formatJakartaDateTime,
+  toWibLocalInput as toJakartaLocalInput,
+  fromWibLocalInput as fromJakartaLocalInput,
+} from './datetime';
 
 // ── 직원 ──
 export async function fetchEmployees(): Promise<Employee[]> {

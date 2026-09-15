@@ -51,9 +51,20 @@
   - **같은 항목은 같은 용어**로 쓴다. 탭마다 다른 이름(트레드 깊이 / TD, 최대 하중 / 하중능력 / Load Capacity)을 섞지 말고 확인 후 하나로 통일한다.
   - **가능한 약어를 쓴다**: `PAT`(Pattern) · `Size` · `PR` · `LI`(Load Index) · `SS`(Speed Symbol) · `RIM` · `OD` · `SW` · `TD` · `Single` · `Dual` · `Pres` · `WT`(Weight).
   - **단위가 있는 항목은 반드시 단위를 표기**한다: `OD (mm)` · `SW (mm)` · `TD (mm)` · `Single (kg)` · `Dual (kg)` · `Pres (psi)` · `WT (kg)` · `Qty (EA)`.
+- **마진 산정 기준** — **마진은 항상 판매가 기준: 마진 = (판매가 − 원가) ÷ 판매가.** 원가 기준
+  산식((판매가−원가)÷원가)은 어떤 화면·문서·역산에도 쓰지 않는다. 역산(마진→판매가)은
+  `판매가 = 원가 ÷ (1 − 마진)` 이며 마진 100% 이상 입력은 무효. 가중평균 마진 = 총이익 ÷ 총판매액
+  (Additional Discount 반영 후, PPN 제외). (2026-08-19 확정)
 - **가격 부가세(PPN) 기준** — **대리점가(`dist_price_pcs`·`dist_price_set`)는 VAT 포함가, 그 외 가격
   (`fob`·`wh_price_pcs`·`wh_price_set`)은 VAT 미포함가.** 외부 자료(대시보드·거래처 가격표)를 반영할 때는
   그 자료의 VAT 포함 여부를 먼저 확인하고 이 기준으로 환산해 넣는다(인니 PPN 11% → 포함가 ÷ 1.11).
   화면·CSV 헤더에도 `VAT 별도`/`VAT 포함` 을 병기한다.
+- **시간대 기준 = WIB(Asia/Jakarta, UTC+7)** — 앱의 모든 "오늘"·현재 시각·날짜 경계는 WIB 이다.
+  `src/lib/datetime.ts` 가 SSOT(`wibDate`·`wibDateOffset`·`wibDayRange`·`formatWibTime`/`DateTime`/`Short`/`DateLabel`·
+  `toWibLocalInput`·`fromWibLocalInput`). **`new Date().toISOString().slice(0,10)` 금지** — UTC 날짜라
+  WIB 00:00~07:00 에 하루가 밀린다. `toLocale*` 로 시각을 표시할 때는 반드시 `timeZone` 을 넘긴다
+  (안 주면 관리자 브라우저의 한국 시간으로 보인다). DB 는 `timestamptz`(UTC 저장)가 정상이고 변환은
+  조회·표시 시점에 하며, 서버는 `AT TIME ZONE 'Asia/Jakarta'`, pg_cron 은 UTC 스케줄이므로 **WIB−7h** 로
+  환산해 등록한다. PostgREST 에 `+07:00` 경계를 넘길 때는 `encodeURIComponent` 필수(`+` → `%2B`). (2026-09-15 확정)
 - 라우터 역할 게이팅: `super_admin`/`staff`=전체, `distributor`/`end_user`=`/quote`만.
 - Supabase service_role 키는 서버/수집기 전용(`VITE_` 접두사 금지). 데이터 보호는 RLS `to authenticated` + 사용자 JWT.

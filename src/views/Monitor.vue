@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { TrendingUp, TrendingDown, Minus, Plus, X, Pencil, Download, RotateCw } from 'lucide-vue-next';
 import { sbGet, sbGetAll, sbPost } from '@/lib/supabase';
+import { wibDate } from '@/lib/datetime';
 import KpiEntryModal from '@/components/KpiEntryModal.vue';
 import KpiTrendModal, { type TrendSeries } from '@/components/KpiTrendModal.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -608,7 +609,7 @@ async function saveInput() {
   if (!inputTarget.value || inputValue.value === '') return;
   inputSaving.value = true;
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = wibDate();   // 기록 기준일은 WIB (수집기·Edge Function 과 동일)
     await sbPost('indicator_history', {
       indicator_id:  inputTarget.value.id,
       value:         Number(inputValue.value),

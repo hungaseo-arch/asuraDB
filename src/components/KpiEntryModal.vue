@@ -11,6 +11,7 @@
 import { ref, computed, watch } from 'vue';
 import { X, Loader2, Lock } from 'lucide-vue-next';
 import { sbGetAll, sbPost } from '@/lib/supabase';
+import { wibDate } from '@/lib/datetime';
 
 interface KpiMetric {
   id: string; grp: string; product: string | null; kind: string;
@@ -25,7 +26,7 @@ const props = defineProps<{ metrics: KpiMetric[]; year: number }>();
 const emit = defineEmits<{ (e: 'close'): void; (e: 'saved'): void }>();
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
-const month = ref<number>(new Date().getMonth() + 1);
+const month = ref<number>(Number(wibDate().slice(5, 7)));   // 기본값 = WIB 기준 이번 달
 const loading = ref(false);
 const saving = ref(false);
 const msg = ref('');

@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge.vue';
 import DataState from '@/components/ui/DataState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { cn } from '@/lib/utils';
+import { formatWibDateLabel } from '@/lib/datetime';
 
 const loading = ref(true);
 const error = ref<string | null>(null);
@@ -93,7 +94,7 @@ function leaveTypeLabel(type: string) {
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+  return formatWibDateLabel(date);
 }
 </script>
 

@@ -11,6 +11,7 @@ import AsuraLogo from '@/components/icons/AsuraLogo.vue';
 import { cn } from '@/lib/utils';
 import { API_BASE, LAUNCHER_BASE, IS_HOST } from '@/lib/api';
 import { SB_URL, sbHeaders, supabase } from '@/lib/supabase';
+import { wibDate } from '@/lib/datetime';
 import Button from '@/components/ui/Button.vue';
 
 interface NavItem {
@@ -309,7 +310,7 @@ function stopHeartbeat() {
 // (yfinance 환율·브렌트/파생 KRW·IDR + 스크래퍼 매크로. 수동 전용 원자재는 소스 없어 제외)
 async function maybeDailyCollect() {
   if (!IS_HOST) return;   // 수집기는 호스트 PC 의 로컬 백엔드에만 있다
-  const today = new Date().toISOString().slice(0, 10);
+  const today = wibDate();   // 하루 경계는 WIB (수집기 스케줄과 동일)
   if (localStorage.getItem('asura_last_collect') === today) return;
   localStorage.setItem('asura_last_collect', today);
   try {

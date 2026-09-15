@@ -6,13 +6,15 @@ import Button from '@/components/ui/Button.vue';
 import Badge from '@/components/ui/Badge.vue';
 import DataState from '@/components/ui/DataState.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { wibDate, wibDateOffset, wibDayRange, formatWibShort, formatWibDateTime } from '@/lib/datetime';
 
 const loading = ref(true);
 const error = ref<string | null>(null);
 const records = ref<LoginHistoryRecord[]>([]);
 
-const today   = new Date().toISOString().slice(0, 10);
-const weekAgo = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+// 기본 조회 기간은 WIB 기준 최근 7일 (표시·경계 모두 WIB 로 통일)
+const today   = wibDate();
+const weekAgo = wibDateOffset(-6);
 const fromDate = ref(weekAgo);
 const toDate   = ref(today);
 
@@ -21,8 +23,8 @@ async function loadData() {
   error.value = null;
   try {
     records.value = await fetchLoginHistory({
-      from: `${fromDate.value}T00:00:00`,
-      to:   `${toDate.value}T23:59:59.999`,
+      from: wibDayRange(fromDate.value).from,
+      to:   wibDayRange(toDate.value).to,
     });
   } catch (e: any) {
     error.value = e.message || '데이터를 불러오지 못했습니다';
@@ -47,7 +49,7 @@ function roleLabel(role: string | null) {
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return formatWibShort(iso);
 }
 
 // 엑셀 등에서 셀 값이 =,+,-,@ 로 시작하면 수식으로 해석되는 CSV 인젝션을 막는다.
@@ -59,7 +61,7 @@ function exportCSV() {
   const rows = [['시간', '이메일', '역할', '유형']];
   for (const r of records.value) {
     rows.push([
-      new Date(r.created_at).toLocaleString('ko-KR'),
+      formatWibDateTime(r.created_at),
       csvSafe(r.email ?? '-'),
       roleLabel(r.role),
       r.event_type === 'login' ? '로그인' : '로그아웃',

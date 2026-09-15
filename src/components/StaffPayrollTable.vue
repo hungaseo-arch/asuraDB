@@ -4,7 +4,9 @@ import { Search, Download } from 'lucide-vue-next';
 import { sbGetAll } from '@/lib/supabase';
 import { exportCsv } from '@/lib/csv';
 import { errMsg } from '@/lib/utils';
+import { wibDate } from '@/lib/datetime';
 import DataState from '@/components/ui/DataState.vue';
+import StaffDetailModal from '@/components/StaffDetailModal.vue';
 import TableState from '@/components/ui/TableState.vue';
 
 interface Payroll {
@@ -23,11 +25,17 @@ const missing = ref(false);              // 테이블 자체가 없음(마이그
 const loadError = ref<string | null>(null);   // 권한·네트워크 등 그 외 실패 → 재시도 UI
 
 // staff 마스터(nik → 성명·직급). position 컬럼은 마이그레이션 후 존재(없으면 undefined → —)
-interface StaffRow { nik: string; name: string | null; grade?: string | null; position?: string | null }
+interface StaffRow {
+  nik: string; name: string | null; grade?: string | null; position?: string | null;
+  location?: string | null; is_active?: boolean | null;
+  email?: string | null; phone?: string | null;
+}
 const staffMap = ref<Map<string, StaffRow>>(new Map());
 const nameOf  = (nik: string) => staffMap.value.get(nik)?.name || '—';
 const gradeOf = (nik: string) => staffMap.value.get(nik)?.grade || '—';
 const posOf   = (nik: string) => staffMap.value.get(nik)?.position || '—';
+const mailOf  = (nik: string) => staffMap.value.get(nik)?.email || '—';
+const telOf   = (nik: string) => staffMap.value.get(nik)?.phone || '—';
 
 async function load() {
   loading.value = true; missing.value = false; loadError.value = null;
@@ -62,7 +70,7 @@ const filtered = computed(() => {
   return rows.value.filter(r => {
     if (periode.value !== '전체' && r.periode !== periode.value) return false;
     if (!q) return true;
-    return [nameOf(r.nik), r.nik, gradeOf(r.nik), posOf(r.nik)].some(v => (v ?? '').toLowerCase().includes(q));
+    return [nameOf(r.nik), r.nik, gradeOf(r.nik), posOf(r.nik), mailOf(r.nik), telOf(r.nik)].some(v => (v ?? '').toLowerCase().includes(q));
   });
 });
 
@@ -72,6 +80,8 @@ const STAFF_COLS: { key: string; label: string; num?: boolean; center?: boolean;
   { key: 'nik', label: 'NIK' },
   { key: 'grade', label: '레벨' },
   { key: 'position', label: '직급' },
+  { key: 'email', label: '이메일' },
+  { key: 'phone', label: '전화번호' },
   { key: 'gaji_pokok', label: '기본급', num: true, right: true },
   { key: 'tunj_jabatan', label: '직책수당', num: true, right: true },
   { key: 'total_tunj_tetap', label: '고정수당', num: true, right: true },
@@ -83,6 +93,8 @@ function staffVal(r: Payroll, key: string): string | number {
   if (key === 'name') return nameOf(r.nik);
   if (key === 'grade') return gradeOf(r.nik);
   if (key === 'position') return posOf(r.nik);
+  if (key === 'email') return mailOf(r.nik);
+  if (key === 'phone') return telOf(r.nik);
   const v = r[key as keyof Payroll];
   return typeof v === 'number' ? v : String(v ?? '');
 }
@@ -110,15 +122,27 @@ watch([query, periode], () => { page.value = 1; });
 const sum = (k: keyof Payroll) => filtered.value.reduce((s, r) => s + (Number(r[k]) || 0), 0);
 const fmt = (n: number | null | undefined) => (n == null ? '—' : Number(n).toLocaleString('en-US'));
 
+// 행 클릭 → 상세 모달(기본정보·연락처 편집·급여 상세)
+const selected = ref<Payroll | null>(null);
+const selectedStaff = computed(() => (selected.value ? staffMap.value.get(selected.value.nik) ?? null : null));
+function onSaved(v: { nik: string; email: string | null; phone: string | null }) {
+  // 모달에서 저장한 연락처를 표에도 즉시 반영한다(재조회 없이).
+  const cur = staffMap.value.get(v.nik);
+  const next = new Map(staffMap.value);
+  next.set(v.nik, { ...(cur ?? { nik: v.nik, name: null }), email: v.email, phone: v.phone });
+  staffMap.value = next;
+}
+
 function downloadCsv() {
-  const headers = ['성명', 'NIK', '레벨', '직급', '기본급', '직책수당', '고정수당', '변동수당', 'Gross', '기간'];
+  const headers = ['성명', 'NIK', '레벨', '직급', '이메일', '전화번호', '기본급', '직책수당', '고정수당', '변동수당', 'Gross', '기간'];
   const clean = (s: string) => (s === '—' ? '' : s);
   const rows = filtered.value.map(r => [
     clean(nameOf(r.nik)), r.nik, clean(gradeOf(r.nik)), clean(posOf(r.nik)),
+    clean(mailOf(r.nik)), clean(telOf(r.nik)),
     r.gaji_pokok ?? '', r.tunj_jabatan ?? '', r.total_tunj_tetap ?? '', r.total_tunj_tidak_tetap ?? '',
     r.total_gaji_gross ?? '', r.periode,
   ]);
-  exportCsv(`직원_급여_${new Date().toISOString().slice(0, 10)}`, headers, rows);
+  exportCsv(`직원_급여_${wibDate()}`, headers, rows);
 }
 </script>
 
@@ -144,7 +168,7 @@ function downloadCsv() {
           </div>
           <div class="relative">
             <Search :size="14" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input v-model="query" type="text" placeholder="성명·NIK·직급 검색…"
+            <input v-model="query" type="text" placeholder="성명·NIK·직급·연락처 검색…"
               class="w-48 bg-card border border-border rounded-lg pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal-400" />
           </div>
           <button class="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors whitespace-nowrap" title="엑셀(CSV) 다운로드" @click="downloadCsv">
@@ -170,17 +194,21 @@ function downloadCsv() {
             <tbody>
               <TableState
                 v-if="loading || !paged.length"
-                :colspan="10" :loading="loading" :skeleton-rows="6"
+                :colspan="12" :loading="loading" :skeleton-rows="6"
                 empty-text="검색 결과가 없습니다."
               />
               <tr
                 v-for="r in paged" v-else :key="r.nik + r.periode"
-                class="border-b border-border/50 last:border-b-0 hover:bg-accent/40 transition-colors"
+                class="border-b border-border/50 last:border-b-0 hover:bg-accent/40 transition-colors cursor-pointer"
+                tabindex="0" role="button" :aria-label="`${nameOf(r.nik)} 상세 보기`"
+                @click="selected = r" @keydown.enter="selected = r" @keydown.space.prevent="selected = r"
               >
                 <td class="px-3 py-2.5 font-medium text-foreground">{{ nameOf(r.nik) }}</td>
                 <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ r.nik }}</td>
                 <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ gradeOf(r.nik) }}</td>
                 <td class="px-3 py-2.5 text-muted-foreground">{{ posOf(r.nik) }}</td>
+                <td class="px-3 py-2.5 text-muted-foreground">{{ mailOf(r.nik) }}</td>
+                <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ telOf(r.nik) }}</td>
                 <td class="px-3 py-2.5 text-right tabular-nums">{{ fmt(r.gaji_pokok) }}</td>
                 <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmt(r.tunj_jabatan) }}</td>
                 <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmt(r.total_tunj_tetap) }}</td>
@@ -201,5 +229,11 @@ function downloadCsv() {
         </div>
       </div>
     </template>
+
+    <StaffDetailModal
+      v-if="selected"
+      :pay="selected" :staff="selectedStaff"
+      @close="selected = null" @saved="onSaved"
+    />
   </div>
 </template>

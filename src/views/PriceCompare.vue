@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { Plus, Printer, Save, FolderOpen, X, FileText, Trash2 } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 import { sbGet, sbPost, sbPatch, sbDelete, sbRpc } from '@/lib/supabase';
+import { wibDate } from '@/lib/datetime';
 import PageHeader from '@/components/PageHeader.vue';
 import DataState from '@/components/ui/DataState.vue';
 import { errMsg } from '@/lib/utils';
@@ -150,7 +151,7 @@ function defaultCompanies(): Company[] {
   ];
 }
 
-const today = new Date().toISOString().slice(0, 10);
+const today = wibDate();
 const form = ref({
   createdDate: today,
   customer: '',

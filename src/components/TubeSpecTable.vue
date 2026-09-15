@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wibDate } from '@/lib/datetime';
 import { ref, computed, watch, onMounted } from 'vue';
 import { Search, Package, Download } from 'lucide-vue-next';
 import { TUBE_SPECS, type TubeSpec } from '@/data/tubeSpecs';
@@ -52,7 +53,7 @@ function downloadCsv() {
     s.no, 'TUBE', s.description ?? '', s.article ?? '', s.size, s.valve ?? '',
     s.wStd ?? '', s.wMin ?? '', s.wMax ?? '', s.lebar ?? '', s.tebal ?? '', s.packaging, s.qty ?? '',
   ]);
-  exportCsv(`스펙_튜브_${new Date().toISOString().slice(0, 10)}`, headers, rows);
+  exportCsv(`스펙_튜브_${wibDate()}`, headers, rows);
 }
 </script>
 

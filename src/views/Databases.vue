@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, nextTick, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Search, Package, Users, Contact, Building2, Wrench, Download, ShoppingCart, TrendingUp, X } from 'lucide-vue-next';
 import StaffPayrollTable from '@/components/StaffPayrollTable.vue';
+import { wibDate } from '@/lib/datetime';
 import DataState from '@/components/ui/DataState.vue';
 import TableState from '@/components/ui/TableState.vue';
 import { sbGetAll } from '@/lib/supabase';
@@ -983,7 +984,7 @@ const tradeDetailLast = (side: 'buy' | 'sell') =>
 const unitIdr = (idr: number, qty: number) => (qty > 0 ? idr / qty : null);
 
 // ── 엑셀(CSV) 다운로드 ────────────────────────────────────────────────────────
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => wibDate();
 function downloadPrice() {
   // 헤더 2개 국어: 1행 영문 · 2행 한글. 가격 4열은 화면과 같은 부가세 기준(vatMode)으로 내보낸다.
   const vEn = vatMode.value === 'incl' ? 'incl. VAT' : 'excl. VAT';

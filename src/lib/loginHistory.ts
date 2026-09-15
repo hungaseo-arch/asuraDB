@@ -33,8 +33,9 @@ export async function recordLoginEvent(
 
 export async function fetchLoginHistory(params: { from?: string; to?: string; limit?: number } = {}): Promise<LoginHistoryRecord[]> {
   const filters = ['select=*', 'order=created_at.desc'];
-  if (params.from) filters.push(`created_at=gte.${params.from}`);
-  if (params.to)   filters.push(`created_at=lte.${params.to}`);
+  // 경계값은 WIB 오프셋(+07:00)을 포함하므로 반드시 인코딩한다(+ → %2B, 안 하면 공백으로 해석).
+  if (params.from) filters.push(`created_at=gte.${encodeURIComponent(params.from)}`);
+  if (params.to)   filters.push(`created_at=lte.${encodeURIComponent(params.to)}`);
   filters.push(`limit=${params.limit ?? 500}`);
   return sbGet<LoginHistoryRecord[]>(`login_history?${filters.join('&')}`);
 }

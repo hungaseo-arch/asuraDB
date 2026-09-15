@@ -35,7 +35,7 @@ PRODUCT_MAP = {
     "agr": "AGR",
     # → IND (Solid + PNEU)
     "solid": "IND", "pneu": "IND", "ind": "IND",
-    "vul": "Vulkan",
+    "vul": "Vulkan", "vulkan": "Vulkan",   # 시트 라벨이 "VUL"(2025) / "Vulkan"(2026~) 두 가지
     "tube": "Tube",
     "flap": "Flap",
     # 한글 라벨 (2022~2026 실적 시트) — 시트마다 "튜 브"처럼 사이 공백이 있어 norm() 으로 흡수.

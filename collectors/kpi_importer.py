@@ -4,7 +4,7 @@
 입력: data/kpi/<YYYY>.csv  (사업계획 시트를 CSV로 저장한 파일; 연도별 1개)
   · 시트 구조: "1. TARGET/목표" 섹션 + "2. ACHIEVEMENT/실적" 섹션 (+ "3. …" 이후 무시)
   · 연도마다 제품 분류(Radial/Bias/Solid/Tire/LTR·TBR …)가 달라도 PRODUCT_MAP 으로 흡수.
-  · 인코딩(UTF-8 / CP949 / 이중인코딩 mojibake) 자동 복구.
+  · 인코딩은 UTF-8(BOM 허용) / CP949 / EUC-KR 자동 판별.
 
 매핑: Radial·Tire·LTR/TBR → TBR, Bias → TBB, Solid·PNEU → IND,
       OTR → OTR, AGR → AGR, VUL → VUL, Tube → Tube, Flap → Flap.
@@ -37,22 +37,12 @@ PRODUCT_MAP = {
     "VUL": "VUL",
     "tube": "Tube",
     "flap": "Flap",
-    # 한글 라벨 (2022 실적 등) — 정상 UTF-8
-    "솔리드": "IND", "공압": "IND",
+    # 한글 라벨 (2022~2026 실적 시트) — 시트마다 "튜 브"처럼 사이 공백이 있어 norm() 으로 흡수.
+    "솔리드": "IND", "아리드": "IND", "공압": "IND",
     "튜브": "Tube", "플랩": "Flap",
 }
 
-# 2022 실적 시트의 한글 라벨은 mojibake(저장 시 제어 바이트가 손실)라 정상 한글로 복구가
-# 불가능하다. → 파일에 실제 담긴 바이트열(latin-1 디코드)을 키로 사용한다.
-# (소스에 깨진 글자를 그대로 두지 않도록, 바이트열 + 정상 라벨 주석으로 명시. byte-exact 검증됨)
-for _raw, _code in (
-    ((0xEC, 0xEB, 0xA6, 0xAC, 0xEB), "IND"),   # 솔리드
-    ((0xED, 0x20, 0xEB, 0xB8),       "Tube"),  # 튜브
-    ((0xED, 0x20, 0xEB, 0xA9),       "Flap"),  # 플랩
-):
-    PRODUCT_MAP[bytes(_raw).decode("latin-1")] = _code
-
-# ⚠ "타이어"(및 그 mojibake) 는 의도적으로 매핑에서 제외한다.
+# ⚠ "타이어" 는 의도적으로 매핑에서 제외한다.
 #   TBR = Truck & Bus 'Radial' 특정 제품이라 "타이어"(=전체 타이어 집계)를 대변할 수 없음.
 #   실제 시트에서 "타이어" 행은 항상 '판매금액 달성률(%)' 요약 행(값이 100%·8.4% 등 퍼센트)이라
 #   num()이 None 처리 → 기록 대상 아님. 실제 TBR 데이터는 Tire/Radial/LTR·TBR/TBR. 라벨에서 온다.
@@ -74,15 +64,14 @@ METRIC_DEFS += [
     ("fin_ord",   "internal", None, "financial", "경상이익", "USD"),
 ]
 
-QTY_MARKERS    = {"qty", "판매수량", "íë§¤ìë"}        # mojibake 판매수량
-AMOUNT_MARKERS = {"amt", "판매금액", "íë§¤ê¸ì¡"}        # mojibake 판매금액
+QTY_MARKERS    = {"qty", "판매수량"}
+AMOUNT_MARKERS = {"amt", "판매금액"}
 
-# 재무 라벨: 정상 한글 + mojibake 양쪽 매칭
 FIN_LABELS = {
-    "fin_sales": {"재무매출", "ì¬ë¬´ë§¤ì¶"},
-    "fin_sga":   {"판관비", "íê´ë¹"},
-    "fin_op":    {"영업이익", "ììì´ìµ"},
-    "fin_ord":   {"경상이익", "ê²½ìì´ìµ"},
+    "fin_sales": {"재무매출"},
+    "fin_sga":   {"판관비"},
+    "fin_op":    {"영업이익"},
+    "fin_ord":   {"경상이익"},
 }
 
 # ── 인코딩 복구 ────────────────────────────────────────────────────────────────
@@ -98,21 +87,14 @@ def read_text(path: str) -> str:
             continue
     if text is None:
         text = raw.decode("latin-1")
-    # 이중 인코딩 mojibake (UTF-8 바이트가 latin-1 로 표시된 경우) 복구
-    if not re.search(r"[가-힣]", text) and re.search(r"[ÃÂìëíê]", text):
-        try:
-            fixed = text.encode("latin-1").decode("utf-8")
-            if re.search(r"[가-힣]", fixed):
-                text = fixed
-        except (UnicodeEncodeError, UnicodeDecodeError):
-            pass
-    # 선두 BOM 제거 (정상 '﻿' + mojibake 'ï»¿')
-    text = text.lstrip("﻿")
-    if text.startswith("ï»¿"):
-        text = text[3:]
-    return text
+    return text.lstrip("\ufeff")   # 선두 BOM 제거
 
 # ── 셀 파싱 ────────────────────────────────────────────────────────────────────
+
+def norm(label: str) -> str:
+    """라벨 정규화 — 따옴표·앞뒤 공백 제거 + 낱글자 사이 공백 흡수("구 분"→"구분")."""
+    return re.sub(r"\s+", "", label.strip().strip('"'))
+
 
 _NULLS = {"", "-", "–", "—", "``", "`", "#value!", "#div/0!", "n/a", "전체", "연간", "연간목표"}
 
@@ -137,13 +119,13 @@ def detect_section(cells):
 
 def find_sum_index(cells):
     for i, c in enumerate(cells):
-        if c.strip().strip('"').strip() in ("Sum", "합계", "í©ê³"):   # mojibake 합계 = 'í©ê³'
+        if norm(c) in ("Sum", "합계"):
             return i
     return None
 
 def classify_financial(label: str):
-    l = label.strip().strip('"').strip()
-    if "률" in l or "달성" in l or "ë¥" in l:   # 비율/달성률 행 제외 (mojibake 률 = 'ë¥')
+    l = norm(label)
+    if "률" in l or "달성" in l:   # 비율/달성률 행 제외
         return None
     for metric, toks in FIN_LABELS.items():
         if l in toks:
@@ -151,11 +133,10 @@ def classify_financial(label: str):
     return None
 
 def map_product(label: str):
-    l = label.strip().strip('"').strip().rstrip(".").lower()
-    return PRODUCT_MAP.get(l)
+    return PRODUCT_MAP.get(norm(label).rstrip(".").lower())
 
 def marker_kind(label: str):
-    l = label.strip().strip('"').strip().lower()
+    l = norm(label).lower()
     if l in QTY_MARKERS:
         return "qty"
     if l in AMOUNT_MARKERS:

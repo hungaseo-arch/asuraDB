@@ -7,7 +7,8 @@
   · 인코딩은 UTF-8(BOM 허용) / CP949 / EUC-KR 자동 판별.
 
 매핑: Radial·Tire·LTR/TBR → TBR, Bias → TBB, Solid·PNEU → IND,
-      OTR → OTR, AGR → AGR, VUL → VUL, Tube → Tube, Flap → Flap.
+      OTR → OTR, AGR → AGR, VUL → Vulkan, Tube → Tube, Flap → Flap.
+  ※ PRODUCT_MAP 키는 반드시 소문자 — map_product() 가 norm().lower() 후 조회한다.
 
 실행:
   uv run python collectors/kpi_importer.py --dry-run     # DB 미반영, 파싱·검증만 출력
@@ -33,8 +34,8 @@ PRODUCT_MAP = {
     "otr": "OTR",
     "agr": "AGR",
     # → IND (Solid + PNEU)
-    "solid": "IND", "PNEU": "IND", "ind": "IND",
-    "VUL": "VUL",
+    "solid": "IND", "pneu": "IND", "ind": "IND",
+    "vul": "Vulkan",
     "tube": "Tube",
     "flap": "Flap",
     # 한글 라벨 (2022~2026 실적 시트) — 시트마다 "튜 브"처럼 사이 공백이 있어 norm() 으로 흡수.
@@ -49,7 +50,7 @@ PRODUCT_MAP = {
 
 CODE = {  # 표준 제품 → metric id suffix
     "TBR": "tbr", "TBB": "tbb", "OTR": "otr", "AGR": "agr",
-    "IND": "ind", "VUL": "VUL", "Tube": "tube", "Flap": "flap",
+    "IND": "ind", "Vulkan": "vulkan", "Tube": "tube", "Flap": "flap",
 }
 
 # 지표 정의 (kpi_metrics) — 마이그레이션과 동일, 멱등 upsert

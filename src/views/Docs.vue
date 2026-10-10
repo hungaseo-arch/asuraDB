@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { FileText, ArrowLeft, ChevronLeft, ChevronRight, Search } from 'lucide-vue-next';
 import PageHeader from '@/components/PageHeader.vue';
 import TableState from '@/components/ui/TableState.vue';
-import { sbGet } from '@/lib/supabase';
+import { sbGet, sbRpc, supabase } from '@/lib/supabase';
 import { errMsg } from '@/lib/utils';
 
 interface Post {
@@ -13,7 +13,7 @@ interface Post {
   category: string;
   date: string;           // 등록일 YYYY-MM-DD
   updated: string | null; // 수정일 YYYY-MM-DD (수정 이력 없으면 null)
-  file: string;           // public/docs/*.html
+  file: string;           // Storage docs/<scope>/<file>
 }
 
 // 이 게시판은 '정리'(회사 자료)와 'SEO자료'(개인 자료실)가 공유한다.
@@ -114,9 +114,83 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
 
 // ── 문서 뷰어 ────────────────────────────────────────────────────────────────
 const selected = ref<Post | null>(null);
-const docSrc = (p: Post) => `${import.meta.env.BASE_URL}docs/${p.file}`;
-function open(p: Post) { selected.value = p; }
-function back() { selected.value = null; }
+// 본문 HTML 은 private 버킷 `docs/<scope>/<file>` 에 있다 → 서명 URL(10분)로 받아 srcdoc 로 주입한다.
+//   (Storage 는 HTML 을 text/plain 으로 내릴 수 있어 iframe src 직결 대신 fetch → srcdoc. 동일 출처가 돼 브리지도 유지)
+const docHtml = ref<string | null>(null);
+const docLoading = ref(false);
+const docError = ref<string | null>(null);
+let docReq = 0;   // 빠르게 다른 글을 열 때 늦게 도착한 응답을 버리기 위한 토큰
+
+// srcdoc 에서는 `#id` 앵커 이동이 보장되지 않아, 목차 클릭을 scrollIntoView 로 대신 처리한다.
+const ANCHOR_FIX = `<script>document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a||a.getAttribute('href').length<2)return;var id=decodeURIComponent(a.getAttribute('href').slice(1));var t=document.getElementById(id)||document.getElementsByName(id)[0];if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth',block:'start'});}});<\/script>`;
+const withAnchorFix = (html: string) =>
+  /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${ANCHOR_FIX}</body>`) : html + ANCHOR_FIX;
+
+async function fetchDoc(p: Post): Promise<string> {
+  // 서명 URL 은 캐시하지 않고 열 때마다 발급한다
+  const { data, error } = await supabase.storage.from('docs').createSignedUrl(`${scope.value}/${p.file}`, 600);
+  if (error || !data?.signedUrl) throw new Error('열람 권한이 없거나 로그인 세션이 만료되었습니다. 다시 로그인해 주세요.');
+  const res = await fetch(data.signedUrl);
+  if (!res.ok) throw new Error(`문서를 불러오지 못했습니다 (${res.status}).`);
+  return res.text();
+}
+
+async function open(p: Post) {
+  selected.value = p;
+  docHtml.value = null;
+  docError.value = null;
+  docLoading.value = true;
+  const req = ++docReq;
+  try {
+    const html = await fetchDoc(p);
+    if (req === docReq) docHtml.value = withAnchorFix(html);
+  } catch (e) {
+    if (req === docReq) docError.value = errMsg(e);
+  } finally {
+    if (req === docReq) docLoading.value = false;
+  }
+}
+function back() { docReq++; selected.value = null; docHtml.value = null; docError.value = null; }
+
+// 받아온 HTML 로 Blob URL 을 만들어 새 탭에서 연다 (Storage URL 을 직접 열지 않음)
+function openInNewTab() {
+  if (docHtml.value == null) return;
+  const url = URL.createObjectURL(new Blob([docHtml.value], { type: 'text/html;charset=utf-8' }));
+  window.open(url, '_blank', 'noopener');
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+// ── 문항 열람 기록 브리지 ─────────────────────────────────────────────────────
+// 정적 HTML(iframe, 동일 출처)은 로그인 세션이 없으므로 postMessage 로 뷰어에 위임한다.
+//   iframe → { type:'doc-views-ready' } | { type:'doc-view', q }   (같은 출처만 수락)
+//   뷰어   → { type:'doc-views', views:{ [q]: {count, first, last} } }
+interface ViewRow { q_no: number; view_count: number; first_viewed_at: string; last_viewed_at: string }
+const docFrame = ref<HTMLIFrameElement | null>(null);
+
+function postViews(rows: ViewRow[]) {
+  const views: Record<number, { count: number; first: string; last: string }> = {};
+  for (const r of rows) views[r.q_no] = { count: r.view_count, first: r.first_viewed_at, last: r.last_viewed_at };
+  docFrame.value?.contentWindow?.postMessage({ type: 'doc-views', views }, window.location.origin);
+}
+async function onDocMessage(e: MessageEvent) {
+  if (e.origin !== window.location.origin || e.source !== docFrame.value?.contentWindow) return;
+  const file = selected.value?.file;
+  const d = e.data as { type?: string; q?: number } | null;
+  if (!file || !d) return;
+  try {
+    if (d.type === 'doc-views-ready') {
+      postViews(await sbGet<ViewRow[]>(`doc_question_views?file=eq.${encodeURIComponent(file)}&select=q_no,view_count,first_viewed_at,last_viewed_at`));
+    } else if (d.type === 'doc-view' && Number.isInteger(d.q)) {
+      const row = await sbRpc<ViewRow>('record_doc_view', { p_file: file, p_q: d.q });
+      docFrame.value?.contentWindow?.postMessage(
+        { type: 'doc-views', views: { [row.q_no]: { count: row.view_count, first: row.first_viewed_at, last: row.last_viewed_at } } },
+        window.location.origin,
+      );
+    }
+  } catch { /* 기록 실패는 열람에 영향 없음(테이블 미적용 환경 등) */ }
+}
+onMounted(() => window.addEventListener('message', onDocMessage));
+onBeforeUnmount(() => window.removeEventListener('message', onDocMessage));
 
 // '정리' ↔ 'SEO자료' 는 같은 컴포넌트를 재사용하므로 라우트만 바뀌면 재조회해야 한다
 watch(scope, () => {
@@ -156,10 +230,11 @@ watch(scope, () => {
         >
           <ArrowLeft :size="16" /> 목록
         </button>
-        <a
-          :href="docSrc(selected)" target="_blank" rel="noopener noreferrer"
-          class="text-xs text-primary hover:text-primary/80 font-medium"
-        >새 탭에서 열기 ↗</a>
+        <button
+          :disabled="docHtml == null"
+          class="text-xs text-primary hover:text-primary/80 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+          @click="openInNewTab"
+        >새 탭에서 열기 ↗</button>
       </div>
       <div class="rounded-xl border border-border bg-card overflow-hidden">
         <div class="px-5 py-3 border-b border-border bg-muted/20">
@@ -169,8 +244,18 @@ watch(scope, () => {
             <span v-if="selected.updated"> · 수정일 {{ selected.updated }}</span>
           </p>
         </div>
+        <div v-if="docLoading" class="flex items-center justify-center text-sm text-muted-foreground" style="height: 40vh">
+          문서를 불러오는 중…
+        </div>
+        <div v-else-if="docError" class="flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground" style="height: 40vh">
+          <p>{{ docError }}</p>
+          <button class="text-xs text-primary font-medium" @click="open(selected)">다시 시도</button>
+        </div>
         <iframe
-          :src="docSrc(selected)"
+          v-else-if="docHtml != null"
+          ref="docFrame"
+          :srcdoc="docHtml"
+          sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"
           class="w-full bg-card block"
           style="height: calc(100vh - 220px)"
           title="문서 미리보기"

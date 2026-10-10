@@ -56,3 +56,6 @@ playwright-report/
 
 # 수집기 원본 다운로드 캐시 (재다운로드 가능 — 저장소에 두지 않는다)
 data/cache/
+
+# 계정 정의(비밀번호 포함) — create_auth_users.mjs 입력, 절대 커밋 금지
+accounts.json

@@ -8,11 +8,10 @@
 // 실행:
 //   node scripts/create_auth_users.mjs
 //
-// 계정 정의:
-//   - 기본 계정 4개(역할별 1명)는 ACCOUNTS 배열에 인라인 정의.
-//   - 외부 JSON 파일로 더 많은 계정을 추가하려면:
-//       node scripts/create_auth_users.mjs accounts.json
-//     accounts.json 형식: [{ "email": "...", "password": "...", "role": "staff" }, ...]
+// 계정 정의 (비밀번호는 코드에 두지 않는다 — public 저장소):
+//   - JSON 파일:   node scripts/create_auth_users.mjs [accounts.json]   (기본 경로: 저장소 루트 accounts.json, .gitignore 됨)
+//   - 환경변수:    ACCOUNTS_JSON='[{"email":"...","password":"...","role":"staff"}]' node scripts/create_auth_users.mjs
+//   형식: [{ "email": "...", "password": "...", "role": "staff" }, ...]
 //
 // service_role 키는 .env 의 SUPABASE_SERVICE_KEY 또는 SUPABASE_SERVICE_ROLE_KEY 환경변수에서 읽음.
 
@@ -26,27 +25,17 @@ if (!SERVICE_KEY) { console.error('✗ service_role 키 없음 (.env SUPABASE_SE
 
 const ALLOWED_ROLES = ['super_admin', 'staff', 'distributor', 'end_user'];
 
-// 기본 계정 — 역할별 1명. 실제 운영 비밀번호는 대시보드에서 변경 권장.
-const DEFAULT_ACCOUNTS = [
-  { email: 'admin@asuradb.local',       password: 'asuradb-admin-0574',       role: 'super_admin' },
-  { email: 'staff@asuradb.local',       password: 'asuradb-staff-0232',       role: 'staff'       },
-  { email: 'distributor@asuradb.local', password: 'asuradb-distributor-0123', role: 'distributor' },
-  { email: 'customer@asuradb.local',    password: 'asuradb-customer-0000',    role: 'end_user'    },
-];
-
-// 외부 JSON 인자가 있으면 그걸 사용 — 기본 계정 + JSON 머지(이메일 중복 시 JSON 우선)
-let accounts = DEFAULT_ACCOUNTS;
-if (process.argv[2]) {
-  try {
-    const extra = JSON.parse(readFileSync(process.argv[2], 'utf8'));
-    if (!Array.isArray(extra)) throw new Error('JSON 최상단은 배열이어야 합니다.');
-    const map = new Map(DEFAULT_ACCOUNTS.map((a) => [a.email, a]));
-    for (const a of extra) map.set(a.email, a);
-    accounts = [...map.values()];
-  } catch (e) {
-    console.error('✗ accounts.json 읽기 실패:', e.message);
-    process.exit(1);
-  }
+// 계정 목록 — 파일 인자 > ACCOUNTS_JSON 환경변수 > 루트 accounts.json 순. 어느 쪽도 없으면 중단.
+let accounts;
+try {
+  const raw = process.env.ACCOUNTS_JSON
+    ? process.env.ACCOUNTS_JSON
+    : readFileSync(process.argv[2] ?? new URL('../accounts.json', import.meta.url), 'utf8');
+  accounts = JSON.parse(raw);
+  if (!Array.isArray(accounts)) throw new Error('JSON 최상단은 배열이어야 합니다.');
+} catch (e) {
+  console.error('✗ 계정 정의를 읽지 못했습니다 (accounts.json 또는 ACCOUNTS_JSON):', e.message);
+  process.exit(1);
 }
 
 // 검증

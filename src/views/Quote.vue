@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import { ClipboardList, Trash2, Printer, Loader2, Save, FolderOpen, FilePlus, Copy, X, ChevronDown } from 'lucide-vue-next';
+import { ClipboardList, Trash2, Printer, Loader2, Save, FolderOpen, FilePlus, Copy, X, ChevronDown, AlertTriangle } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { sbGet, sbPost, sbPatch, sbDelete, sbRpc } from '@/lib/supabase';
@@ -274,8 +274,10 @@ function inverseDiscount(l: LineItem): number {
   return d < 1 ? 1 - d : 1;
 }
 
+// 마진율 = (순판매가 − 원가) ÷ 순판매가 — 판매가 기준(CLAUDE.md 마진 산정 기준). 원가 기준(markup)은 쓰지 않는다.
 function rawMargin(l: LineItem): number {
-  return (lineNetPrice(l) - l.whPrice) / l.whPrice;
+  const net = lineNetPrice(l);
+  return net > 0 ? (net - l.whPrice) / net : 0;
 }
 
 function lineNetPrice(l: LineItem): number { return (l.unitPrice || 0) * (1 - (l.discount || 0) / 100); }
@@ -287,17 +289,27 @@ function lineMarginNum(l: LineItem): string {
   if (!l.whPrice) return isQuoteOnly ? l.guestMargin.toFixed(1) : '';
   return (rawMargin(l) * 100).toFixed(1);
 }
+// 최저 추천 마진(판매가 기준). 색 임계값 = 이 값 이상 녹색 / 0 이상 주황 / 음수 빨강.
+const MIN_MARGIN = 0.15;
 function marginColor(l: LineItem): string {
   if (!l.whPrice || !l.unitPrice) return '';
   const m = rawMargin(l);
-  return m >= 0.05 ? 'text-success' : m >= 0 ? 'text-warning' : 'text-destructive';
+  return m >= MIN_MARGIN ? 'text-success' : m >= 0 ? 'text-warning' : 'text-destructive';
+}
+// 최저 추천 마진 대비 차이(%p) — 입력창 옆에 "+5.0p" / "−3.0p" 로 병기.
+function marginGap(l: LineItem): string {
+  if (!l.whPrice || !l.unitPrice) return '';
+  const gap = (rawMargin(l) - MIN_MARGIN) * 100;
+  return `${gap >= 0 ? '+' : '−'}${Math.abs(gap).toFixed(1)}p`;
 }
 function onMarginChange(line: LineItem, val: string) {
   const m = parseFloat(val);
   if (isNaN(m)) return;
   if (isQuoteOnly) line.guestMargin = m;
   if (!line.whPrice) return;
-  line.unitPrice = Math.round(line.whPrice * (1 + m / 100) / inverseDiscount(line));
+  // 역산: 판매가 = 원가 ÷ (1 − 마진율). 마진 100% 이상은 무효.
+  if (m >= 100) return;
+  line.unitPrice = Math.round(line.whPrice / (1 - m / 100) / inverseDiscount(line));
 }
 
 // markup: end_user 만 추가 15% (최종 고객용). distributor 는 products_sell 가격 그대로(1.0).
@@ -325,7 +337,24 @@ function fmt(n: number):      string { return n ? Math.round(Math.abs(n)).toLoca
 function fmtInput(n: number): string { return n ? n.toLocaleString('en-US') : ''; }
 function parseNum(s: string): number { return parseInt(s.replace(/,/g, ''), 10) || 0; }
 
+// 최저 추천 마진 미만 라인 — 인쇄/PDF 전 경고 모달에 나열(원가를 보는 역할만 판정).
+const lowMarginLines = computed(() =>
+  canViewCost
+    ? lines.value.filter(l => l.whPrice > 0 && l.unitPrice > 0 && rawMargin(l) < MIN_MARGIN)
+    : [],
+);
+const showLowMarginModal = ref(false);
+
 function handlePrint() {
+  if (lowMarginLines.value.length) { showLowMarginModal.value = true; return; }
+  doPrint();
+}
+function confirmLowMarginPrint() {
+  showLowMarginModal.value = false;
+  doPrint();
+}
+
+function doPrint() {
   const d = new Date();
   const dd   = String(d.getDate()).padStart(2, '0');
   const mm   = String(d.getMonth() + 1).padStart(2, '0');
@@ -730,7 +759,7 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
             <col class="print:hidden" :style="{ width: '10%' }" /> <!-- Dist Price -->
             <col class="print:hidden" :style="{ width: '5%' }" />  <!-- Discount -->
             <col :style="{ width: '10%' }" />
-            <col class="print:hidden" :style="{ width: '3%' }" />  <!-- Margin -->
+            <col class="print:hidden" :style="{ width: '5%' }" />  <!-- Margin (+차이 %p) -->
             <col :style="{ width: '10%' }" />
             <col :style="{ width: '2%' }" />
           </colgroup>
@@ -825,6 +854,11 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
                     @change="onMarginChange(line, ($event.target as HTMLInputElement).value)"
                   />
                   <span class="text-xs text-muted-foreground shrink-0">%</span>
+                  <span
+                    v-if="marginGap(line)"
+                    :class="['text-[10px] tabular-nums shrink-0 w-11 text-left', marginColor(line)]"
+                    :title="`최저 추천 마진 ${MIN_MARGIN * 100}% 대비`"
+                  >{{ marginGap(line) }}</span>
                 </div>
               </td>
               <td class="hidden md:table-cell px-2 py-1.5 text-right text-xs font-mono tabular-nums font-semibold">
@@ -1044,6 +1078,56 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
               <span>PIC {{ c.main_pic_name }}</span>
             </template>
           </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
+  <!-- 저마진 경고 모달 (Print / PDF 전) -->
+  <Teleport to="body">
+    <div
+      v-if="showLowMarginModal"
+      class="fixed inset-0 z-9998 flex items-center justify-center bg-black/60 print:hidden"
+      @click.self="showLowMarginModal = false"
+    >
+      <div class="bg-card border border-border rounded-xl w-full max-w-lg mx-4 shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 class="text-sm font-bold flex items-center gap-2">
+            <AlertTriangle :size="16" class="text-warning" />
+            최저 추천 마진({{ MIN_MARGIN * 100 }}%) 미달 제품
+          </h2>
+          <button class="p-1 rounded hover:bg-accent transition-colors" @click="showLowMarginModal = false">
+            <X :size="16" />
+          </button>
+        </div>
+        <div class="px-5 py-3 text-xs text-muted-foreground">
+          아래 {{ lowMarginLines.length }}개 라인의 마진이 {{ MIN_MARGIN * 100 }}% 미만입니다. 그대로 PDF를 생성할까요?
+        </div>
+        <div class="max-h-72 overflow-y-auto border-t border-border">
+          <table class="w-full text-xs">
+            <thead class="bg-muted/30 text-muted-foreground">
+              <tr>
+                <th class="text-left px-5 py-2 font-semibold">Item</th>
+                <th class="text-right px-3 py-2 font-semibold">Unit Price</th>
+                <th class="text-right px-3 py-2 font-semibold">Margin</th>
+                <th class="text-right px-5 py-2 font-semibold">vs {{ MIN_MARGIN * 100 }}%</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="l in lowMarginLines" :key="l.id" class="border-t border-border/40">
+                <td class="px-5 py-2 truncate max-w-56">{{ l.description || '(no description)' }}</td>
+                <td class="px-3 py-2 text-right font-mono tabular-nums">{{ fmt(lineNetPrice(l)) }}</td>
+                <td :class="['px-3 py-2 text-right font-mono tabular-nums font-semibold', marginColor(l)]">{{ lineMarginNum(l) }}%</td>
+                <td :class="['px-5 py-2 text-right font-mono tabular-nums', marginColor(l)]">{{ marginGap(l) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="flex justify-end gap-2 px-5 py-3 border-t border-border">
+          <Button variant="outline" size="sm" class="text-xs" @click="showLowMarginModal = false">취소</Button>
+          <Button size="sm" class="gap-1.5 text-xs" @click="confirmLowMarginPrint">
+            <Printer :size="13" />그대로 생성
+          </Button>
         </div>
       </div>
     </div>

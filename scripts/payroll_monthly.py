@@ -10,7 +10,8 @@
 사용:
   # 1) Gmail RAW(JSON 저장본)에서 첨부 추출
   python3 scripts/payroll_monthly.py extract <gmail_raw.json> <outdir>
-  # 2) 집계 + 검증 (+ --apply 로 src/data/payrollMonthly.ts 갱신, --sql 로 staff_payroll upsert SQL 생성)
+  # 2) 집계 + 검증 → 리포트(JSON)의 payroll_monthly.sql = 인건비 탭 SSOT(Supabase payroll_monthly) 반영 SQL
+  #    (+ --sql 로 staff_payroll upsert SQL 생성, --apply 로 정적 fallback src/data/payrollMonthly.ts 갱신)
   python3 scripts/payroll_monthly.py run --period 2026-09 --dir <outdir> [--dir <rev_outdir>] \
       [--apply] [--sql /tmp/staff_payroll_2026-09.sql] [--override thr.HQ=268.9]
 
@@ -455,6 +456,31 @@ def ts_months(ts_path):
     return re.search(r"PAYROLL_UPDATED = '(\d{4}-\d{2})'", s).group(1)
 
 
+# ───────────────────────── payroll_monthly(DB) upsert SQL ─────────────────────────
+def db_sql(res):
+    """인건비 탭 SSOT(Supabase public.payroll_monthly) 반영 SQL — 집계값만(개인정보 없음). 해당 월을 통째로 교체."""
+    period = res['period']
+    vals = []
+
+    def add(tab, item, row_key, v):
+        vals.append("('%s','%s','%s','%s',%s)" % (tab, item, row_key.replace("'", "''"), period, fmt_num(v)))
+
+    c = res['company']
+    for t in TABS:
+        add('company', 'hc', t, c['rows'][t])
+    for item in ('total', 'salary', 'avgcost', 'kompensasi', 'thr', 'insentif'):
+        add('company', item, '', c[item])
+    for t in TABS:
+        x = res['tabs'][t]
+        for sec, n in sorted(x['sections'].items()):
+            add(TAB_KEY[t], 'hc', sec, n)
+        for item in ('total', 'salary', 'avgcost', 'kompensasi', 'thr', 'insentif'):
+            add(TAB_KEY[t], item, '', x[item])
+    return ("begin;\ndelete from public.payroll_monthly where period = '%s';\n"
+            "insert into public.payroll_monthly (tab_key, item, row_key, period, value) values\n%s;\ncommit;"
+            % (period, ',\n'.join(vals))), len(vals), round(sum(float(v.rsplit(',', 1)[1].rstrip(')')) for v in vals), 1)
+
+
 # ───────────────────────── staff_payroll SQL ─────────────────────────
 def q(v):
     if v is None or v == '':
@@ -500,6 +526,9 @@ def cmd_run(a):
     report = {'period': a.period, 'ok': not errs, 'errors': errs, 'warnings': warns, 'sources': data['sources'],
               'checklist': data['checklist'], 'result': res, 'ts_updated_before': ts_months(a.ts)}
     if res and not errs:
+        sql_text, n_vals, chk = db_sql(res)
+        # 검증 쿼리: select count(*), sum(value) from payroll_monthly where period = '<P>'  → rows / checksum 과 일치해야 함
+        report['payroll_monthly'] = {'rows': n_vals, 'checksum': chk, 'sql': sql_text}
         if a.sql:
             known = set(open(a.staff_known, encoding='utf-8').read().replace(',', '\n').split()) if a.staff_known else None
             report['sql'] = write_sql(a.sql, data, a.period, known)

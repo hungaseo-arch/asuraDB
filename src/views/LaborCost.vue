@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // 경영·성과 › 인건비 — 지점별·월별 인원/인건비/보상비/THR/상여금/총인건비
-// 데이터: src/data/payrollMonthly.ts (정적 SSOT). 라이트(화이트) 테마 · 기존 뷰(Margin/Monitor) 컨벤션 준수.
-import { ref, computed } from 'vue';
+// 데이터: Supabase `payroll_monthly`(SSOT, src/lib/payroll.ts) — 조회 실패·미적재 시 정적 src/data/payrollMonthly.ts 로 대체.
+// 라이트(화이트) 테마 · 기존 뷰(Margin/Monitor) 컨벤션 준수.
+import { ref, shallowRef, computed, onMounted } from 'vue';
 import { Users, Wallet, Coins, CalendarRange, Download } from 'lucide-vue-next';
 import { Bar } from 'vue-chartjs';
 import type { ChartData, ChartDataset, ChartOptions } from 'chart.js';
@@ -9,10 +10,24 @@ import { cssVar, chartColor, chartAlpha } from '@/components/charts/chartSetup';
 import PageHeader from '@/components/PageHeader.vue';
 import { exportXlsx } from '@/lib/xlsx';
 import { PAYROLL_TABS, PAYROLL_MONTHS_2026, PAYROLL_UPDATED } from '@/data/payrollMonthly';
-import type { PayrollSeries, PayrollAddon } from '@/data/payrollMonthly';
+import type { PayrollSeries, PayrollAddon, PayrollTab } from '@/data/payrollMonthly';
+import { loadPayroll } from '@/lib/payroll';
+
+// 정적 값으로 먼저 그리고, DB 값이 오면 교체한다(월 마감 반영은 DB upsert 만으로 끝 — 재배포 불필요).
+const tabs = shallowRef<PayrollTab[]>(PAYROLL_TABS);
+const months = ref<string[]>(PAYROLL_MONTHS_2026);
+const updated = ref(PAYROLL_UPDATED);
+onMounted(async () => {
+  try {
+    const d = await loadPayroll();
+    if (d) { tabs.value = d.tabs; months.value = d.months; updated.value = d.updated; }
+  } catch (e) {
+    console.warn('[LaborCost] payroll_monthly 조회 실패 — 정적 데이터로 표시', e);
+  }
+});
 
 const cur = ref(0);
-const tab = computed(() => PAYROLL_TABS[cur.value]);
+const tab = computed(() => tabs.value[cur.value]);
 
 // ── 인건비 부가항목 표 행 (인건비 + 보상비 + THR + 상여금) ──────────────────
 // series 가 없으면(원천 미적재) '-' 로 표시해 0 과 구분한다. THR 은 원천 미정이라 항상 '-'.
@@ -37,7 +52,7 @@ const totalCost = computed<PayrollAddon>(() => {
     avg2025: addons2025Known
       ? add(t.salary.avg2025, t.kompensasi?.avg2025, t.thr?.avg2025, t.insentif?.avg2025)
       : null,
-    m2026: PAYROLL_MONTHS_2026.map((_, i) =>
+    m2026: months.value.map((_, i) =>
       add(t.salary.m2026[i], t.kompensasi?.m2026[i], t.thr?.m2026[i], t.insentif?.m2026[i])),
     avg2026: add(t.salary.avg2026, t.kompensasi?.avg2026, t.thr?.avg2026, t.insentif?.avg2026),
   };
@@ -46,7 +61,7 @@ const totalCost = computed<PayrollAddon>(() => {
 // ── 엑셀(.xlsx) 내보내기 — 현재 탭의 피벗 표 전체(인원·평균·인건비 구성·총인건비) ──
 function downloadLaborXlsx() {
   const t = tab.value;
-  const headers = ['구분', '2025 평균', ...PAYROLL_MONTHS_2026, '2026 Avg'];
+  const headers = ['구분', '2025 평균', ...months.value, '2026 Avg'];
   const rows: (string | number)[][] = [];
   const dash = (v: number | null | undefined) => (v == null ? '-' : v);
   // ① 인원 (지점/부서별)
@@ -58,12 +73,12 @@ function downloadLaborXlsx() {
   for (const cr of costRows.value) {
     rows.push(cr.series
       ? [cr.label, dash(cr.series.avg2025), ...cr.series.m2026, cr.series.avg2026]
-      : [cr.label, '-', ...PAYROLL_MONTHS_2026.map(() => '-'), '-']);
+      : [cr.label, '-', ...months.value.map(() => '-'), '-']);
   }
   // ④ 총인건비 (파생 합계)
   const tc = totalCost.value;
   rows.push(['총인건비 (백만IDR)', dash(tc.avg2025), ...tc.m2026, tc.avg2026]);
-  exportXlsx(`인건비_${t.name}_${PAYROLL_UPDATED}`, headers, rows, `인건비_${t.name}`);
+  exportXlsx(`인건비_${t.name}_${updated.value}`, headers, rows, `인건비_${t.name}`);
 }
 
 const fmt = (n: number, d = 1) =>
@@ -74,7 +89,7 @@ const deltaClass = (v: number | null) =>
 const deltaText = (v: number | null) =>
   v == null ? '—' : `${v > 0 ? '▲' : v < 0 ? '▼' : '■'} ${Math.abs(v).toFixed(1)}%`;
 
-// KPI(최신월=7월) → 2025 평균 대비 증감
+// KPI(최신월) → 2025 평균 대비 증감
 const kpis = computed(() => {
   const t = tab.value;
   const i = t.total.m2026.length - 1;
@@ -99,7 +114,7 @@ const LINE_GREEN = chartColor(3);          // 인원(headcount) 선 — 차트 �
 
 // 월별 추이 차트 (인건비 막대 + 인원 선, 이중 축)
 const chartData = computed<ChartData<'bar'>>(() => ({
-  labels: PAYROLL_MONTHS_2026,
+  labels: months.value,
   datasets: [
     { label: '인건비 (백만IDR)', data: tab.value.salary.m2026,
       backgroundColor: chartAlpha(BAR_BLUE, 0.5), borderColor: BAR_BLUE, borderWidth: 1, yAxisID: 'y', order: 2 },
@@ -126,7 +141,7 @@ const notes = computed(() => {
   const t = tab.value;
   const n = [
     '인건비 = TOTAL GAJI GROSS(기본급+수당+회사부담 BPJS, 세전). 구분 = 원본 월시트 Section(Divisi) 그대로. 평균 인건비 = 인건비 ÷ 인원(천 단위).',
-    '2025 평균 = 2025년 월별 평균, 2026 Avg = 1~7월 평균.',
+    `2025 평균 = 2025년 월별 평균, 2026 Avg = 1~${months.value.length}월 평균.`,
   ];
   if (t.key === 'Semarang' || t.key === 'company')
     n.push('스마랑 2025년 10월 개소 → 지점 2025평균은 10~12월(3개월), 전사 탭의 스마랑 행은 연간 12개월 기준.');
@@ -142,12 +157,12 @@ const notes = computed(() => {
   <div class="p-4 sm:p-5 space-y-4 max-w-300 mx-auto">
     <PageHeader
       title="인건비"
-      :subtitle="`지점별·월별 인원 / 인건비 / 평균 인건비 · 단위: 인원=명, 인건비=백만 IDR(Juta) · 기준 ${PAYROLL_UPDATED}`"
+      :subtitle="`지점별·월별 인원 / 인건비 / 평균 인건비 · 단위: 인원=명, 인건비=백만 IDR(Juta) · 기준 ${updated}`"
     >
       <template #controls>
         <div class="flex flex-wrap gap-1.5">
           <button
-            v-for="(t, i) in PAYROLL_TABS" :key="t.key"
+            v-for="(t, i) in tabs" :key="t.key"
             class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors"
             :class="i === cur
               ? 'bg-primary/15 border-primary/40 text-primary'
@@ -200,11 +215,11 @@ const notes = computed(() => {
             <tr class="text-muted-foreground">
               <th scope="col" rowspan="2" class="text-left font-semibold px-2 py-2 border-b border-border">구분 (Kategori)</th>
               <th scope="col" rowspan="2" class="px-2 py-2 border-b border-border bg-muted/40">2025<br>평균</th>
-              <th scope="colgroup" :colspan="PAYROLL_MONTHS_2026.length" class="px-2 py-1 border-b border-border">2026</th>
+              <th scope="colgroup" :colspan="months.length" class="px-2 py-1 border-b border-border">2026</th>
               <th scope="col" rowspan="2" class="px-2 py-2 border-b border-border bg-primary/10 text-primary">2026<br>Avg</th>
             </tr>
             <tr class="text-muted-foreground">
-              <th scope="col" v-for="m in PAYROLL_MONTHS_2026" :key="m" class="px-2 py-1.5 border-b border-border font-semibold">{{ m }}</th>
+              <th scope="col" v-for="m in months" :key="m" class="px-2 py-1.5 border-b border-border font-semibold">{{ m }}</th>
             </tr>
           </thead>
           <tbody>
@@ -236,7 +251,7 @@ const notes = computed(() => {
             >
               <td class="text-left px-2 py-2 text-foreground/90">{{ cr.label }}</td>
               <td class="text-center px-2 py-2 bg-muted/20">{{ cr.series && cr.series.avg2025 != null ? fmt(cr.series.avg2025, 1) : '-' }}</td>
-              <td v-for="(_m, i) in PAYROLL_MONTHS_2026" :key="i" class="text-center px-2 py-2">{{ cr.series ? fmt(cr.series.m2026[i], 1) : '-' }}</td>
+              <td v-for="(_m, i) in months" :key="i" class="text-center px-2 py-2">{{ cr.series ? fmt(cr.series.m2026[i], 1) : '-' }}</td>
               <td class="text-center px-2 py-2 bg-primary/5">{{ cr.series ? fmt(cr.series.avg2026, 1) : '-' }}</td>
             </tr>
 

@@ -1,10 +1,10 @@
 // src/data/payrollMonthly.ts
-// 인건비(월별) 집계 데이터 — 경영·성과 › 인건비 탭 SSOT(정적).
+// 인건비(월별) 집계 데이터 — 경영·성과 › 인건비 탭 정적 메타·fallback.
 // 출처: Rekap Gaji Ascendo Internasional 월별 파일(2025-01~2026-09, Google Drive).
 // 인건비 = TOTAL GAJI GROSS(기본급+수당+회사부담 BPJS, 세전). 단위: 인원=명, 인건비=백만 IDR(Juta).
 // 구분(rows.label) = 원본 월시트 Section(Divisi) 그대로. 평균인건비 = 인건비 ÷ 인원(천 단위).
-// ⚠ 갱신: 신규 월마감 시 scripts/payroll_monthly.py run --period YYYY-MM --dir <첨부폴더> --apply (수기 편집 지양).
-//   중기적으로는 Supabase payroll_monthly 테이블 + importer로 승격 권장(작업지시서 §8 참고).
+// ⚠ SSOT 는 Supabase `payroll_monthly`(2026-10-12 승격) — 화면은 src/lib/payroll.ts 로 DB 값을 읽고,
+//   이 파일은 탭·행 라벨 메타 + DB 조회 실패 시 fallback 으로만 쓴다. 월 반영은 scripts/payroll_monthly.py 참고.
 
 export interface PayrollSeries { avg2025: number; m2026: number[]; avg2026: number }
 // 부가항목(보상비·THR·상여금): 2025 원천이 없어 avg2025 는 null 가능('-' 로 표시)

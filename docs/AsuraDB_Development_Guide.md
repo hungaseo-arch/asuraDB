@@ -726,15 +726,15 @@ export async function sbHeaders() {            // 로그인 시 사용자 JWT, �
 
 | 키 | 저장 위치 | 노출 | 주의 |
 |---|---|---|---|
-| **publishable** (`VITE_SB_KEY`) | `.env` → 브라우저 번들 | ⚠️ 노출됨 | RLS+Auth로 보호. service_role 절대 금지. 현재 `sb_publishable_…`(신규 ~46자), 레거시 `eyJ…` JWT anon도 동작 |
+| **publishable** (`VITE_SB_KEY`) | `.env` → 브라우저 번들 | ⚠️ 노출됨 | RLS+Auth로 보호. service_role 절대 금지. `sb_publishable_…` 만 사용 — **레거시 `eyJ…` anon/service_role 은 2026-10-13 비활성화**(401) |
 | **URL** (`VITE_SB_URL`) | `.env` → 번들 | 노출(정상) | 공개 정보 |
-| **service_role** (`SUPABASE_SERVICE_KEY`) | `.env` (`VITE_` 접두사 **금지**) | 서버 전용 | Edge Function · `api/search.py` · 수집기에서만 |
+| **secret** (`SUPABASE_SERVICE_KEY`) | `.env` (`VITE_` 접두사 **금지**) | 서버 전용 | `sb_secret_…`(2026-10-13 교체). `api/search.py` · 수집기 · `scripts/*` 에서만. Edge Function 은 런타임 주입 `SUPABASE_SERVICE_ROLE_KEY` 사용 |
 
 ### 11-3. 핵심 보안 원칙
 
 1. **`VITE_` 접두사 변수는 모두 빌드 결과물에 그대로 포함** → 브라우저 노출돼도 되는 값만 지정.
 2. **`VITE_SB_KEY`에는 publishable(또는 레거시 anon) 키만.** service_role이 `VITE_`로 노출되면 RLS 우회로 전체 DB가 열림.
-3. **데이터 보호는 키가 아니라 RLS + 사용자 JWT가 담당.** RLS가 `to authenticated`로 좁혀져 비로그인(publishable만) 요청은 전 테이블 빈 응답(차단). 로그인 흐름: PIN 입력 → `signInWithPin(pin)` → 계정 매핑(`full@asuradb.local`/`quote@asuradb.local`) → `signInWithPassword` → JWT 발급 → 이후 `sb*` 호출에 자동 첨부.
+3. **데이터 보호는 키가 아니라 RLS + 사용자 JWT가 담당.** RLS가 `to authenticated`로 좁혀져 비로그인(publishable만) 요청은 전 테이블 빈 응답(차단). 로그인 흐름: 이메일+비밀번호 → `signIn(email, password)`(`signInWithPassword`) → JWT 발급(역할은 `app_metadata.role`) → 이후 `sb*` 호출에 자동 첨부.
 4. **서비스 키는 클라이언트로 절대 유출 금지.** `SUPABASE_SERVICE_KEY`는 `VITE_` 없는 별도 변수 → 번들 미포함. 사용처: `collectors/*.py`, `scripts/create_auth_users.mjs`, `api/search.py`.
 
 ### 11-4. 점검 체크리스트
@@ -769,9 +769,29 @@ export async function sbHeaders() {            // 로그인 시 사용자 JWT, �
 | `src/views/PinLogin.vue` | PIN 키패드 UI |
 | `src/router/index.ts` | 세션 기반 async 가드 · 역할별 페이지 게이팅 |
 | `supabase/migrations/enable_rls_all_tables.sql` | 테이블 RLS 활성화 + `<table>_auth_all` 정책 |
-| `scripts/create_auth_users.mjs` | Admin API로 PIN 매핑 계정 생성/갱신 (service_role) |
+| `scripts/create_auth_users.mjs` | Admin API로 계정 일괄 생성/갱신 (`accounts.json`, secret 키) |
+| `supabase/functions/admin-users/` | 관리자 사용자 관리 Edge Function (`src/views/UserAdmin.vue`) |
+| `scripts/upload-doc.mjs` | 자료실 문서 Storage 업로드 + `doc_posts` 등록 |
 
 > PIN 로그인 구현 현황은 §13-1 참조.
+
+### 11-5a. 자료실 비공개 문서 · 사용자 관리 (2026-10-13)
+
+**자료실 문서 본문**은 공개 저장소·GitHub Pages(`public/docs/`)에서 제거하고 **비공개 Storage 버킷 `docs`** 로 옮겼다.
+
+| 항목 | 내용 |
+|---|---|
+| 객체 경로 | `docs/<scope>/<file>` — scope = `personal` · `company` · `templates`(게시판 비노출) |
+| 읽기 권한 | `storage.objects` 정책 "docs read by role" — 경로 첫 폴더로 판정: personal·templates = super_admin, company = super_admin·staff. insert/update/delete 정책 없음(업로드는 secret 키 전용) |
+| 목록 메타 | `doc_posts` 정책 "doc_posts read by role" — 같은 규칙. `doc_question_views` 는 본인 행 + 해당 문서가 보일 때만 |
+| 화면 | `Docs.vue` — `createSignedUrl(path, 600)` → `fetch` → `iframe srcdoc`(앵커 목차 보정 스크립트 주입). 새 탭은 Blob URL |
+| 업로드 | `node scripts/upload-doc.mjs <scope> "<제목>" "<분류>" <YYYY-MM-DD> <로컬.html>` (Storage + `doc_posts` 한 번에) |
+| SQL | `storage_docs_private.sql` / 롤백 `storage_docs_private_rollback.sql` |
+
+**사용자 관리**(`#/user-admin`, super_admin 전용): 계정 등록·삭제·비밀번호 재설정은 service_role 이 필요하므로
+Edge Function `admin-users` 가 처리한다. 함수가 호출자 JWT 를 `auth.getUser` 로 재검증하고 `app_metadata.role = super_admin`
+만 허용한다. 비밀번호를 비우면 함수 시크릿 `DEFAULT_USER_PASSWORD` 를 쓴다(저장소에 두지 않음). 비밀번호 재설정 시 대상
+사용자의 전 세션을 종료한다. `scripts/create_auth_users.mjs` 는 `accounts.json`(gitignore)·`ACCOUNTS_JSON` 에서만 계정을 읽는다.
 
 ### 11-6. SECURITY DEFINER RPC 작성 규칙
 

@@ -34,7 +34,7 @@
 - **AsuraDB_지표수집_가이드.md** — 외부 거시·시장 지표 24종 수집
 - **근태관리기능.md** — 근태 3개 화면·직원용 PWA·지오펜싱·RLS 권한·배포 방법
 - **웹사이트_운영_변경이력.md** — 월간 데이터 갱신 절차 + **변경이력(changelog)** ← 위 지침의 기록처
-- **학습덱_HTML_제작지침.md** — `public/docs/` 학습용 정적 HTML 덱 표준 규격 ← 덱 추가·수정 전 필독
+- **학습덱_HTML_제작지침.md** — 자료실 학습용 정적 HTML 덱 표준 규격 ← 덱 추가·수정 전 필독
 
 ## 데이터 SSOT (단일 진실원천)
 
@@ -53,7 +53,7 @@
     `#546E7A` 테두리, 필수 표시는 `<span class="required">*</span>`. 기준 적용처는 `Quote.vue`
     Order Information. 팔레트 외 신규 색 도입 금지.
 - 변경 후 `npm run build` 로 타입/빌드 검증.
-- **`public/docs/` 학습덱 HTML**: 신규 추가·수정 시 [`docs/학습덱_HTML_제작지침.md`](docs/학습덱_HTML_제작지침.md) 를 **그대로** 따른다. 새 디자인을 임의로 만들지 말고 기준본 [`public/docs/phrasal-verbs-deck-200.html`](public/docs/phrasal-verbs-deck-200.html) 을 복사해 데이터만 교체한다. 핵심 4가지 — ① 앱 시맨틱 토큰 `:root` 고정(라이트) ② 목록 카드 3칸(`.nbox`/`.wbox`/`.ex`) ③ **영어·인니어·한국어 3종 필수 + 인니어 예문 누락 금지** ④ 🔊 TTS 는 문장에만(`en-US`/`id-ID`). 게시판 등록은 `doc_posts`(신규 insert / 수정 시 `updated_on` 갱신).
+- **자료실 문서·학습덱 HTML**: 본문은 비공개 Storage 버킷 `docs/<scope>/<file>` 에만 둔다(**저장소 `public/docs/` 에 HTML 커밋 금지** — 공개 저장소·GitHub Pages 로 노출됨). 업로드는 `node scripts/upload-doc.mjs <scope> "<제목>" "<분류>" <YYYY-MM-DD> <로컬.html>`. 신규 추가·수정 시 [`docs/학습덱_HTML_제작지침.md`](docs/학습덱_HTML_제작지침.md) 를 **그대로** 따른다. 새 디자인을 임의로 만들지 말고 기준본 Storage `docs/templates/phrasal-verbs-deck-200.html`(로컬 사본 `~/asuraDB-docs-backup-20261010/`) 을 복사해 데이터만 교체한다. 핵심 4가지 — ① 앱 시맨틱 토큰 `:root` 고정(라이트) ② 목록 카드 3칸(`.nbox`/`.wbox`/`.ex`) ③ **영어·인니어·한국어 3종 필수 + 인니어 예문 누락 금지** ④ 🔊 TTS 는 문장에만(`en-US`/`id-ID`). 게시판 등록은 `doc_posts`(신규 insert / 수정 시 `updated_on` 갱신).
 - **제원(스펙) 표기 규칙** — `Databases.vue` 스펙 탭을 비롯해 제원표를 만드는 모든 화면·문서에 적용:
   - **용어는 영문으로 통일**한다. 헤더·셀 값 모두 한국어·인니어를 쓰지 않는다(예: 구분→`Type`, 고하중→`Heavy Duty`, 건설·농업용→`Construction / Agri`, 폭(lebar)→`Width`, 두께(tebal)→`Thick`).
   - **같은 항목은 같은 용어**로 쓴다. 탭마다 다른 이름(트레드 깊이 / TD, 최대 하중 / 하중능력 / Load Capacity)을 섞지 말고 확인 후 하나로 통일한다.

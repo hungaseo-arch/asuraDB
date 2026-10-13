@@ -1,9 +1,12 @@
-# 학습덱 HTML 제작 지침 (public/docs/)
+# 학습덱 HTML 제작 지침 (자료실 문서 · Supabase Storage)
 
-`public/docs/` 에 넣는 **학습용 정적 HTML 덱**(영어학습 등)의 표준 규격이다.
+자료실에 올리는 **학습용 정적 HTML 덱**(영어학습 등)의 표준 규격이다.
+> 2026-10-13 부터 문서 본문은 저장소 `public/docs/` 가 아니라 **비공개 Supabase Storage 버킷 `docs`**(`<scope>/<file>`)에 둔다.
+> 저장소가 공개라 HTML 을 커밋하지 않는다. 작업은 저장소 밖 폴더에서 하고 `scripts/upload-doc.mjs` 로 업로드한다.
 **신규 덱을 추가하거나 기존 덱을 수정할 때는 이 문서를 그대로 따른다.** 눈대중으로 새 디자인을 만들지 않는다.
 
-- **기준본(레퍼런스)**: [`public/docs/phrasal-verbs-deck-200.html`](../public/docs/phrasal-verbs-deck-200.html)
+- **기준본(레퍼런스)**: Storage `docs/templates/phrasal-verbs-deck-200.html` (게시판 비노출, super_admin 만 열람)
+  · 로컬 사본 `~/asuraDB-docs-backup-20261010/phrasal-verbs-deck-200.html`
   → 새 덱은 **이 파일을 복사해서 데이터만 갈아끼우는 것**이 가장 안전하고 빠르다.
 - 2026-08-03 기준 이 규격을 따르는 덱: `phrasal-verbs-deck-200.html` · `phrasal-verbs-deck-200-v2.html` ·
   `light-verbs-deck-200.html` · `sentence-openers-30.html` · `daily-english-100.html`
@@ -27,7 +30,8 @@
 
 | 항목 | 규칙 |
 |---|---|
-| 파일 위치 | `public/docs/<슬러그>.html` — 슬러그는 kebab-case, 개수를 붙인다 (`light-verbs-deck-200.html`) |
+| 파일 위치 | Storage `docs/<scope>/<슬러그>.html` — 슬러그는 kebab-case, 개수를 붙인다 (`light-verbs-deck-200.html`). 저장소에 커밋하지 않는다 |
+| 업로드 | `node scripts/upload-doc.mjs <scope> "<제목>" "<분류>" <YYYY-MM-DD> <로컬.html>` — Storage 업로드 + `doc_posts` insert(기존 file 이면 `updated_on` 갱신) 한 번에 |
 | 인코딩 | UTF-8, `<html lang="ko">`, `<meta name="viewport" content="width=device-width, initial-scale=1">` |
 | 제목 | `<title>` 은 게시판 제목과 **문자 그대로 일치**시킨다 |
 | 게시판 등록 | `doc_posts` 에 insert. `scope`(`company`/`personal`) · `category` · `published_on`(등록일) · `file`(UNIQUE) |
@@ -259,7 +263,7 @@ if(t)t.classList.toggle('revealed');
 빠른 확인용(헤드리스 렌더):
 
 ```bash
-cd public/docs
+cd <작업 폴더>   # 저장소 밖
 { cat <파일>.html; echo '<script>showPanel("list")</script>'; } > /tmp/shot.html
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --disable-gpu \
   --screenshot=/tmp/shot.png --window-size=900,900 --virtual-time-budget=3000 file:///tmp/shot.html

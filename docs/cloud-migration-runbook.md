@@ -66,7 +66,7 @@ public.reap_cron_responses() (10분 주기)
 - **Vault** (`trigger_collector` 가 사용) — SQL Editor 에서 1회 실행, git 커밋 금지:
   - `project_url` = `https://<PROJECT_REF>.supabase.co`
   - `secret_key` = 신규 secret key `sb_secret_…` (대시보드 Settings → API Keys, 로컬 `.env` 의 `SUPABASE_SERVICE_KEY` 와 같은 값).
-    2026-10-13 `20261013_cron_secret_key_auth.sql` 로 전환. 옛 `service_role_key`(레거시 JWT)는 서명 비밀값 Revoke 로 무효 — 삭제 가능.
+    2026-10-13 `20261013_cron_secret_key_auth.sql` 로 전환. 옛 `service_role_key`(레거시 JWT)는 서명 비밀값 Revoke 로 무효 — 2026-10-13 삭제 완료.
   - 템플릿: `supabase/migrations/20260824_cloud_collectors_vault.sql` 주석 참고(이름만 `secret_key` 로 읽을 것)
 - **Edge Function Secrets** (함수 환경변수):
   - `BPS_API_KEY` — `supabase secrets set --project-ref <REF> BPS_API_KEY=<key>` (등록 완료)

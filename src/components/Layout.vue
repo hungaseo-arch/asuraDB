@@ -4,7 +4,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import {
   Home, Search, BrainCircuit, ClipboardList, BarChart3, Ship, Percent, Store,
   FolderOpen, Package, RefreshCw, LogOut, Scale, Gauge, BookMarked, Wallet, ScanSearch, Menu,
-  MapPin, Clock, FileText, History, KeyRound,
+  MapPin, Clock, FileText, History, KeyRound, UserCog,
 } from 'lucide-vue-next';
 import { signOut } from '@/lib/auth';
 import AsuraLogo from '@/components/icons/AsuraLogo.vue';
@@ -22,6 +22,7 @@ interface NavItem {
   short?: string;
   badge: string | null;
   exact?: boolean;
+  adminOnly?: boolean;
 }
 
 const router = useRouter();
@@ -85,7 +86,7 @@ async function submitPasswordChange() {
 
 // ── 3그룹 재분류: 경영·성과 / 영업·견적 / 운영·데이터 (3그룹 × 3페이지) ──────
 interface NavGroup { key: string; label: string; items: NavItem[] }
-const NAV_GROUPS: NavGroup[] = [
+const ALL_NAV_GROUPS: NavGroup[] = [
   {
     key: 'perf', label: '경영·성과',
     items: [
@@ -118,6 +119,8 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/tire-import',      icon: Ship,       label: '수입 조회 — BPS자료',    short: '수입', badge: null },
       { to: '/load-calc',        icon: Gauge,      label: '하중 조회 — 차량하중',    short: '하중', badge: null },
       { to: '/login-history',    icon: History,    label: '로그인 이력 — 회원 로그', short: '로그인이력', badge: null },
+      // 사용자 관리는 super_admin 전용 — 아래 NAV_GROUPS 필터에서 그 외 역할은 숨김
+      { to: '/user-admin',       icon: UserCog,    label: '사용자 관리 — 계정·비밀번호', short: '사용자', badge: null, adminOnly: true },
     ],
   },
   {
@@ -128,6 +131,10 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
+
+const NAV_GROUPS: NavGroup[] = ALL_NAV_GROUPS.map(g => ({
+  ...g, items: g.items.filter(i => !i.adminOnly || auth === 'super_admin'),
+}));
 
 // 고객 전용(distributor/end_user)은 견적서 + 가격비교만 평면 노출 (그룹 없음)
 const quoteOnlyItems: NavItem[] = [

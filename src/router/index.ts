@@ -110,6 +110,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '회원 로그 관리', desc: '회원 로그인·로그아웃 이력 조회' },
       },
       {
+        path: 'user-admin',
+        name: 'user-admin',
+        component: () => import('@/views/UserAdmin.vue'),
+        meta: { title: '사용자 관리', desc: '로그인 계정 등록·삭제·비밀번호 재설정', adminOnly: true },
+      },
+      {
         path: 'docs',
         name: 'docs',
         component: () => import('@/views/Docs.vue'),
@@ -199,6 +205,8 @@ router.beforeEach(async (to) => {
   const isPrivileged = role === 'super_admin' || role === 'staff';
   const customerAllowed = to.path === '/quote' || to.path.startsWith('/price-compare');
   if (!isPrivileged && !to.meta.public && !customerAllowed) return '/quote';
+  // 관리자 전용 화면(사용자 관리) — staff 도 차단. 서버(Edge Function)에서도 다시 검증한다.
+  if (to.meta.adminOnly && role !== 'super_admin') return '/home';
 });
 
 // 최근 방문 페이지 기록 (Command Palette용) + 문서 제목 갱신

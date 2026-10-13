@@ -1,7 +1,7 @@
 // attendance-selfie-cleanup — 출퇴근 셀피 90일 보관 후 자동 삭제 (D4)
 //
 // pg_cron('attendance-selfie-cleanup', 매일 UTC 18:30 = Jakarta 01:30)
-//   → trigger_attendance_selfie_cleanup() → pg_net POST (Authorization: service_role)
+//   → trigger_attendance_selfie_cleanup() → pg_net POST (apikey: vault secret_key)
 //   → 이 함수. collect-indicators 와 동일한 클라우드 배치 패턴(작업지시서 KPI지표_월별백필_2026 §7 참고).
 //
 // attendance.selfie_url 은 공개 URL 이 아니라 attendance-selfies 버킷 내부 경로
@@ -11,10 +11,13 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const sb = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-);
+// 레거시 JWT 비밀값 폐기(2026-10-13) 대응 — verify_jwt=false 로 배포하고 호출자를 직접 검증한다.
+// pg_cron 트리거는 vault 'secret_key'(sb_secret_…)를 apikey 헤더로 보낸다.
+const SECRET_KEYS: Record<string, string> = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}");
+const SERVICE_KEY = SECRET_KEYS["default"] ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const isServiceCaller = (req: Request) => Object.values(SECRET_KEYS).includes(req.headers.get("apikey") ?? "");
+
+const sb = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
 
 const BUCKET = "attendance-selfies";
 const RETENTION_DAYS = 90;
@@ -27,9 +30,10 @@ async function heartbeat(source: string) {
   );
 }
 
-Deno.serve(async (_req: Request) => {
+Deno.serve(async (req: Request) => {
   const json = (status: number, payload: unknown) =>
     new Response(JSON.stringify(payload), { status, headers: { "Content-Type": "application/json" } });
+  if (!isServiceCaller(req)) return json(401, { ok: false, error: "unauthorized" });
 
   try {
     const cutoff = new Date(Date.now() - RETENTION_DAYS * 86_400_000).toISOString();

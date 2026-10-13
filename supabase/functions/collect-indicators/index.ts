@@ -1,7 +1,7 @@
 // collect-indicators — 지표 수집 Edge Function (작업지시서 KPI지표_월별백필_2026 §7)
 //
 // 로컬 launchd 수집기 4종을 클라우드로 이관한 것. pg_cron → trigger_collector(p_kind)
-// → pg_net POST { kind } 로 호출된다 (Authorization: service_role — verify_jwt 통과).
+// → pg_net POST { kind } 로 호출된다 (apikey: vault secret_key — 함수 안에서 검증, verify_jwt=false).
 //
 //   kind=fx        ← collectors/indicator_collector.py (yfinance → Yahoo chart API)
 //   kind=commodity ← collectors/daily_collector.py     (고무·니켈, TE 스크래핑)
@@ -26,10 +26,13 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const sb = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-);
+// 레거시 JWT 비밀값 폐기(2026-10-13) 대응 — verify_jwt=false 로 배포하고 호출자를 직접 검증한다.
+// pg_cron(trigger_collector)은 vault 'secret_key'(sb_secret_…)를 apikey 헤더로 보낸다.
+const SECRET_KEYS: Record<string, string> = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}");
+const SERVICE_KEY = SECRET_KEYS["default"] ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const isServiceCaller = (req: Request) => Object.values(SECRET_KEYS).includes(req.headers.get("apikey") ?? "");
+
+const sb = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
 
 const UA_HEADERS: Record<string, string> = {
   "User-Agent":
@@ -546,7 +549,7 @@ function parseIdDate(s: string): string | null {
 
 // 'US$ 1.029,51' → 1029.51 (인니 표기: . = 천단위, , = 소수점)
 function parseIdNumber(s: string): number | null {
-  const m = s.replace(/ /g, " ").match(/([\d.]+,\d+|[\d.]+)/);
+  const m = s.replace(/\u00a0/g, " ").match(/([\d.]+,\d+|[\d.]+)/);
   if (!m) return null;
   const v = parseFloat(m[1].replace(/\./g, "").replace(",", "."));
   return Number.isFinite(v) ? v : null;
@@ -853,6 +856,9 @@ async function runMonthly(force: boolean): Promise<Result[]> {
 // ══════════════════════════════════════════════════════════════
 
 Deno.serve(async (req: Request) => {
+  if (!isServiceCaller(req)) {
+    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
+  }
   let kind = "", force = false;
   try {
     const body = await req.json();

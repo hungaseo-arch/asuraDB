@@ -728,7 +728,16 @@ export async function sbHeaders() {            // 로그인 시 사용자 JWT, �
 |---|---|---|---|
 | **publishable** (`VITE_SB_KEY`) | `.env` → 브라우저 번들 | ⚠️ 노출됨 | RLS+Auth로 보호. service_role 절대 금지. `sb_publishable_…` 만 사용 — **레거시 `eyJ…` anon/service_role 은 2026-10-13 비활성화**(401) |
 | **URL** (`VITE_SB_URL`) | `.env` → 번들 | 노출(정상) | 공개 정보 |
-| **secret** (`SUPABASE_SERVICE_KEY`) | `.env` (`VITE_` 접두사 **금지**) | 서버 전용 | `sb_secret_…`(2026-10-13 교체). `api/search.py` · 수집기 · `scripts/*` 에서만. Edge Function 은 런타임 주입 `SUPABASE_SERVICE_ROLE_KEY` 사용 |
+| **secret** (`SUPABASE_SERVICE_KEY`) | `.env` (`VITE_` 접두사 **금지**) | 서버 전용 | `sb_secret_…`(2026-10-13 교체). `api/search.py` · 수집기 · `scripts/*` 에서만. Edge Function 은 런타임 주입 `SUPABASE_SECRET_KEYS['default']` 사용(없으면 `SUPABASE_SERVICE_ROLE_KEY` 폴백) |
+| **pg_cron → Edge Function** | Vault `secret_key`(`sb_secret_…`) | 서버 전용 | `trigger_collector`·`trigger_attendance_selfie_cleanup` 이 `apikey` 헤더로 전송(JWT 아님 → `Authorization` 에 넣지 않음) |
+
+### 11-2a. JWT 서명 키 · Edge Function 호출자 검증 (2026-10-13)
+
+- **서명 키**: 레거시 HS256 공유 비밀값을 **ES256(ECC P-256) 비대칭 키로 회전 후 Revoke**(유출 대응). JWKS(`/auth/v1/.well-known/jwks.json`)에는 ES256 키만 노출. 옛 비밀값으로 서명된 토큰은 모두 무효.
+- **Edge Function 은 전부 `verify_jwt=false` 로 배포하고 함수 안에서 호출자를 직접 검증**한다(게이트웨이 `verify_jwt` 는 신규 API 키를 받지 않음).
+  - `collect-indicators` · `attendance-selfie-cleanup`(cron 전용): `apikey` 헤더가 `SUPABASE_SECRET_KEYS` 값 중 하나여야 함, 아니면 401.
+  - `admin-users`(super_admin) · `summarize-meeting`(super_admin·staff): `Authorization: Bearer <사용자 JWT>` 를 `auth.getUser()` 로 확인 + `app_metadata.role` 검사(401/403).
+  - 신규 함수도 이 패턴을 따른다. 재배포 시 `--no-verify-jwt`(MCP 는 `verify_jwt:false`) 필수.
 
 ### 11-3. 핵심 보안 원칙
 

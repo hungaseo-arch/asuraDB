@@ -296,12 +296,6 @@ function marginColor(l: LineItem): string {
   const m = rawMargin(l);
   return m >= MIN_MARGIN ? 'text-success' : m >= 0 ? 'text-warning' : 'text-destructive';
 }
-// 최저 추천 마진 대비 차이(%p) — 입력창 옆에 "+5.0p" / "−3.0p" 로 병기.
-function marginGap(l: LineItem): string {
-  if (!l.whPrice || !l.unitPrice) return '';
-  const gap = (rawMargin(l) - MIN_MARGIN) * 100;
-  return `${gap >= 0 ? '+' : '−'}${Math.abs(gap).toFixed(1)}p`;
-}
 function onMarginChange(line: LineItem, val: string) {
   const m = parseFloat(val);
   if (isNaN(m)) return;
@@ -759,7 +753,7 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
             <col class="print:hidden" :style="{ width: '10%' }" /> <!-- Dist Price -->
             <col class="print:hidden" :style="{ width: '5%' }" />  <!-- Discount -->
             <col :style="{ width: '10%' }" />
-            <col class="print:hidden" :style="{ width: '5%' }" />  <!-- Margin (+차이 %p) -->
+            <col class="print:hidden" :style="{ width: '5%' }" />  <!-- Margin -->
             <col :style="{ width: '10%' }" />
             <col :style="{ width: '2%' }" />
           </colgroup>
@@ -773,7 +767,7 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
               <th scope="col" class="hidden md:table-cell text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground">Unit</th>
               <th scope="col" class="hidden md:table-cell text-right  px-2 py-2.5 text-xs font-semibold text-muted-foreground print:hidden">Dist Price</th>
               <th scope="col" class="hidden md:table-cell text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground print:hidden">Discount</th>
-              <th scope="col" class="text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground">Unit Price</th>
+              <th scope="col" class="text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground whitespace-nowrap">Unit Price</th>
               <th scope="col" class="text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground print:hidden">Margin</th>
               <th scope="col" class="hidden md:table-cell text-right  px-3 py-2.5 text-xs font-semibold text-muted-foreground">Amount</th>
               <th scope="col" class="hidden md:table-cell" />
@@ -797,7 +791,8 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
                   v-model="line.description"
                   type="text"
                   autocomplete="off"
-                  :class="cell + ' print:border-transparent print:bg-transparent'"
+                  :class="cell + ' truncate print:border-transparent print:bg-transparent'"
+                  :title="line.description"
                   placeholder="Input Keyword, Select Product"
                   @focus="(e) => openAc(e, line)"
                   @input="(e) => openAc(e, line)"
@@ -838,7 +833,7 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
                 <input
                   type="text"
                   :value="fmtInput(Math.round(lineNetPrice(line) * markup))"
-                  :class="cell + ' text-right font-mono tabular-nums print:border-transparent print:bg-transparent'"
+                  :class="cell + ' min-w-26 text-right font-mono tabular-nums print:border-transparent print:bg-transparent'"
                   placeholder="0"
                   @change="onNetPriceChange(line, ($event.target as HTMLInputElement).value)"
                 />
@@ -854,11 +849,6 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
                     @change="onMarginChange(line, ($event.target as HTMLInputElement).value)"
                   />
                   <span class="text-xs text-muted-foreground shrink-0">%</span>
-                  <span
-                    v-if="marginGap(line)"
-                    :class="['text-[10px] tabular-nums shrink-0 w-11 text-left', marginColor(line)]"
-                    :title="`최저 추천 마진 ${MIN_MARGIN * 100}% 대비`"
-                  >{{ marginGap(line) }}</span>
                 </div>
               </td>
               <td class="hidden md:table-cell px-2 py-1.5 text-right text-xs font-mono tabular-nums font-semibold">
@@ -1109,16 +1099,14 @@ const select = 'w-full h-9 rounded border border-input bg-background px-3 text-s
               <tr>
                 <th class="text-left px-5 py-2 font-semibold">Item</th>
                 <th class="text-right px-3 py-2 font-semibold">Unit Price</th>
-                <th class="text-right px-3 py-2 font-semibold">Margin</th>
-                <th class="text-right px-5 py-2 font-semibold">vs {{ MIN_MARGIN * 100 }}%</th>
+                <th class="text-right px-5 py-2 font-semibold">Margin</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="l in lowMarginLines" :key="l.id" class="border-t border-border/40">
                 <td class="px-5 py-2 truncate max-w-56">{{ l.description || '(no description)' }}</td>
                 <td class="px-3 py-2 text-right font-mono tabular-nums">{{ fmt(lineNetPrice(l)) }}</td>
-                <td :class="['px-3 py-2 text-right font-mono tabular-nums font-semibold', marginColor(l)]">{{ lineMarginNum(l) }}%</td>
-                <td :class="['px-5 py-2 text-right font-mono tabular-nums', marginColor(l)]">{{ marginGap(l) }}</td>
+                <td :class="['px-5 py-2 text-right font-mono tabular-nums font-semibold', marginColor(l)]">{{ lineMarginNum(l) }}%</td>
               </tr>
             </tbody>
           </table>

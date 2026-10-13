@@ -9,10 +9,10 @@
 ```
 pg_cron (UTC 스케줄)
   └─ public.trigger_collector(p_kind)          -- SECURITY DEFINER
-       ├─ vault: project_url / service_role_key 조회
-       ├─ pg_net: POST {url}/functions/v1/collect-indicators  body={"kind": ...}
+       ├─ vault: project_url / secret_key 조회            (2026-10-13 service_role_key → secret_key)
+       ├─ pg_net: POST {url}/functions/v1/collect-indicators  headers={apikey: secret_key} body={"kind": ...}
        └─ cron_run_log 에 requested 기록
-Edge Function collect-indicators (verify_jwt — service_role 토큰으로 통과)
+Edge Function collect-indicators (verify_jwt=false — 함수 안에서 apikey ∈ SUPABASE_SECRET_KEYS 검증, 아니면 401)
   ├─ kind=fx        환율 4종 + 브렌트유 (Yahoo chart API, yfinance 대체) + krw_idr 파생
   ├─ kind=commodity 고무(USc/kg→USD/MT ×10)·니켈 (TE + 연도필터 + ±25% 가드)
   ├─ kind=weekly    카본블랙(Brent×14)·합성고무BD·강선·SCFI — TE 경로도 ±25% 가드
@@ -65,14 +65,16 @@ public.reap_cron_responses() (10분 주기)
 
 - **Vault** (`trigger_collector` 가 사용) — SQL Editor 에서 1회 실행, git 커밋 금지:
   - `project_url` = `https://<PROJECT_REF>.supabase.co`
-  - `service_role_key` = service_role JWT (로컬 `.env` 의 `SUPABASE_SERVICE_KEY`)
-  - 템플릿·회전 방법: `supabase/migrations/20260824_cloud_collectors_vault.sql` 주석 참고
+  - `secret_key` = 신규 secret key `sb_secret_…` (대시보드 Settings → API Keys, 로컬 `.env` 의 `SUPABASE_SERVICE_KEY` 와 같은 값).
+    2026-10-13 `20261013_cron_secret_key_auth.sql` 로 전환. 옛 `service_role_key`(레거시 JWT)는 서명 비밀값 Revoke 로 무효 — 삭제 가능.
+  - 템플릿: `supabase/migrations/20260824_cloud_collectors_vault.sql` 주석 참고(이름만 `secret_key` 로 읽을 것)
 - **Edge Function Secrets** (함수 환경변수):
   - `BPS_API_KEY` — `supabase secrets set --project-ref <REF> BPS_API_KEY=<key>` (등록 완료)
-  - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` 는 Supabase 가 자동 주입
+  - `SUPABASE_URL` / `SUPABASE_SECRET_KEYS` / `SUPABASE_SERVICE_ROLE_KEY` 는 Supabase 가 자동 주입
 
-**service_role 키 회전 시**: Vault `service_role_key` 를 `vault.update_secret` 으로 갱신
-(템플릿 파일 주석의 SQL). Edge Function 은 자동 주입이라 조치 불필요.
+**secret key 회전 시**: 새 secret key 생성 → Vault `secret_key` 를 `vault.update_secret` 으로 갱신 →
+옛 secret key 삭제. Edge Function 은 `SUPABASE_SECRET_KEYS` 자동 주입이라 재배포 불필요.
+재배포할 때는 반드시 `--no-verify-jwt`(verify_jwt=false).
 
 ## 4. 상태 확인 / 수동 실행
 

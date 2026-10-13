@@ -51,6 +51,24 @@ async function summarize(transcript: string): Promise<SummaryJSON> {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
+  // 레거시 JWT 비밀값 폐기(2026-10-13) 대응 — verify_jwt=false 로 배포하고 호출자를 직접 검증한다.
+  // Anthropic API 과금이 걸린 함수이므로 로그인한 super_admin/staff 만 허용.
+  const secretKeys: Record<string, string> = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}');
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    secretKeys['default'] ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  const { data: caller, error: authErr } = await supabase.auth.getUser(token);
+  const role = caller?.user?.app_metadata?.role;
+  if (authErr || !caller?.user || !['super_admin', 'staff'].includes(role)) {
+    return new Response(
+      JSON.stringify({ error: '권한이 없습니다' }),
+      { status: authErr || !caller?.user ? 401 : 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+
   try {
     const { transcript, title, meeting_date, participants } = await req.json() as {
       transcript:    string;
@@ -67,11 +85,6 @@ Deno.serve(async (req) => {
     }
 
     const summary = await summarize(transcript);
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
 
     const { data, error } = await supabase
       .from('meeting_summaries')

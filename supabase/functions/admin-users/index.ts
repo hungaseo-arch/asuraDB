@@ -23,7 +23,9 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405);
 
   const url = Deno.env.get('SUPABASE_URL')!;
-  const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+  // 레거시 JWT 비밀값 폐기(2026-10-13) 대응 — 신규 secret key 사용, verify_jwt=false(아래에서 직접 검증)
+  const secretKeys: Record<string, string> = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}');
+  const admin = createClient(url, secretKeys['default'] ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 

@@ -137,9 +137,9 @@ scripts/launcher.py            상시 데몬. 아래 러너를 스케줄에 맞�
 |---|---|---|
 | `collect-indicators` | pg_cron | 외부 지표 수집(호스트 PC 독립) |
 | `attendance-selfie-cleanup` | pg_cron (UTC 18:30 = 자카르타 01:30) | 출퇴근 셀피 90일 경과분 Storage 삭제 + `selfie_url` NULL 처리 |
-| `summarize-meeting` | 수동 호출 | 회의록 요약 |
+| `admin-users` | 사용자 관리 화면(super_admin) | 계정 등록·삭제·비밀번호 재설정 |
 
-pg_cron → `pg_net` POST(`Authorization: service_role`) → Edge Function 패턴을 쓴다.
+pg_cron → `pg_net` POST(`apikey: <Vault secret_key>`) → Edge Function 패턴을 쓴다(함수는 `verify_jwt=false`, 호출자를 함수 안에서 검증).
 Storage 객체 삭제는 Storage API 를 거쳐야 실제 파일까지 지워지므로 SQL 만으로 처리하지 않는다.
 
 ### 6.2 마이그레이션

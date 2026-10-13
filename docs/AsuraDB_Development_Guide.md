@@ -736,7 +736,7 @@ export async function sbHeaders() {            // 로그인 시 사용자 JWT, �
 - **서명 키**: 레거시 HS256 공유 비밀값을 **ES256(ECC P-256) 비대칭 키로 회전 후 Revoke**(유출 대응). JWKS(`/auth/v1/.well-known/jwks.json`)에는 ES256 키만 노출. 옛 비밀값으로 서명된 토큰은 모두 무효.
 - **Edge Function 은 전부 `verify_jwt=false` 로 배포하고 함수 안에서 호출자를 직접 검증**한다(게이트웨이 `verify_jwt` 는 신규 API 키를 받지 않음).
   - `collect-indicators` · `attendance-selfie-cleanup`(cron 전용): `apikey` 헤더가 `SUPABASE_SECRET_KEYS` 값 중 하나여야 함, 아니면 401.
-  - `admin-users`(super_admin) · `summarize-meeting`(super_admin·staff): `Authorization: Bearer <사용자 JWT>` 를 `auth.getUser()` 로 확인 + `app_metadata.role` 검사(401/403).
+  - `admin-users`(super_admin): `Authorization: Bearer <사용자 JWT>` 를 `auth.getUser()` 로 확인 + `app_metadata.role` 검사(401/403).
   - 신규 함수도 이 패턴을 따른다. 재배포 시 `--no-verify-jwt`(MCP 는 `verify_jwt:false`) 필수.
 
 ### 11-3. 핵심 보안 원칙
@@ -912,7 +912,7 @@ cd frontend && npm run dev
 | MCP Agent (향후) | Claude Sonnet | `mcp/agent.py` |
 | 임베딩 생성 | `paraphrase-multilingual-MiniLM-L12-v2` | SentenceTransformer (로컬) |
 
-> 이전에 운영했던 AI 회의록 기능(`Meeting.vue` · `summarize-meeting` Edge Function · `meeting_summaries` 테이블)은 2026-06에 전부 제거됨.
+> 이전에 운영했던 AI 회의록 기능(`Meeting.vue` · `summarize-meeting` Edge Function · `meeting_summaries` 테이블)은 2026-06에 전부 제거됨. 잔존하던 `summarize-meeting` 함수 소스는 2026-10-13 저장소에서도 삭제.
 
 ---
 

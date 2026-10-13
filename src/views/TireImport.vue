@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Printer, X, Upload, Info, Download, CloudDownload, RotateCw } from 'lucide-vue-next';
+import { Printer, X, Upload, Info, Download, RotateCw } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 import { sbGetAll, sbPost } from '@/lib/supabase';
 import { API_BASE, IS_HOST, ensureApiRunning } from '@/lib/api';
@@ -145,6 +145,12 @@ const latestPeriod = computed((): { year: number; month: number } | null => {
     }
   }
   return { year: maxY, month: maxM };
+});
+
+// 최신 데이터 연월 라벨 ("2026-07"). 데이터가 없으면 null.
+const latestPeriodLabel = computed(() => {
+  const p = latestPeriod.value;
+  return p ? `${p.year}-${String(p.month).padStart(2, '0')}` : null;
 });
 
 // 카테고리별 집계 (선택 연도)
@@ -486,6 +492,31 @@ async function loadData() {
   }
 }
 
+// ── 데이터 조회 (DB 재조회) ───────────────────────────────────────────────────
+// 수집기(LaunchAgent·다른 PC)가 새 월을 적재해도 이미 열려 있는 화면은 그대로이므로,
+// 새로고침 없이 Supabase 를 다시 읽어 최신 게재월까지 반영한다. (호스트 아니어도 사용 가능)
+
+const reloading = ref(false);
+
+async function reloadData() {
+  if (reloading.value) return;
+  reloading.value = true;
+  try {
+    const before = latestPeriodLabel.value;
+    await loadData();
+    if (loadError.value) {
+      toast.error(`데이터 조회 실패 — ${loadError.value}`);
+      return;
+    }
+    const after = latestPeriodLabel.value;
+    if (!after) toast.info('조회된 데이터가 없습니다.');
+    else if (after !== before) toast.success(`데이터 조회 완료 — 최신 ${after}`);
+    else toast.info(`이미 최신입니다 — ${after}`);
+  } finally {
+    reloading.value = false;
+  }
+}
+
 // ── 최신 데이터 가져오기 (로컬 FastAPI → BPS WebAPI dataexim) ─────────────────
 // 호스트 PC(localhost)에서만 동작 — service_role 백엔드가 로컬에만 있음.
 
@@ -518,7 +549,6 @@ async function fetchLatest() {
     if (total > 0) {
       const span = years.filter(y => y.ok && y.rows > 0).map(y => y.year).join(', ');
       toast.success(`${span}년 총 ${total}행 갱신 완료`);
-      await loadData();
     } else if (failed.length) {
       toast.error(`BPS 호출 실패: ${failed[0].error ?? '알 수 없는 오류'}`);
     } else {
@@ -530,6 +560,16 @@ async function fetchLatest() {
     collecting.value = false;
   }
 }
+
+// [데이터 조회] — 단일 버튼. 호스트 PC 면 BPS 수집을 먼저 시도한 뒤(성공·실패 무관) DB 를 재조회한다.
+// 호스트가 아니면 DB 재조회만 — 수집기가 적재한 새 월을 새로고침 없이 가져온다.
+async function refreshData() {
+  if (busy.value) return;
+  if (IS_HOST) await fetchLatest();
+  await reloadData();
+}
+
+const busy = computed(() => collecting.value || reloading.value);
 
 // ── PDF print ─────────────────────────────────────────────────────────────────
 
@@ -638,13 +678,13 @@ onMounted(loadData);
           HS 코드 안내
         </button>
         <button
-          v-if="IS_HOST"
           class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors disabled:opacity-50"
-          :disabled="collecting"
-          @click="fetchLatest"
+          :disabled="busy"
+          :title="latestPeriodLabel ? `현재 최신 ${latestPeriodLabel}` : ''"
+          @click="refreshData"
         >
-          <CloudDownload :size="12" :class="collecting && 'animate-pulse'" />
-          {{ collecting ? '가져오는 중…' : '최신데이터가져오기' }}
+          <RotateCw :size="12" :class="busy && 'animate-spin'" />
+          {{ collecting ? '가져오는 중…' : reloading ? '조회 중…' : '데이터 조회' }}
         </button>
         <button
           class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-accent transition-colors"

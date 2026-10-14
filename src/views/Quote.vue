@@ -21,6 +21,7 @@ interface Product {
   wh_price_pcs:   number;   // 입고가(원가) 단품 — 권한 없는 역할에선 0
   wh_price_set:   number;   // 입고가(원가) set — 권한 없는 역할에선 0
   dist_price_pcs: number | null;  // 대리점가(pcs 기준) — 없으면 원가 기준 추천가로 대체
+  dist_price_set: number | null;  // 대리점가(set 기준) — 없으면 원가(set) 기준 추천가로 대체
   unit:         'pcs' | 'set';
 }
 
@@ -41,7 +42,7 @@ async function loadProducts() {
     if (canViewCost) {
       // super_admin / staff — 원가 포함 조회
       products.value = await sbGet<Product[]>(
-        'products_priced?select=id,item,brand,description,sku,wh_price_pcs,wh_price_set,dist_price_pcs,unit&is_active=eq.true&order=brand.asc,description.asc',
+        'products_priced?select=id,item,brand,description,sku,wh_price_pcs,wh_price_set,dist_price_pcs,dist_price_set,unit&is_active=eq.true&order=brand.asc,description.asc',
       ) ?? [];
     } else {
       // distributor / end_user — products RLS 로 차단됨 → products_sell 뷰 사용
@@ -57,6 +58,7 @@ async function loadProducts() {
         wh_price_set:   r.unit_price_set ?? 0,
         // 대리점가는 원가 기반 값이라 이 뷰에 없음 → 기존 판매가 규칙을 그대로 따른다
         dist_price_pcs: null,
+        dist_price_set: null,
       }));
     }
   } catch {
@@ -213,10 +215,10 @@ const DIST_MARGIN = 0.25;
 const recommendDist = (cost: number) => (cost > 0 ? Math.round(cost / (1 - DIST_MARGIN)) : 0);
 
 // 라인의 대리점가(Dist Price).
-// products.dist_price_pcs 가 있으면 그 값, 없으면 원가 기준 25% 마진 추천가.
-// dist_price_pcs 는 pcs 단가이므로 set 라인에는 쓰지 않고 원가(set) 기준 추천가를 쓴다.
+// 단위에 맞는 대리점가(pcs → dist_price_pcs, set → dist_price_set)가 있으면 그 값,
+// 없으면 원가 기준 25% 마진 추천가. (가격은 모두 VAT 별도 — PPN 은 합계에서 가산)
 function distPriceFor(p: Product | undefined, unit: 'pcs' | 'set', cost: number): number {
-  const dp = unit === 'pcs' ? Number(p?.dist_price_pcs) || 0 : 0;
+  const dp = Number(unit === 'pcs' ? p?.dist_price_pcs : p?.dist_price_set) || 0;
   return dp || recommendDist(cost);
 }
 

@@ -68,10 +68,11 @@
   산식((판매가−원가)÷원가)은 어떤 화면·문서·역산에도 쓰지 않는다. 역산(마진→판매가)은
   `판매가 = 원가 ÷ (1 − 마진)` 이며 마진 100% 이상 입력은 무효. 가중평균 마진 = 총이익 ÷ 총판매액
   (Additional Discount 반영 후, PPN 제외). (2026-08-19 확정)
-- **가격 부가세(PPN) 기준** — **대리점가(`dist_price_pcs`·`dist_price_set`)는 VAT 포함가, 그 외 가격
-  (`fob`·`wh_price_pcs`·`wh_price_set`)은 VAT 미포함가.** 외부 자료(대시보드·거래처 가격표)를 반영할 때는
-  그 자료의 VAT 포함 여부를 먼저 확인하고 이 기준으로 환산해 넣는다(인니 PPN 11% → 포함가 ÷ 1.11).
-  화면·CSV 헤더에도 `VAT 별도`/`VAT 포함` 을 병기한다.
+- **가격 부가세(PPN) 기준** — **DB 의 모든 가격(`fob`·`wh_price_pcs`·`wh_price_set`·`dist_price_pcs`·
+  `dist_price_set`)은 VAT 미포함가로 저장·계산한다.** 계산(마진·견적 단가)에서는 VAT 포함 여부를 따지지
+  않는다 — 견적서는 VAT 별도 단가 합계에 PPN 11% 를 더해 Total 을 낸다. **VAT 포함가는 대리점 가격표를
+  출력할 때에만** 표시한다(VAT 별도 × 1.11). 외부 가격표가 VAT 포함가면 ÷ 1.11 로 환산해 넣는다.
+  (2026-10-14 정정 — 이전 "대리점가 = VAT 포함 저장" 규칙은 폐기)
 - **시간대 기준 = WIB(Asia/Jakarta, UTC+7)** — 앱의 모든 "오늘"·현재 시각·날짜 경계는 WIB 이다.
   `src/lib/datetime.ts` 가 SSOT(`wibDate`·`wibDateOffset`·`wibDayRange`·`formatWibTime`/`DateTime`/`Short`/`DateLabel`·
   `toWibLocalInput`·`fromWibLocalInput`). **`new Date().toISOString().slice(0,10)` 금지** — UTC 날짜라

@@ -139,7 +139,7 @@ const filtered = computed(() => {
 });
 
 // ── 부가세(PPN) 표기 기준 ─────────────────────────────────────────────────────
-// DB 저장 기준(CLAUDE.md 「가격 부가세(PPN) 기준」)은 입고가 = VAT 별도, 대리점가 = VAT 포함으로 고정.
+// DB 저장 기준(CLAUDE.md 「가격 부가세(PPN) 기준」)은 모든 가격(입고가·대리점가) = VAT 별도 (2026-10-14 정정).
 // 화면·CSV 는 아래 토글로 두 기준을 오가며 보여준다(저장값은 바꾸지 않는다). 인니 PPN 11%.
 const PPN = 0.11;
 const VAT_MODES = [
@@ -995,7 +995,7 @@ function downloadPrice() {
     catOf(p), p.description ?? '', p.brand ?? '', p.sku ?? '', p.unit ?? '',
     p.fob ?? '', p.weight_kg ?? '', p.qty_40ft ?? '',
     vat(p.wh_price_pcs, 'excl') ?? '', p.wh_price_basis ?? '', vat(p.wh_price_set, 'excl') ?? '',
-    vat(p.dist_price_pcs, 'incl') ?? '', vat(p.dist_price_set, 'incl') ?? '',
+    vat(p.dist_price_pcs, 'excl') ?? '', vat(p.dist_price_set, 'excl') ?? '',
     p.review_note ?? '',
   ]);
   exportCsv(`제품_가격_${vatMode.value === 'incl' ? 'VAT포함' : 'VAT별도'}_${today()}`, headEn, [headKo, ...rows]);
@@ -1364,8 +1364,8 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
                       {{ fmt(vat(p.wh_price_set, 'excl')) }}
                     </span>
                   </td>
-                  <td class="px-3 py-2.5 text-right tabular-nums font-medium">{{ fmt(vat(p.dist_price_pcs, 'incl')) }}</td>
-                  <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmt(vat(p.dist_price_set, 'incl')) }}</td>
+                  <td class="px-3 py-2.5 text-right tabular-nums font-medium">{{ fmt(vat(p.dist_price_pcs, 'excl')) }}</td>
+                  <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmt(vat(p.dist_price_set, 'excl')) }}</td>
                   <!-- SAP A/R 누적 판매량(취소·반품 반영 순수량). 최근 판매일은 tooltip -->
                   <td class="px-3 py-2.5 text-right tabular-nums" :title="p.sap_last_sold ? `최근 판매 ${p.sap_last_sold}` : ''">
                     <span :class="p.sap_sold_qty ? 'text-foreground' : 'text-muted-foreground'">{{ p.sap_sold_qty ? fmt(p.sap_sold_qty) : '—' }}</span>
@@ -1540,8 +1540,8 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
               </div>
             </div>
             <div><div class="text-muted-foreground mb-0.5">입고가 (set) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums">{{ fmt(vat(priceModal.wh_price_set, 'excl')) }}</div></div>
-            <div><div class="text-muted-foreground mb-0.5">대리점가 (pcs) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums font-medium">{{ fmt(vat(priceModal.dist_price_pcs, 'incl')) }}</div></div>
-            <div><div class="text-muted-foreground mb-0.5">대리점가 (set) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums">{{ fmt(vat(priceModal.dist_price_set, 'incl')) }}</div></div>
+            <div><div class="text-muted-foreground mb-0.5">대리점가 (pcs) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums font-medium">{{ fmt(vat(priceModal.dist_price_pcs, 'excl')) }}</div></div>
+            <div><div class="text-muted-foreground mb-0.5">대리점가 (set) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums">{{ fmt(vat(priceModal.dist_price_set, 'excl')) }}</div></div>
           </div>
           <p class="text-[11px] text-muted-foreground">
             <span v-if="priceModal.review_note" class="text-destructive">확인 필요 — {{ priceModal.review_note }}</span>

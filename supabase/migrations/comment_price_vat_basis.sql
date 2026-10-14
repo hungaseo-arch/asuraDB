@@ -10,3 +10,8 @@ comment on column public.products_price.wh_price_pcs is '입고가/pcs (Rp) — 
 comment on column public.products_price.wh_price_set is '입고가/set (Rp) — VAT 미포함 (타이어+튜브+플랩 세트)';
 comment on column public.products_price.dist_price_pcs is '대리점가/pcs (Rp) — VAT 포함';
 comment on column public.products_price.dist_price_set is '대리점가/set (Rp) — VAT 포함';
+
+-- 2026-10-14 정정(사용자 확정): **DB 의 모든 가격은 VAT 별도.** VAT 포함가는 대리점 가격표 출력 시에만 ×1.11.
+--   위 "대리점가 = VAT 포함" 규칙은 폐기 — 아래 주석이 최종.
+comment on column public.products_price.dist_price_pcs is '대리점가/pcs (Rp) — VAT 별도 (VAT 포함가는 가격표 출력 시에만 ×1.11)';
+comment on column public.products_price.dist_price_set is '대리점가/set (Rp) — VAT 별도 (VAT 포함가는 가격표 출력 시에만 ×1.11)';

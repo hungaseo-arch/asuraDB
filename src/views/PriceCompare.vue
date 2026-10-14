@@ -36,7 +36,7 @@ interface Product { id: string; item: string | null; brand: string | null; descr
 const products = ref<Product[]>([]);
 
 // ── 자동 판매가 기준 (2026-08-04: 대리점가(pcs) 기준으로 전환) ────────────────
-// 자동 판매가는 DB 대리점가(dist_price_pcs, VAT 포함 저장 → 세전 환산)에서 기준 마진을 역산해 쓴다.
+// 자동 판매가는 DB 대리점가(dist_price_pcs, VAT 별도 저장)에서 기준 마진을 역산해 쓴다.
 // 아래 카테고리 마진율표(마진율표 2026-07-09)는 **대리점가가 없는 제품의 대체값**으로만 쓰인다.
 // 카테고리 = products.item (타이어) · TUBE/FLAP(+description 키워드로 STD/HD·STD/MP 판별).
 const TIRE_CATS = new Set(['LTR', 'TBR', 'LTB', 'TBB', 'OTR', 'AGR', 'PNEU', 'SOLID']);
@@ -105,7 +105,7 @@ function setBasis(mode: 'excl' | 'incl') {
 }
 
 // ── 타입 ────────────────────────────────────────────────────────────────────
-// dist = DB 대리점가(pcs)의 세전 환산값(÷1.11) — 자동 판매가의 기준 마진 역산에 사용
+// dist = DB 대리점가(pcs, VAT 별도 저장) — 자동 판매가의 기준 마진 역산에 사용
 interface Item { price: number; code: string; brand: string; wh?: number; dist?: number; cat?: string | null }
 // max = 권고 최대 할인율(%) · auto = 목표 최종가 맞추기용 자동 프로모션(할인율 자동 계산)
 interface Promo { desc: string; rate: number; max?: number; auto?: boolean }
@@ -350,7 +350,7 @@ function choose(c: Company, key: 'tire' | 'tube' | 'flap', p: Product) {
   const it  = c[key];
   it.code = p.description; it.brand = p.brand ?? '';
   it.wh   = p.wh_price_pcs || p.wh_price_set || 0;
-  it.dist = p.dist_price_pcs ? p.dist_price_pcs / (1 + PPN_RATE) : undefined;   // 대리점가는 VAT 포함 저장 → 세전 환산
+  it.dist = p.dist_price_pcs || undefined;   // 대리점가는 VAT 별도 저장 (2026-10-14 정정)
   it.cat  = catOf(p.item, p.description);
   it.price = priceOf(it, gradeIdx.value);
   setLanded(c);
@@ -506,7 +506,7 @@ async function loadCompare(id: string) {
         const p = products.value.find(pr => pr.description === c[r.key].code);
         if (p) {
           c[r.key].wh = p.wh_price_pcs || p.wh_price_set || 0;
-          c[r.key].dist = p.dist_price_pcs ? p.dist_price_pcs / (1 + PPN_RATE) : undefined;
+          c[r.key].dist = p.dist_price_pcs || undefined;
           c[r.key].cat = catOf(p.item, p.description);
         }
       }

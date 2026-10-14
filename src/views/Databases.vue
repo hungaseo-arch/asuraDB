@@ -58,6 +58,7 @@ interface ProductRow {
   item: string | null; brand: string | null; description: string | null; sku: string | null; unit: string | null;
   wh_price_pcs: number | null; wh_price_set: number | null;
   dist_price_pcs?: number | null; dist_price_set?: number | null;
+  dist_vat_basis?: 'excl' | 'incl' | null;   // 대리점가 저장 기준(null=미확인)
   category?: string | null; spec?: string | null; weight_kg?: number | null;
   fob?: number | null; qty_40ft?: number | null; selling_price?: number | null;
   /** 입고가 산정기준 — 'API-P'(기본) / 'API-U'(대체, 뱃지 표기) / null(원본에 API 구분 없음) */
@@ -155,6 +156,10 @@ function vat(v: number | null | undefined, stored: VatMode): number | null {
   if (stored === vatMode.value) return Number(v);
   return Math.round(stored === 'incl' ? Number(v) / (1 + PPN) : Number(v) * (1 + PPN));
 }
+
+/** 대리점가 저장 기준 — 'incl' 은 옛 규칙(VAT 포함 저장) 잔존 행, 나머지(excl·미확인)는 VAT 별도로 취급 */
+const distBasis = (r: { dist_vat_basis?: 'excl' | 'incl' | null } | null | undefined): VatMode =>
+  r?.dist_vat_basis === 'incl' ? 'incl' : 'excl';
 
 // 가격 정렬 (헤더 클릭 토글) — No. 열 제외
 const PRICE_COLS = computed<{ key: string; label: string; right?: boolean; sub?: string }[]>(() => [
@@ -995,7 +1000,7 @@ function downloadPrice() {
     catOf(p), p.description ?? '', p.brand ?? '', p.sku ?? '', p.unit ?? '',
     p.fob ?? '', p.weight_kg ?? '', p.qty_40ft ?? '',
     vat(p.wh_price_pcs, 'excl') ?? '', p.wh_price_basis ?? '', vat(p.wh_price_set, 'excl') ?? '',
-    vat(p.dist_price_pcs, 'excl') ?? '', vat(p.dist_price_set, 'excl') ?? '',
+    vat(p.dist_price_pcs, distBasis(p)) ?? '', vat(p.dist_price_set, distBasis(p)) ?? '',
     p.review_note ?? '',
   ]);
   exportCsv(`제품_가격_${vatMode.value === 'incl' ? 'VAT포함' : 'VAT별도'}_${today()}`, headEn, [headKo, ...rows]);
@@ -1364,8 +1369,8 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
                       {{ fmt(vat(p.wh_price_set, 'excl')) }}
                     </span>
                   </td>
-                  <td class="px-3 py-2.5 text-right tabular-nums font-medium">{{ fmt(vat(p.dist_price_pcs, 'excl')) }}</td>
-                  <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmt(vat(p.dist_price_set, 'excl')) }}</td>
+                  <td class="px-3 py-2.5 text-right tabular-nums font-medium">{{ fmt(vat(p.dist_price_pcs, distBasis(p))) }}</td>
+                  <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmt(vat(p.dist_price_set, distBasis(p))) }}</td>
                   <!-- SAP A/R 누적 판매량(취소·반품 반영 순수량). 최근 판매일은 tooltip -->
                   <td class="px-3 py-2.5 text-right tabular-nums" :title="p.sap_last_sold ? `최근 판매 ${p.sap_last_sold}` : ''">
                     <span :class="p.sap_sold_qty ? 'text-foreground' : 'text-muted-foreground'">{{ p.sap_sold_qty ? fmt(p.sap_sold_qty) : '—' }}</span>
@@ -1540,8 +1545,8 @@ applyQuery(route.query);   // 첫 진입 — 주소에 담긴 상태 복원
               </div>
             </div>
             <div><div class="text-muted-foreground mb-0.5">입고가 (set) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums">{{ fmt(vat(priceModal.wh_price_set, 'excl')) }}</div></div>
-            <div><div class="text-muted-foreground mb-0.5">대리점가 (pcs) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums font-medium">{{ fmt(vat(priceModal.dist_price_pcs, 'excl')) }}</div></div>
-            <div><div class="text-muted-foreground mb-0.5">대리점가 (set) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums">{{ fmt(vat(priceModal.dist_price_set, 'excl')) }}</div></div>
+            <div><div class="text-muted-foreground mb-0.5">대리점가 (pcs) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums font-medium">{{ fmt(vat(priceModal.dist_price_pcs, distBasis(priceModal))) }}</div></div>
+            <div><div class="text-muted-foreground mb-0.5">대리점가 (set) <span class="opacity-70">{{ vatLabel }}</span></div><div class="tabular-nums">{{ fmt(vat(priceModal.dist_price_set, distBasis(priceModal))) }}</div></div>
           </div>
           <p class="text-[11px] text-muted-foreground">
             <span v-if="priceModal.review_note" class="text-destructive">확인 필요 — {{ priceModal.review_note }}</span>

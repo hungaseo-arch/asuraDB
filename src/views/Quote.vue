@@ -22,6 +22,7 @@ interface Product {
   wh_price_set:   number;   // 입고가(원가) set — 권한 없는 역할에선 0
   dist_price_pcs: number | null;  // 대리점가(pcs 기준) — 없으면 원가 기준 추천가로 대체
   dist_price_set: number | null;  // 대리점가(set 기준) — 없으면 원가(set) 기준 추천가로 대체
+  dist_vat_basis?: 'excl' | 'incl' | null;  // 대리점가 저장 기준 — 'incl' 은 옛 규칙 잔존(÷1.11 해서 사용)
   unit:         'pcs' | 'set';
 }
 
@@ -42,7 +43,7 @@ async function loadProducts() {
     if (canViewCost) {
       // super_admin / staff — 원가 포함 조회
       products.value = await sbGet<Product[]>(
-        'products_priced?select=id,item,brand,description,sku,wh_price_pcs,wh_price_set,dist_price_pcs,dist_price_set,unit&is_active=eq.true&order=brand.asc,description.asc',
+        'products_priced?select=id,item,brand,description,sku,wh_price_pcs,wh_price_set,dist_price_pcs,dist_price_set,dist_vat_basis,unit&is_active=eq.true&order=brand.asc,description.asc',
       ) ?? [];
     } else {
       // distributor / end_user — products RLS 로 차단됨 → products_sell 뷰 사용
@@ -217,8 +218,10 @@ const recommendDist = (cost: number) => (cost > 0 ? Math.round(cost / (1 - DIST_
 // 라인의 대리점가(Dist Price).
 // 단위에 맞는 대리점가(pcs → dist_price_pcs, set → dist_price_set)가 있으면 그 값,
 // 없으면 원가 기준 25% 마진 추천가. (가격은 모두 VAT 별도 — PPN 은 합계에서 가산)
+// dist_vat_basis='incl'(옛 규칙으로 VAT 포함 저장된 값)은 ÷1.11 해 VAT 별도로 맞춘다.
 function distPriceFor(p: Product | undefined, unit: 'pcs' | 'set', cost: number): number {
-  const dp = Number(unit === 'pcs' ? p?.dist_price_pcs : p?.dist_price_set) || 0;
+  const raw = Number(unit === 'pcs' ? p?.dist_price_pcs : p?.dist_price_set) || 0;
+  const dp = p?.dist_vat_basis === 'incl' ? Math.round(raw / 1.11) : raw;
   return dp || recommendDist(cost);
 }
 

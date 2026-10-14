@@ -32,7 +32,12 @@ function normGrade(g: string | null): string {
 }
 
 // ── 제품 마스터 (Supabase products) ─────────────────────────────────────────
-interface Product { id: string; item: string | null; brand: string | null; description: string; sku: string | null; wh_price_pcs: number; wh_price_set: number; dist_price_pcs: number | null; unit: string }
+interface Product { id: string; item: string | null; brand: string | null; description: string; sku: string | null; wh_price_pcs: number; wh_price_set: number; dist_price_pcs: number | null; dist_vat_basis?: 'excl' | 'incl' | null; unit: string }
+// 대리점가를 VAT 별도로 — dist_vat_basis='incl'(옛 규칙 VAT 포함 저장 잔존)은 ÷1.11
+const distExcl = (p: Product): number | undefined => {
+  const v = Number(p.dist_price_pcs) || 0;
+  return (p.dist_vat_basis === 'incl' ? Math.round(v / 1.11) : v) || undefined;
+};
 const products = ref<Product[]>([]);
 
 // ── 자동 판매가 기준 (2026-08-04: 대리점가(pcs) 기준으로 전환) ────────────────
@@ -350,7 +355,7 @@ function choose(c: Company, key: 'tire' | 'tube' | 'flap', p: Product) {
   const it  = c[key];
   it.code = p.description; it.brand = p.brand ?? '';
   it.wh   = p.wh_price_pcs || p.wh_price_set || 0;
-  it.dist = p.dist_price_pcs || undefined;   // 대리점가는 VAT 별도 저장 (2026-10-14 정정)
+  it.dist = distExcl(p);   // 대리점가는 VAT 별도 기준 (2026-10-14 정정)
   it.cat  = catOf(p.item, p.description);
   it.price = priceOf(it, gradeIdx.value);
   setLanded(c);
@@ -368,7 +373,7 @@ async function loadProducts() {
   if (!isPrivileged) return;   // 원가(wh_price_pcs) 조회는 super_admin/staff 만 (products RLS)
   try {
     products.value = await sbGet<Product[]>(
-      'products_priced?select=id,item,brand,description,sku,wh_price_pcs,wh_price_set,dist_price_pcs,unit&is_active=eq.true&order=item.asc,description.asc',
+      'products_priced?select=id,item,brand,description,sku,wh_price_pcs,wh_price_set,dist_price_pcs,dist_vat_basis,unit&is_active=eq.true&order=item.asc,description.asc',
     );
   } catch (e) {
     products.value = [];
@@ -506,7 +511,7 @@ async function loadCompare(id: string) {
         const p = products.value.find(pr => pr.description === c[r.key].code);
         if (p) {
           c[r.key].wh = p.wh_price_pcs || p.wh_price_set || 0;
-          c[r.key].dist = p.dist_price_pcs || undefined;
+          c[r.key].dist = distExcl(p);
           c[r.key].cat = catOf(p.item, p.description);
         }
       }

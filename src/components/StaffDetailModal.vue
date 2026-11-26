@@ -1,25 +1,17 @@
 <script setup lang="ts">
 /**
- * 직원 상세 모달 — 급여 표(StaffPayrollTable.vue)에서 행을 클릭하면 열린다.
+ * 직원 상세 모달 — 직원 표(StaffPayrollTable.vue)에서 행을 클릭하면 열린다.
  *
- * 기본정보·급여 상세는 읽기 전용이고, 연락처(이메일·전화)만 여기서 수정한다.
+ * 기본정보는 읽기 전용이고, 연락처(이메일·전화)만 여기서 수정한다.
  * (staff.email·staff.phone — supabase/migrations/add_staff_contact.sql)
- * NPWP·계좌번호 등 PII 가 함께 노출되므로 super_admin 전용 탭 안에서만 쓴다.
+ * 급여 금액·TER·NPWP·계좌번호는 화면에 표시하지 않는다(2026-11-25).
  */
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { X, Loader2, Mail, Phone } from 'lucide-vue-next';
 import { sbPatch } from '@/lib/supabase';
 import { errMsg } from '@/lib/utils';
 
-interface Payroll {
-  nik: string; npwp: string | null; no_rek: string | null;
-  kode_ter: string | null; ter_pct: number | null;
-  gaji_pokok: number | null; tunj_jabatan: number | null;
-  total_tunj_tetap: number | null; total_tunj_tidak_tetap: number | null;
-  total_bpjs_perusahaan: number | null; total_gaji_gross: number | null;
-  total_potongan: number | null; take_home_pay: number | null;
-  periode: string;
-}
+interface Payroll { nik: string; periode: string }
 interface StaffRow {
   nik: string; name: string | null; grade?: string | null; position?: string | null;
   location?: string | null; is_active?: boolean | null;
@@ -49,7 +41,6 @@ const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') emit('close'); };
 onMounted(() => window.addEventListener('keydown', onKey));
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 
-const fmt = (n: number | null | undefined) => (n == null ? '—' : Number(n).toLocaleString('en-US'));
 const txt = (s: string | null | undefined) => (s && String(s).trim() ? String(s) : '—');
 
 async function save() {
@@ -107,32 +98,6 @@ async function save() {
               <input id="staff-phone" v-model="phone" type="tel" inputmode="tel" placeholder="+62 812-3456-7890" />
             </div>
           </div>
-        </section>
-
-        <!-- 급여 상세 -->
-        <section>
-          <h3 class="text-[11px] font-semibold text-muted-foreground mb-2">급여 상세 ({{ pay.periode }}, IDR)</h3>
-          <div class="rounded-lg border border-border overflow-hidden">
-            <table class="w-full text-sm">
-              <caption class="sr-only">직원 급여 상세</caption>
-              <tbody>
-                <tr class="border-b border-border/50"><th scope="row" class="text-left font-normal text-muted-foreground px-3 py-2">기본급</th><td class="px-3 py-2 text-right tabular-nums">{{ fmt(pay.gaji_pokok) }}</td>
-                    <th scope="row" class="text-left font-normal text-muted-foreground px-3 py-2">직책수당</th><td class="px-3 py-2 text-right tabular-nums">{{ fmt(pay.tunj_jabatan) }}</td></tr>
-                <tr class="border-b border-border/50"><th scope="row" class="text-left font-normal text-muted-foreground px-3 py-2">고정수당</th><td class="px-3 py-2 text-right tabular-nums">{{ fmt(pay.total_tunj_tetap) }}</td>
-                    <th scope="row" class="text-left font-normal text-muted-foreground px-3 py-2">변동수당</th><td class="px-3 py-2 text-right tabular-nums">{{ fmt(pay.total_tunj_tidak_tetap) }}</td></tr>
-                <tr class="border-b border-border/50"><th scope="row" class="text-left font-normal text-muted-foreground px-3 py-2">회사부담 BPJS</th><td class="px-3 py-2 text-right tabular-nums">{{ fmt(pay.total_bpjs_perusahaan) }}</td>
-                    <th scope="row" class="text-left font-normal text-muted-foreground px-3 py-2">공제 합계</th><td class="px-3 py-2 text-right tabular-nums">{{ fmt(pay.total_potongan) }}</td></tr>
-                <tr class="bg-muted/20"><th scope="row" class="text-left font-semibold px-3 py-2">Gross</th><td class="px-3 py-2 text-right tabular-nums font-semibold text-teal-700">{{ fmt(pay.total_gaji_gross) }}</td>
-                    <th scope="row" class="text-left font-semibold px-3 py-2">실수령(THP)</th><td class="px-3 py-2 text-right tabular-nums font-semibold text-teal-700">{{ fmt(pay.take_home_pay) }}</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <dl class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 text-sm mt-3">
-            <div><dt class="text-[11px] text-muted-foreground">TER 코드</dt><dd class="text-foreground">{{ txt(pay.kode_ter) }}</dd></div>
-            <div><dt class="text-[11px] text-muted-foreground">TER %</dt><dd class="text-foreground tabular-nums">{{ pay.ter_pct == null ? '—' : `${pay.ter_pct}%` }}</dd></div>
-            <div><dt class="text-[11px] text-muted-foreground">NPWP</dt><dd class="text-foreground tabular-nums">{{ txt(pay.npwp) }}</dd></div>
-            <div><dt class="text-[11px] text-muted-foreground">계좌번호</dt><dd class="text-foreground tabular-nums">{{ txt(pay.no_rek) }}</dd></div>
-          </dl>
         </section>
       </div>
 

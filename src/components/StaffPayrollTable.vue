@@ -9,15 +9,8 @@ import DataState from '@/components/ui/DataState.vue';
 import StaffDetailModal from '@/components/StaffDetailModal.vue';
 import TableState from '@/components/ui/TableState.vue';
 
-interface Payroll {
-  nik: string; npwp: string | null; no_rek: string | null;
-  kode_ter: string | null; ter_pct: number | null;
-  gaji_pokok: number | null; tunj_jabatan: number | null;
-  total_tunj_tetap: number | null; total_tunj_tidak_tetap: number | null;
-  total_bpjs_perusahaan: number | null; total_gaji_gross: number | null;
-  total_potongan: number | null; take_home_pay: number | null;
-  periode: string;
-}
+// 급여 금액은 화면·CSV 에 두지 않는다(2026-11-25). 목록 구성에 필요한 nik·periode 만 조회한다.
+interface Payroll { nik: string; periode: string }
 
 const rows = ref<Payroll[]>([]);
 const loading = ref(true);
@@ -41,7 +34,7 @@ async function load() {
   loading.value = true; missing.value = false; loadError.value = null;
   try {
     const [pay, staff] = await Promise.all([
-      sbGetAll<Payroll>('staff_payroll?select=*&order=periode.desc,nik.asc'),
+      sbGetAll<Payroll>('staff_payroll?select=nik,periode&order=periode.desc,nik.asc'),
       sbGetAll<StaffRow>('staff?select=*').catch(() => [] as StaffRow[]),
     ]);
     rows.value = pay;
@@ -82,11 +75,6 @@ const STAFF_COLS: { key: string; label: string; num?: boolean; center?: boolean;
   { key: 'position', label: '직급' },
   { key: 'email', label: '이메일' },
   { key: 'phone', label: '전화번호' },
-  { key: 'gaji_pokok', label: '기본급', num: true, right: true },
-  { key: 'tunj_jabatan', label: '직책수당', num: true, right: true },
-  { key: 'total_tunj_tetap', label: '고정수당', num: true, right: true },
-  { key: 'total_tunj_tidak_tetap', label: '변동수당', num: true, right: true },
-  { key: 'total_gaji_gross', label: 'Gross', num: true, right: true },
   { key: 'periode', label: '기간', center: true },
 ];
 function staffVal(r: Payroll, key: string): string | number {
@@ -119,10 +107,7 @@ const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / 
 const paged = computed(() => sorted.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE));
 watch([query, periode], () => { page.value = 1; });
 
-const sum = (k: keyof Payroll) => filtered.value.reduce((s, r) => s + (Number(r[k]) || 0), 0);
-const fmt = (n: number | null | undefined) => (n == null ? '—' : Number(n).toLocaleString('en-US'));
-
-// 행 클릭 → 상세 모달(기본정보·연락처 편집·급여 상세)
+// 행 클릭 → 상세 모달(기본정보·연락처 편집)
 const selected = ref<Payroll | null>(null);
 const selectedStaff = computed(() => (selected.value ? staffMap.value.get(selected.value.nik) ?? null : null));
 function onSaved(v: { nik: string; email: string | null; phone: string | null }) {
@@ -134,15 +119,14 @@ function onSaved(v: { nik: string; email: string | null; phone: string | null })
 }
 
 function downloadCsv() {
-  const headers = ['성명', 'NIK', '레벨', '직급', '이메일', '전화번호', '기본급', '직책수당', '고정수당', '변동수당', 'Gross', '기간'];
+  const headers = ['성명', 'NIK', '레벨', '직급', '이메일', '전화번호', '기간'];
   const clean = (s: string) => (s === '—' ? '' : s);
   const rows = filtered.value.map(r => [
     clean(nameOf(r.nik)), r.nik, clean(gradeOf(r.nik)), clean(posOf(r.nik)),
     clean(mailOf(r.nik)), clean(telOf(r.nik)),
-    r.gaji_pokok ?? '', r.tunj_jabatan ?? '', r.total_tunj_tetap ?? '', r.total_tunj_tidak_tetap ?? '',
-    r.total_gaji_gross ?? '', r.periode,
+    r.periode,
   ]);
-  exportCsv(`직원_급여_${wibDate()}`, headers, rows);
+  exportCsv(`직원_명부_${wibDate()}`, headers, rows);
 }
 </script>
 
@@ -157,7 +141,7 @@ function downloadCsv() {
     <template v-else>
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <p class="text-[11px] text-muted-foreground">
-          인원 {{ filtered.length }}명 · 총 Gross {{ fmt(sum('total_gaji_gross')) }} (IDR)
+          인원 {{ filtered.length }}명
         </p>
         <div class="flex items-center gap-2">
           <div class="inline-flex items-center gap-1.5 bg-card rounded-lg border border-border pl-3 pr-1 focus-within:ring-1 focus-within:ring-teal-400">
@@ -180,7 +164,7 @@ function downloadCsv() {
       <div class="rounded-xl border border-border bg-card overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-sm whitespace-nowrap">
-            <caption class="sr-only">직원별 급여 상세</caption>
+            <caption class="sr-only">직원 목록</caption>
             <thead>
               <tr class="border-b border-border bg-muted/20 text-xs text-muted-foreground">
                 <th scope="col" v-for="col in STAFF_COLS" :key="col.key" class="font-semibold px-3 py-2.5 cursor-pointer select-none hover:text-foreground" :class="col.right ? 'text-right' : col.center ? 'text-center' : 'text-left'" @click="sortBy(col.key)">
@@ -194,7 +178,7 @@ function downloadCsv() {
             <tbody>
               <TableState
                 v-if="loading || !paged.length"
-                :colspan="12" :loading="loading" :skeleton-rows="6"
+                :colspan="7" :loading="loading" :skeleton-rows="6"
                 empty-text="검색 결과가 없습니다."
               />
               <tr
@@ -209,11 +193,6 @@ function downloadCsv() {
                 <td class="px-3 py-2.5 text-muted-foreground">{{ posOf(r.nik) }}</td>
                 <td class="px-3 py-2.5 text-muted-foreground">{{ mailOf(r.nik) }}</td>
                 <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ telOf(r.nik) }}</td>
-                <td class="px-3 py-2.5 text-right tabular-nums">{{ fmt(r.gaji_pokok) }}</td>
-                <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmt(r.tunj_jabatan) }}</td>
-                <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmt(r.total_tunj_tetap) }}</td>
-                <td class="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{{ fmt(r.total_tunj_tidak_tetap) }}</td>
-                <td class="px-3 py-2.5 text-right tabular-nums font-semibold text-teal-700">{{ fmt(r.total_gaji_gross) }}</td>
                 <td class="px-3 py-2.5 text-center text-muted-foreground tabular-nums">{{ r.periode }}</td>
               </tr>
             </tbody>
